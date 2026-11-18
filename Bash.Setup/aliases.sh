@@ -14,9 +14,9 @@ alias ..='cd ..'
 alias ...='cd ../..'
 alias ....='cd ../../..'
 alias ~='cd ~'
-alias repo='cd ~/Proyectos'
+alias repo='cd ~/Workspace/Repositorios'
 alias workspace='cd ~/Workspace'
-alias deb='cd ~/Proyectos/Linux/Debian'
+alias gdl='cd ~/Workspace/Repositorios/GoldenDogLinux'
 
 # -----------------------------------------------------------------------------
 # 2. LISTADO DE ARCHIVOS (MODERNO CON FALLBACK)

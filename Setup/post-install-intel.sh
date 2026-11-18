@@ -23,21 +23,8 @@ echo "Debian detectado: $CODENAME"
 # 1. Actualización Base y Herramientas de Gestión de Repositorios
 echo "ℹ️ [1/9] Actualizando repositorios y herramientas base..."
 sudo apt update
-sudo apt install -y curl wget ca-certificates gnupg lsb-release pciutils
-
-# 2. Habilitar Repositorios Extra (Contrib, Non-Free, Non-Free-Firmware)
-echo "ℹ️ [2/9] Habilitando contrib, non-free y non-free-firmware para $CODENAME..."
-if [ -f /etc/apt/sources.list.d/debian.sources ]; then
-    sudo sed -i '/^Components:/ {/contrib/! s/$/ contrib/}' /etc/apt/sources.list.d/debian.sources 2>/dev/null || true
-    sudo sed -i '/^Components:/ {/non-free/! s/$/ non-free/}' /etc/apt/sources.list.d/debian.sources 2>/dev/null || true
-    sudo sed -i '/^Components:/ {/non-free-firmware/! s/$/ non-free-firmware/}' /etc/apt/sources.list.d/debian.sources 2>/dev/null || true
-fi
-if [ -f /etc/apt/sources.list ]; then
-    sudo sed -i '/^deb / {/contrib/! s/\(main\)/\1 contrib non-free non-free-firmware/}' /etc/apt/sources.list 2>/dev/null || true
-fi
-
-sudo apt update
 sudo apt upgrade -y
+sudo apt install -y curl wget ca-certificates gnupg lsb-release pciutils
 
 # 3. Pre-aceptar licencias de tipografías si aplica (ttf-mscorefonts-installer)
 echo "ttf-mscorefonts-installer msttcorefonts/accepted-mscorefonts-eula select true" | sudo debconf-set-selections 2>/dev/null || true
@@ -50,7 +37,6 @@ sudo apt install -y \
     cmake \
     curl \
     wget \
-    btop \
     inxi \
     fuse3 \
     exfatprogs \
@@ -63,8 +49,6 @@ sudo apt install -y \
     fastfetch \
     ca-certificates \
     gnupg \
-    flatpak \
-    plasma-discover-backend-flatpak \
     kio-extras \
     dolphin-plugins \
     power-profiles-daemon \
@@ -113,10 +97,6 @@ else
         sudo systemctl restart zramswap.service 2>/dev/null || true
     fi
 fi
-
-# 8. Integración de Flathub para Flatpak
-echo "ℹ️ [8/9] Registrando repositorio Flathub..."
-flatpak remote-add --if-not-exists flathub https://dl.flathub.org/repo/flathub.flatpakrepo 2>/dev/null || true
 
 # Limpieza de paquetes residuales
 echo "ℹ️ Limpiando dependencias huérfanas..."
