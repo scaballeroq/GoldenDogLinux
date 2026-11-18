@@ -6,10 +6,10 @@
 # Características:
 #  - Instalación y gestión 100% rootless en ~/.local/bin/agy.
 #  - Comprobación de estado (--status) e inspección de versión instantánea.
-#  - Consulta directa al manifiesto oficial sin scripts intermedios innecesarios.
+#  - Consulta directa al manifiesto oficial con timeouts y parseo seguro.
 #  - Prevención de descargas redundantes si la versión local ya está al día.
-#  - Actualización rápida mediante 'agy update' nativo o reinstalación limpia.
-#  - Integración modular en ~/.bashrc.d/ y ~/.config/environment.d/.
+#  - Fallback automático al instalador oficial si el manifiesto no responde.
+#  - Integración idempotente en ~/.bashrc.d/ y ~/.config/environment.d/.
 #  - Opciones completas de CLI: --status, --check, --update, --force, --uninstall y --help.
 # ==============================================================================
 
@@ -25,9 +25,10 @@ BOLD="\033[1m"
 NC="\033[0m"
 
 # Detección de usuario real
-if [ -n "${SUDO_USER:-}" ] && [ "$SUDO_USER" != "root" ]; then
+if [[ -n "${SUDO_USER:-}" && "$SUDO_USER" != "root" ]]; then
     REAL_USER="$SUDO_USER"
-    USER_HOME=$(getent passwd "$SUDO_USER" | cut -d: -f6)
+    USER_HOME=$(getent passwd "$SUDO_USER" | cut -d: -f6 || true)
+    USER_HOME="${USER_HOME:-/home/$REAL_USER}"
 else
     REAL_USER="${USER:-$(id -un)}"
     USER_HOME="${HOME:-/home/$REAL_USER}"
@@ -46,6 +47,14 @@ ENV_FILE="$ENV_D/10-antigravity-cli.conf"
 MANIFEST_BASE_URL="https://antigravity-cli-auto-updater-974169037036.us-central1.run.app"
 OFFICIAL_INSTALLER_URL="https://antigravity.google/cli/install.sh"
 
+_TMP_DIR=""
+cleanup_tmp() {
+    if [[ -n "${_TMP_DIR:-}" && -d "$_TMP_DIR" ]]; then
+        rm -rf "$_TMP_DIR"
+    fi
+}
+trap cleanup_tmp EXIT
+
 case "$(uname -m)" in
 x86_64 | amd64)
     ARCH="amd64"
@@ -61,58 +70,109 @@ aarch64 | arm64)
     ;;
 esac
 
+require_cmd() {
+    local cmd="$1"
+    if ! command -v "$cmd" &>/dev/null; then
+        echo -e "${RED}❌ Dependencia requerida no encontrada: $cmd${NC}" >&2
+        exit 1
+    fi
+}
+
 run_as_user() {
-    if [ -n "${SUDO_USER:-}" ] && [ "$SUDO_USER" != "root" ]; then
+    if [[ -n "${SUDO_USER:-}" && "$SUDO_USER" != "root" ]]; then
         sudo -u "$REAL_USER" env HOME="$USER_HOME" "$@"
     else
         "$@"
     fi
 }
 
-get_installed_version() {
-    if [ -x "$AGY_BIN" ]; then
-        "$AGY_BIN" --version 2>/dev/null || echo ""
-    elif command -v agy &>/dev/null; then
-        agy --version 2>/dev/null || echo ""
+extract_semver() {
+    grep -oE '[0-9]+\.[0-9]+(\.[0-9]+)+' <<<"$1" | head -n1 || true
+}
+
+versions_match() {
+    local local_raw="$1"
+    local remote_raw="$2"
+    local local_ver remote_ver
+
+    [[ -n "$local_raw" && -n "$remote_raw" ]] || return 1
+
+    local_ver=$(extract_semver "$local_raw")
+    remote_ver=$(extract_semver "$remote_raw")
+
+    if [[ -n "$local_ver" && -n "$remote_ver" ]]; then
+        [[ "$local_ver" == "$remote_ver" ]]
     else
-        echo ""
+        [[ "$local_raw" == "$remote_raw" ]]
+    fi
+}
+
+get_installed_version() {
+    if [[ -x "$AGY_BIN" ]]; then
+        run_as_user "$AGY_BIN" --version 2>/dev/null || true
+    elif command -v agy &>/dev/null; then
+        run_as_user agy --version 2>/dev/null || true
     fi
 }
 
 get_remote_version() {
+    require_cmd curl
     local manifest_url="$MANIFEST_BASE_URL/manifests/$PLATFORM.json"
     local json version
-    json=$(curl -fsSL --retry 2 "$manifest_url" 2>/dev/null || true)
-    version=$(echo "$json" | sed -n 's/.*"version"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/p' | head -n1 || true)
-    if [ -n "$version" ]; then
-        echo "$version"
+
+    json=$(curl -fsSL --connect-timeout 5 --max-time 15 --retry 2 "$manifest_url" 2>/dev/null || true)
+    [[ -n "$json" ]] || return 0
+
+    if command -v jq &>/dev/null; then
+        version=$(jq -r '.version // empty' <<<"$json" 2>/dev/null || true)
     else
-        echo "1.2.10"
+        version=$(grep -oE '"version"[[:space:]]*:[[:space:]]*"[^"]*"' <<<"$json" | head -n1 | cut -d'"' -f4 || true)
     fi
+
+    echo "$version"
 }
 
 validate_agy() {
     local bin="$1"
-    if [ ! -x "$bin" ]; then
-        return 1
-    fi
-    if "$bin" --version &>/dev/null; then
+    [[ -x "$bin" ]] && run_as_user "$bin" --version &>/dev/null
+}
+
+write_if_changed() {
+    local target="$1"
+    local content="$2"
+    if [[ -f "$target" ]] && [[ "$(cat "$target")" == "$content" ]]; then
         return 0
-    else
-        return 1
     fi
+    printf '%s\n' "$content" | run_as_user tee "$target" >/dev/null
+}
+
+ensure_integration() {
+    run_as_user mkdir -p "$BASHRC_D" "$ENV_D"
+
+    local env_content bashrc_content
+    env_content='# Google Antigravity CLI Environment Integration
+PATH="$HOME/.local/bin:$PATH"'
+
+    bashrc_content='# Google Antigravity CLI Integration
+if [ -d "$HOME/.local/bin" ] && [[ ":$PATH:" != *":$HOME/.local/bin:"* ]]; then
+    export PATH="$HOME/.local/bin:$PATH"
+fi'
+
+    write_if_changed "$ENV_FILE" "$env_content"
+    write_if_changed "$BASHRC_FILE" "$bashrc_content"
 }
 
 show_status() {
     local installed_ver remote_ver
     installed_ver=$(get_installed_version)
+
     echo -e "${BOLD}${CYAN}=================================================================${NC}"
-    echo -e "${BOLD}🔍 ESTADO DE GOOGLE ANTIGRAVITY CLI (agy) - UBUNTU WORKSTATION${NC}"
+    echo -e "${BOLD}🔍 ESTADO DE GOOGLE ANTIGRAVITY CLI (agy) - DEBIAN WORKSTATION${NC}"
     echo -e "${BOLD}${CYAN}=================================================================${NC}"
     echo -e "• Ubicación del binario:     ${AGY_BIN}"
-    if [ -n "$installed_ver" ]; then
+    if [[ -n "$installed_ver" ]]; then
         echo -e "• Estado local:              ${GREEN}✅ Instalado${NC} (Versión: ${BOLD}${installed_ver}${NC})"
-        if [ -f "$MARKER_FILE" ]; then
+        if [[ -f "$MARKER_FILE" ]]; then
             echo -e "• Gestión de instalación:    ${GREEN}✅ Gestionado por script (v1)${NC}"
         fi
     else
@@ -122,21 +182,21 @@ show_status() {
     echo -e "• Plataforma / Arch:         ${BLUE}${PLATFORM}${NC} (${ARCH})"
     echo -n "• Consulta versión remota:   "
     remote_ver=$(get_remote_version)
-    if [ -n "$remote_ver" ]; then
+    if [[ -n "$remote_ver" ]]; then
         echo -e "${GREEN}v${remote_ver}${NC}"
-        if [ -n "$installed_ver" ]; then
-            if [ "$installed_ver" == "$remote_ver" ] || [[ "$installed_ver" == *"$remote_ver"* ]]; then
+        if [[ -n "$installed_ver" ]]; then
+            if versions_match "$installed_ver" "$remote_ver"; then
                 echo -e "• Sincronización:            ${GREEN}✅ La versión instalada coincide con la última versión remota.${NC}"
             else
                 echo -e "• Sincronización:            ${YELLOW}⚡ Hay una actualización disponible: v${remote_ver}${NC}"
             fi
         fi
     else
-        echo -e "${YELLOW}No disponible (sin conexión)${NC}"
+        echo -e "${YELLOW}No disponible (sin conexión o error de manifiesto)${NC}"
     fi
 
-    echo -e "• Integración de entorno:    $(if [ -f "$ENV_FILE" ]; then echo -e "${GREEN}✅ environment.d activo${NC}"; else echo -e "${YELLOW}No configurado${NC}"; fi)"
-    echo -e "• Integración en Shell:      $(if [ -f "$BASHRC_FILE" ]; then echo -e "${GREEN}✅ ~/.bashrc.d activo${NC}"; else echo -e "${YELLOW}No configurado${NC}"; fi)"
+    echo -e "• Integración de entorno:    $(if [[ -f "$ENV_FILE" ]]; then echo -e "${GREEN}✅ environment.d activo${NC}"; else echo -e "${YELLOW}No configurado${NC}"; fi)"
+    echo -e "• Integración en Shell:      $(if [[ -f "$BASHRC_FILE" ]]; then echo -e "${GREEN}✅ ~/.bashrc.d activo${NC}"; else echo -e "${YELLOW}No configurado${NC}"; fi)"
     echo -e "${BOLD}${CYAN}=================================================================${NC}"
 }
 
@@ -149,7 +209,7 @@ Gestor e Instalador de Google Antigravity CLI (agy) para Debian.
 Opciones:
   (sin argumentos)    Comprueba la versión instalada y descarga/instala sólo si hay una versión nueva.
   --status, -s        Muestra diagnóstico completo de agy, versión local y remota.
-  --check, -c         Comprueba silenciosamente si hay actualizaciones (exit 0 si al día, 1 si pendiente).
+  --check, -c         Comprueba silenciosamente si hay actualizaciones (exit 0 si al día, 1 si pendiente, 2 si error remoto).
   --update, -u        Fuerza la comprobación y actualización a la última versión disponible.
   --force, -f         Reinstala forzosamente la última versión independientemente del estado actual.
   --uninstall         Elimina el binario agy y sus archivos de configuración de entorno.
@@ -157,64 +217,64 @@ Opciones:
 EOF
 }
 
+install_from_official_script() {
+    echo -e "${YELLOW}⚠️ Descarga por manifiesto directo no disponible. Utilizando instalador oficial...${NC}"
+    curl -fsSL --connect-timeout 5 --max-time 60 "$OFFICIAL_INSTALLER_URL" | run_as_user bash
+}
+
 install_agy() {
     local force="${1:-false}"
     local installed_ver remote_ver
+
+    require_cmd curl
+    require_cmd tar
+
     installed_ver=$(get_installed_version)
 
     echo -e "${BOLD}${BLUE}==> Comprobando versiones de Google Antigravity CLI...${NC}"
     remote_ver=$(get_remote_version)
 
-    if [ "$force" != "true" ] && [ -n "$installed_ver" ]; then
-        if [ "$installed_ver" == "$remote_ver" ] || [[ "$installed_ver" == *"$remote_ver"* ]]; then
+    if [[ "$force" != "true" && -n "$installed_ver" && -n "$remote_ver" ]]; then
+        if versions_match "$installed_ver" "$remote_ver"; then
+            ensure_integration
             echo -e "${GREEN}✅ Antigravity CLI ya está en la última versión ($installed_ver). Nada que hacer.${NC}"
             exit 0
         fi
     fi
 
-    echo -e "${BLUE}==> Descargando e instalando Google Antigravity CLI ($remote_ver)...${NC}"
-    run_as_user mkdir -p "$LOCAL_BIN" "$BASHRC_D" "$ENV_D"
+    echo -e "${BLUE}==> Descargando e instalando Google Antigravity CLI (${remote_ver:-última versión})...${NC}"
+    run_as_user mkdir -p "$LOCAL_BIN"
 
-    local download_url="$MANIFEST_BASE_URL/downloads/antigravity-$PLATFORM-$remote_ver.tar.gz"
-    local tmp_dir
-    tmp_dir=$(run_as_user mktemp -d "/tmp/agy-install-XXXXXX")
-    trap 'rm -rf "$tmp_dir"' EXIT
+    if [[ -n "$remote_ver" ]]; then
+        local download_url="$MANIFEST_BASE_URL/downloads/antigravity-$PLATFORM-$remote_ver.tar.gz"
+        _TMP_DIR=$(run_as_user mktemp -d "/tmp/agy-install-XXXXXX")
 
-    if ! curl -fsSL --retry 3 "$download_url" -o "$tmp_dir/agy.tar.gz" 2>/dev/null; then
-        echo -e "${YELLOW}⚠️ Descarga por manifiesto directo no disponible. Utilizando instalador oficial...${NC}"
-        curl -fsSL "$OFFICIAL_INSTALLER_URL" | run_as_user bash
-    else
-        tar -xzf "$tmp_dir/agy.tar.gz" -C "$tmp_dir"
-        local extracted_bin
-        extracted_bin=$(find "$tmp_dir" -type f -name "agy" | head -n1)
-        if [ -n "$extracted_bin" ]; then
-            run_as_user install -m 755 "$extracted_bin" "$AGY_BIN"
+        if curl -fsSL --connect-timeout 5 --max-time 120 --retry 3 "$download_url" -o "$_TMP_DIR/agy.tar.gz" 2>/dev/null; then
+            tar -xzf "$_TMP_DIR/agy.tar.gz" -C "$_TMP_DIR"
+            local extracted_bin
+            extracted_bin=$(find "$_TMP_DIR" -type f -name "agy" | head -n1)
+            if [[ -n "$extracted_bin" ]]; then
+                run_as_user install -m 755 "$extracted_bin" "$AGY_BIN"
+            else
+                echo -e "${RED}❌ Error: no se encontró el binario 'agy' en el paquete descargado.${NC}" >&2
+                exit 1
+            fi
         else
-            echo -e "${RED}❌ Error: no se encontró el binario 'agy' en el paquete descargado.${NC}"
-            exit 1
+            install_from_official_script
         fi
+    else
+        install_from_official_script
     fi
 
     if validate_agy "$AGY_BIN"; then
-        echo "$MARKER_VALUE" | run_as_user tee "$MARKER_FILE" >/dev/null
-        echo -e "${GREEN}✅ Binario instalado y validado con éxito: $("$AGY_BIN" --version 2>/dev/null || echo "$remote_ver")${NC}"
+        printf '%s\n' "$MARKER_VALUE" | run_as_user tee "$MARKER_FILE" >/dev/null
+        echo -e "${GREEN}✅ Binario instalado y validado con éxito: $(run_as_user "$AGY_BIN" --version 2>/dev/null || echo "${remote_ver:-OK}")${NC}"
     else
-        echo -e "${RED}❌ Error de validación del binario 'agy'.${NC}"
+        echo -e "${RED}❌ Error de validación del binario 'agy'.${NC}" >&2
         exit 1
     fi
 
-    cat <<'EOF' | run_as_user tee "$ENV_FILE" >/dev/null
-# Google Antigravity CLI Environment Integration
-PATH="$HOME/.local/bin:$PATH"
-EOF
-
-    cat <<'EOF' | run_as_user tee "$BASHRC_FILE" >/dev/null
-# Google Antigravity CLI Integration
-if [ -d "$HOME/.local/bin" ] && [[ ":$PATH:" != *":$HOME/.local/bin:"* ]]; then
-    export PATH="$HOME/.local/bin:$PATH"
-fi
-EOF
-
+    ensure_integration
     echo -e "${GREEN}✅ Integración en ~/.bashrc.d y ~/.config/environment.d completada.${NC}"
 }
 
@@ -234,7 +294,9 @@ case "${1:-}" in
 --check | -c)
     local_v=$(get_installed_version)
     remote_v=$(get_remote_version)
-    if [ -n "$local_v" ] && { [ "$local_v" == "$remote_v" ] || [[ "$local_v" == *"$remote_v"* ]]; }; then
+    if [[ -z "$remote_v" ]]; then
+        exit 2
+    elif versions_match "$local_v" "$remote_v"; then
         exit 0
     else
         exit 1
@@ -253,7 +315,7 @@ case "${1:-}" in
     install_agy false
     ;;
 *)
-    echo -e "${RED}❌ Opción no reconocida: $1${NC}"
+    echo -e "${RED}❌ Opción no reconocida: $1${NC}" >&2
     show_help
     exit 1
     ;;
