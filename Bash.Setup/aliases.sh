@@ -100,6 +100,9 @@ alias chgrp='chgrp --preserve-root' # Proteger directorio raíz
 command -v duf &> /dev/null && alias df='duf'
 command -v dust &> /dev/null && alias du='dust'
 command -v procs &> /dev/null && alias ps='procs'
+if command -v fdfind &> /dev/null && ! command -v fd &> /dev/null; then
+    alias fd='fdfind'
+fi
 if command -v btm &> /dev/null; then
     alias top='btm'
 elif command -v btop &> /dev/null; then
@@ -146,7 +149,9 @@ check-kernel-update() {
     echo "🐧 Kernel activo en el sistema:  $active_kernel"
     echo "📌 Última versión en Kernel.org: v$latest_kernel"
     echo "================================================================="
-    if [[ "$active_kernel" != *"$latest_kernel"* ]]; then
+    if [ "$latest_kernel" = "Desconocido" ]; then
+        echo "⚠️  No se pudo consultar la última versión en kernel.org (sin conexión o timeout)."
+    elif [[ "$active_kernel" != *"$latest_kernel"* ]]; then
         echo "💡 Hay una versión de kernel más reciente disponible en kernel.org."
     else
         echo "✅ Tu kernel coincide con la última versión estable."
@@ -169,14 +174,11 @@ alias vminfo='virsh dominfo'
 alias vmconsole='virsh console'
 
 # -----------------------------------------------------------------------------
-# 10. PODMAN (Comandos directos)
+# 10. PODMAN (Comandos directos adicionales; p/pps/pv en podman-functions.sh)
 # -----------------------------------------------------------------------------
-alias p='podman'
 alias pc='podman-compose'
-alias pps='podman ps'
 alias ppsa='podman ps -a'
 alias pimg='podman images'
-alias pv='podman volume ls'
 alias pods='podman pod ps'
 alias podsa='podman pod ps -a'
 alias pclean='podman system prune -af'

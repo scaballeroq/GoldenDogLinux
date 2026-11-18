@@ -1,16 +1,21 @@
-#!/bin/bash
 # =============================================================================
 # ALIASES PARA YT-DLP (yt-dlp_aliases.sh)
 # =============================================================================
 # Este archivo contiene atajos para descargar vídeos y audio usando yt-dlp.
 
+# Evitar ejecución en subshells y sesiones no interactivas
+[[ $- != *i* ]] && return 0 2>/dev/null || true
+
 # Motor de JS para yt-dlp (Deno es recomendado; detectamos si viene de mise o sistema)
+JS_RUNTIME=""
 if command -v deno &> /dev/null; then
     JS_RUNTIME="--js-runtimes deno"
-elif command -v mise &> /dev/null && mise where deno &>/dev/null; then
-    JS_RUNTIME="--js-runtimes deno:$(mise where deno)/bin/deno"
-else
-    JS_RUNTIME=""
+elif command -v mise &> /dev/null; then
+    _deno_dir=$(mise where deno 2>/dev/null || true)
+    if [ -n "$_deno_dir" ]; then
+        JS_RUNTIME="--js-runtimes deno:${_deno_dir}/bin/deno"
+    fi
+    unset _deno_dir
 fi
 
 # Navegador predeterminado para cookies (Debian suele usar firefox o chrome)
@@ -35,5 +40,6 @@ alias ytlista-audio="yt-dlp -f 'ba' -x --audio-format mp3 --audio-quality 0 --co
 # Descarga video con subtítulos (Optimizado para español)
 alias ytdl-subs="yt-dlp -f 'bestvideo[height<=1080]+bestaudio/best[height<=1080]' --merge-output-format mp4 $JS_RUNTIME --impersonate chrome --write-auto-subs --embed-subs --sub-langs 'es.*' --convert-subs srt --cookies-from-browser $YT_BROWSER --sleep-subtitles 15 --rm-cache-dir"
 
-#echo "✅ Aliases de yt-dlp cargados (ytvideo, ytaudio, ytlista, ytlista-audio)"
-echo "✅ Aliases de yt-dlp cargados"
+unset JS_RUNTIME YT_BROWSER
+
+[[ $- == *i* ]] && echo "✅ Aliases de yt-dlp cargados"

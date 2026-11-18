@@ -7,9 +7,11 @@
 # Evitar ejecución en subshells y sesiones no interactivas
 [[ $- != *i* ]] && return 0 2>/dev/null || true
 
-# 1. Asegurar que el directorio de logs existe
+# 1. Asegurar que el directorio de logs existe (solo si rclone está instalado)
 RCLONE_LOG_DIR="$HOME/Workspace/rclone_logs"
-mkdir -p "$RCLONE_LOG_DIR"
+if command -v rclone &> /dev/null && [ ! -d "$RCLONE_LOG_DIR" ]; then
+    mkdir -p "$RCLONE_LOG_DIR"
+fi
 
 # 2. Opciones comunes optimizadas para Google Drive
 # - tpslimit 10: Evita errores de límite de tasa (Rate Limit / User Rate Limit Exceeded) de la API de Google.

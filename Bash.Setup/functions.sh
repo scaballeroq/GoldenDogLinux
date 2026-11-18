@@ -146,7 +146,7 @@ iso2sd() {
     echo "Uso: iso2sd <archivo_iso> <dispositivo_salida>"
     echo "Ejemplo: iso2sd ~/debian.iso /dev/sda"
     echo -e "\nDispositivos disponibles:"
-    lsblk -d -o NAME | grep -E '^sd[a-z]' | awk '{print "/dev/"$1}'
+    lsblk -d -o NAME | grep -E '^(sd[a-z]|mmcblk[0-9]+|nvme[0-9]+n[0-9]+)' | awk '{print "/dev/"$1}'
     return 1
   else
     sudo dd bs=4M status=progress oflag=sync if="$1" of="$2"
@@ -163,7 +163,7 @@ format-drive() {
     echo "Uso: format-drive <dispositivo> <etiqueta>"
     echo "Ejemplo: format-drive /dev/sdb 'MiPendrive'"
     echo -e "\nDispositivos disponibles:"
-    lsblk -d -o NAME,SIZE,MODEL | grep -E '^sd[a-z]'
+    lsblk -d -o NAME,SIZE,MODEL | grep -E '^(sd[a-z]|mmcblk[0-9]+|nvme[0-9]+n[0-9]+)'
     return 1
   fi
 
@@ -178,7 +178,7 @@ format-drive() {
     sudo parted -s "$1" mkpart primary 2048s 100%
 
     local part="${1}1"
-    [[ "$1" =~ nvme ]] && part="${1}p1"
+    [[ "$1" =~ (nvme|mmcblk) ]] && part="${1}p1"
 
     echo "⚙️  Formateando partición $part como exFAT..."
     sudo mkfs.exfat -n "$2" "$part"

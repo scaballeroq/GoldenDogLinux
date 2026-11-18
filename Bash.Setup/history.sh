@@ -24,13 +24,12 @@ elif [ -n "${ZSH_VERSION:-}" ]; then
     # CONFIGURACIÓN PARA ZSH (Compatibilidad)
     # -------------------------------------------------------------------------
     export HISTFILE="${HISTFILE:-$HOME/.zsh_history}"
-    export HISTSIZE=10000
+    export HISTSIZE=20000
     export SAVEHIST=20000
 
     # Comportamiento del historial en Zsh
     setopt APPEND_HISTORY          # Añadir al historial en vez de sobrescribir
-    setopt INC_APPEND_HISTORY      # Guardar cada comando inmediatamente al ejecutarse
-    setopt SHARE_HISTORY           # Compartir historial entre múltiples terminales activas
+    setopt SHARE_HISTORY           # Compartir e incorporar historial entre sesiones activas
     setopt HIST_IGNORE_DUPS        # No registrar comandos consecutivos repetidos
     setopt HIST_IGNORE_ALL_DUPS    # Si se repite un comando, eliminar la ocurrencia anterior
     setopt HIST_IGNORE_SPACE       # Ignorar comandos que comiencen con espacio

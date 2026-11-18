@@ -8,8 +8,9 @@ if [ -n "${BASH_VERSION:-}" ]; then
     # -------------------------------------------------------------------------
     # CONFIGURACIÓN PARA BASH (Predeterminada)
     # -------------------------------------------------------------------------
-    # cdspell: Intenta corregir pequeños errores tipográficos en los comandos cd.
+    # cdspell / dirspell: Corrige pequeños errores tipográficos en cd y al completar directorios.
     shopt -s cdspell 2>/dev/null || true
+    shopt -s dirspell 2>/dev/null || true
 
     # autocd: Permite entrar en un directorio escribiendo solo su nombre.
     shopt -s autocd 2>/dev/null || true
@@ -20,12 +21,10 @@ if [ -n "${BASH_VERSION:-}" ]; then
     # checkwinsize: Verifica el tamaño de la ventana después de cada comando.
     shopt -s checkwinsize 2>/dev/null || true
 
-    # Autocompletado Readline (solo interactivo)
-    if [[ $- == *i* ]]; then
-        bind 'set completion-ignore-case on' 2>/dev/null || true
-        bind 'set show-all-if-ambiguous on' 2>/dev/null || true
-        bind 'set colored-stats on' 2>/dev/null || true
-    fi
+    # Autocompletado Readline
+    bind 'set completion-ignore-case on' 2>/dev/null || true
+    bind 'set show-all-if-ambiguous on' 2>/dev/null || true
+    bind 'set colored-stats on' 2>/dev/null || true
 
 elif [ -n "${ZSH_VERSION:-}" ]; then
     # -------------------------------------------------------------------------

@@ -90,8 +90,10 @@ fi
 # Conexión por defecto de virsh / virt-manager al hipervisor KVM de sistema
 export LIBVIRT_DEFAULT_URI="qemu:///system"
 
-# Soporte para GPG en la terminal
-export GPG_TTY=$(tty 2>/dev/null || echo "")
+# Soporte para GPG en la terminal (solo si hay una TTY activa)
+if tty -s; then
+    export GPG_TTY="$(tty)"
+fi
 
 # Rutas de actualización para Antigravity
 export UPDATE_ANTIGRAVITY_PATH="/usr/local/bin/update-antigravity"
