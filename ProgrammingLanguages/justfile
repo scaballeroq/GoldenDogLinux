@@ -1,37 +1,37 @@
-# ProgrammingLanguages Sub-Justfile - Debian Workstation
+# ProgrammingLanguages Sub-Justfile - Debian Workstation (KDE Plasma 6)
 
 # Instalar todos los lenguajes y runtimes
-languages: mise node python rust dotnet java angular
+languages: mise node python rust java
     @echo "✅ Todos los lenguajes han sido instalados correctamente."
 
+# Diagnóstico de todos los lenguajes y runtimes
+languages-status:
+    ./mise.sh --status
+    ./nodejs.sh --status
+    ./python.sh --status
+    ./rust.sh --status
+    ./java.sh --status
+
 # Gestor de versiones Mise
-mise:
-    ./mise.sh
+mise *args:
+    ./mise.sh {{args}}
 
 # Node.js LTS & pnpm vía Mise
-node:
-    ./nodejs.sh
+node *args:
+    ./nodejs.sh {{args}}
 
-# Python con UV package manager
-python:
-    ./python.sh
+# Python nativo (Debian) con UV package manager
+python *args:
+    ./python.sh {{args}}
 
 # Inicializador de proyectos Python con UV
 python-uv *args:
     ./python-uv-init.sh {{args}}
 
-# Rust toolchain
-rust:
-    ./Revisar/rust.sh
+# Rust toolchain (Rustup + Mold + sccache)
+rust *args:
+    ./rust.sh {{args}}
 
-# .NET SDK
-dotnet:
-    ./Revisar/dotnet.sh
-
-# OpenJDK Java LTS
-java:
-    ./java.sh
-
-# Angular CLI
-angular:
-    ./Revisar/angular.sh
+# OpenJDK Java LTS (Maven + Gradle)
+java *args:
+    ./java.sh {{args}}

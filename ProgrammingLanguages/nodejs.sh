@@ -27,13 +27,15 @@ else
     USER_HOME="${HOME:-/home/$REAL_USER}"
 fi
 
+REAL_UID=$(id -u "$REAL_USER" 2>/dev/null || echo "1000")
+
 if [ "$EUID" -ne 0 ]; then
     SUDO="sudo"
 else
     SUDO=""
 fi
 
-# Flags de optimización multinúcleo (AMD Ryzen / multinúcleo) para node-gyp
+# Flags de optimización multinúcleo para compilación nativa (node-gyp)
 NPROC=$(nproc 2>/dev/null || echo 8)
 export MAKEFLAGS="-j$NPROC"
 export JOBS="$NPROC"
@@ -44,15 +46,21 @@ export COREPACK_ENABLE_DOWNLOAD_PROMPT=0
 export PATH="$USER_HOME/.local/bin:$USER_HOME/.local/share/mise/shims:/usr/bin:$PATH"
 
 run_as_user() {
+    local runtime_dir="${XDG_RUNTIME_DIR:-/run/user/$REAL_UID}"
+    local dbus_addr="${DBUS_SESSION_BUS_ADDRESS:-unix:path=$runtime_dir/bus}"
     if [ -n "${SUDO_USER:-}" ] && [ "$SUDO_USER" != "root" ]; then
-        sudo -u "$REAL_USER" env HOME="$USER_HOME" \
+        sudo -u "$REAL_USER" env HOME="$USER_HOME" USER="$REAL_USER" \
             MAKEFLAGS="-j$NPROC" JOBS="$NPROC" npm_config_jobs="$NPROC" \
             COREPACK_ENABLE_DOWNLOAD_PROMPT=0 \
-            PATH="$USER_HOME/.local/bin:$USER_HOME/.local/share/mise/shims:$PATH" "$@"
+            XDG_RUNTIME_DIR="$runtime_dir" \
+            DBUS_SESSION_BUS_ADDRESS="$dbus_addr" \
+            PATH="$USER_HOME/.local/bin:$USER_HOME/.local/share/mise/shims:/usr/bin:/bin" "$@"
     else
-        MAKEFLAGS="-j$NPROC" JOBS="$NPROC" npm_config_jobs="$NPROC" \
-        COREPACK_ENABLE_DOWNLOAD_PROMPT=0 \
-        PATH="$USER_HOME/.local/bin:$USER_HOME/.local/share/mise/shims:$PATH" "$@"
+        env MAKEFLAGS="-j$NPROC" JOBS="$NPROC" npm_config_jobs="$NPROC" \
+            COREPACK_ENABLE_DOWNLOAD_PROMPT=0 \
+            XDG_RUNTIME_DIR="$runtime_dir" \
+            DBUS_SESSION_BUS_ADDRESS="$dbus_addr" \
+            PATH="$USER_HOME/.local/bin:$USER_HOME/.local/share/mise/shims:$PATH" "$@"
     fi
 }
 
@@ -213,6 +221,13 @@ JOBS=$NPROC
 npm_config_jobs=$NPROC
 EOF
 
+if command -v systemctl &>/dev/null; then
+    run_as_user systemctl --user import-environment COREPACK_ENABLE_DOWNLOAD_PROMPT JOBS npm_config_jobs 2>/dev/null || true
+fi
+if command -v dbus-update-activation-environment &>/dev/null; then
+    run_as_user dbus-update-activation-environment --systemd COREPACK_ENABLE_DOWNLOAD_PROMPT JOBS npm_config_jobs 2>/dev/null || true
+fi
+
 # 8.2. Shell Bash (predeterminada)
 cat << EOF | run_as_user tee "$BASHRC_D/nodejs.sh" > /dev/null
 # Node.js & Corepack Environment Settings
@@ -235,8 +250,8 @@ fi
 
 # 8.4. Autocompletados para Bash
 if command -v mise &>/dev/null || [ -x "$USER_HOME/.local/bin/mise" ]; then
-    run_as_user mise exec node@lts -- npm completion > "$BASH_COMPLETIONS_DIR/npm" 2>/dev/null || true
-    run_as_user mise exec node@lts -- pnpm completion bash > "$BASH_COMPLETIONS_DIR/pnpm" 2>/dev/null || true
+    run_as_user mise exec node@lts -- npm completion 2>/dev/null | run_as_user tee "$BASH_COMPLETIONS_DIR/npm" > /dev/null || true
+    run_as_user mise exec node@lts -- pnpm completion bash 2>/dev/null | run_as_user tee "$BASH_COMPLETIONS_DIR/pnpm" > /dev/null || true
 fi
 
 # 8.5. Autocompletados para Zsh (si existe ~/.zshrc)
@@ -246,8 +261,7 @@ if [ -f "$USER_HOME/.zshrc" ]; then
     run_as_user mkdir -p "$ZSH_COMPLETIONS_DIR" "$ZFUNC_DIR"
 
     if command -v mise &>/dev/null || [ -x "$USER_HOME/.local/bin/mise" ]; then
-        run_as_user mise exec node@lts -- pnpm completion zsh > "$ZSH_COMPLETIONS_DIR/_pnpm" 2>/dev/null || true
-        run_as_user mise exec node@lts -- pnpm completion zsh > "$ZFUNC_DIR/_pnpm" 2>/dev/null || true
+        run_as_user mise exec node@lts -- pnpm completion zsh 2>/dev/null | run_as_user tee "$ZSH_COMPLETIONS_DIR/_pnpm" "$ZFUNC_DIR/_pnpm" > /dev/null || true
     fi
 fi
 
@@ -266,7 +280,7 @@ echo "  • npm:          $NPM_VER"
 echo "  • pnpm:         $PNPM_VER (Corepack)"
 echo "  • yarn:         $YARN_VER (Corepack)"
 echo "  • Compilación:  node-gyp optimizado para $NPROC hilos paralelos"
-echo "  • Entorno KDE:~/.config/environment.d/10-nodejs.conf"
+echo "  • Entorno KDE:  ~/.config/environment.d/10-nodejs.conf"
 echo "  • Shells:       Bash (predeterminada)$([ -f "$USER_HOME/.zshrc" ] && echo " & Zsh (compatible)") con autocompletados nativos"
 echo "  • Shims Mise:   $USER_HOME/.local/share/mise/shims"
 echo "================================================================="

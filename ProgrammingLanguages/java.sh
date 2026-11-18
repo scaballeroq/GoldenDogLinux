@@ -10,10 +10,10 @@
 #   Maven y herramientas de tarjetas inteligentes / AutoFirma (pcscd, libnss3-tools).
 # - Detección y resolución dinámica y canónica de JAVA_HOME en Debian (/usr/lib/jvm/...).
 # - Gestión de alternativas nativa con update-alternatives.
-# - Optimización de compilación multinúcleo para Ryzen 7 PRO (16 hilos paralelos):
-#   * Maven: MAVEN_ARGS="-T 1C" (1 hilo por núcleo), MAVEN_OPTS con G1GC y heap escalado a 4GB.
+# - Optimización de compilación multinúcleo adaptativa ($NPROC hilos y heap escalado):
+#   * Maven: MAVEN_ARGS="-T 1C" (1 hilo por núcleo), MAVEN_OPTS con G1GC y heap dinámico.
 #   * Gradle: Generación de ~/.gradle/gradle.properties con parallel, caching,
-#     daemon, 16 workers y vfs.watch (inotify en ext4/btrfs).
+#     daemon, workers=$NPROC y vfs.watch (inotify en ext4/btrfs).
 # - Integración gráfica con KDE Plasma 6 sobre Wayland:
 #   * _JAVA_AWT_WM_NONREPARENTING=1 (previene ventanas grises en Swing/AWT en KWin Wayland).
 #   * Renderizado de fuentes subpixel LCD antialiasing (-Dawt.useSystemAAFontSettings=on -Dswing.aatext=true).
@@ -34,6 +34,8 @@ else
     USER_HOME="${HOME:-/home/$REAL_USER}"
 fi
 
+REAL_UID=$(id -u "$REAL_USER" 2>/dev/null || echo "1000")
+
 export PATH="$USER_HOME/.local/bin:/usr/local/sbin:/usr/sbin:/usr/bin:$PATH"
 
 if [ "$EUID" -ne 0 ]; then
@@ -42,13 +44,28 @@ else
     SUDO=""
 fi
 
-NPROC=$(nproc 2>/dev/null || echo 16)
+NPROC=$(nproc 2>/dev/null || echo 8)
+TOTAL_RAM_MB=$(awk '/MemTotal/ {printf "%d", $2/1024}' /proc/meminfo 2>/dev/null || echo 8192)
+if [ "$TOTAL_RAM_MB" -ge 15000 ]; then
+    MAVEN_HEAP="4096m"
+    GRADLE_HEAP="4g"
+else
+    MAVEN_HEAP="2048m"
+    GRADLE_HEAP="2g"
+fi
 
 run_as_user() {
+    local runtime_dir="${XDG_RUNTIME_DIR:-/run/user/$REAL_UID}"
+    local dbus_addr="${DBUS_SESSION_BUS_ADDRESS:-unix:path=$runtime_dir/bus}"
     if [ -n "${SUDO_USER:-}" ] && [ "$SUDO_USER" != "root" ]; then
-        sudo -u "$REAL_USER" env HOME="$USER_HOME" PATH="$PATH" "$@"
+        sudo -u "$REAL_USER" env HOME="$USER_HOME" USER="$REAL_USER" \
+            XDG_RUNTIME_DIR="$runtime_dir" \
+            DBUS_SESSION_BUS_ADDRESS="$dbus_addr" \
+            PATH="$PATH" "$@"
     else
-        "$@"
+        env XDG_RUNTIME_DIR="$runtime_dir" \
+            DBUS_SESSION_BUS_ADDRESS="$dbus_addr" \
+            "$@"
     fi
 }
 
@@ -61,14 +78,16 @@ check_pkg() {
 # ------------------------------------------------------------------------------
 resolve_default_jvm() {
     local jvm_path=""
+    local deb_arch
+    deb_arch=$(dpkg --print-architecture 2>/dev/null || echo "amd64")
 
-    # 1. Rutas canónicas y directorios de Java 21 LTS en Debian
-    if [ -d "/usr/lib/jvm/java-21-openjdk-amd64" ]; then
-        jvm_path="/usr/lib/jvm/java-21-openjdk-amd64"
+    # 1. Rutas canónicas y directorios de Java LTS en Debian
+    if [ -d "/usr/lib/jvm/java-21-openjdk-${deb_arch}" ]; then
+        jvm_path="/usr/lib/jvm/java-21-openjdk-${deb_arch}"
     elif [ -d "/usr/lib/jvm/default-java" ]; then
         jvm_path="/usr/lib/jvm/default-java"
     else
-        for dir in /usr/lib/jvm/java-21-openjdk* /usr/lib/jvm/java-17-openjdk*; do
+        for dir in /usr/lib/jvm/java-25-openjdk* /usr/lib/jvm/java-21-openjdk* /usr/lib/jvm/java-17-openjdk*; do
             if [ -d "$dir" ] && [ -x "$dir/bin/java" ]; then
                 jvm_path="$dir"
                 break
@@ -119,7 +138,7 @@ resolve_default_jvm() {
 # ------------------------------------------------------------------------------
 show_help() {
     cat <<EOF
-☕ Gestor y Optimizador de OpenJDK - Debian Workstation (KDE Plasma 6 + AMD Ryzen)
+☕ Gestor y Optimizador de OpenJDK - Debian Workstation (KDE Plasma 6 Wayland)
 
 Uso:
   $0 [OPCIÓN]
@@ -177,7 +196,7 @@ show_status() {
     echo "• Apache Maven:            $mvn_ver"
     echo "• JAVA_HOME detectado:     $jvm_active"
     echo "• Almacén CA (cacerts):    $cacerts_status"
-    echo "• Hilos de compilación:    $NPROC hilos paralelos (Ryzen 7 PRO)"
+    echo "• Hilos de compilación:    $NPROC hilos paralelos (Heap máx: $GRADLE_HEAP)"
     echo "• Entorno KDE Plasma 6:     $(if [ -f "$env_conf" ]; then echo "✅ Configurado ($env_conf)"; else echo "ℹ️ No presente"; fi)"
     echo "• Integración Bash:        $(if [ -f "$bashrc_file" ]; then echo "✅ Activo ($bashrc_file)"; else echo "ℹ️ No presente"; fi)"
     echo "• Aceleración Gradle:      $(if [ -f "$gradle_file" ]; then echo "✅ Optimizado ($gradle_file)"; else echo "ℹ️ No presente"; fi)"
@@ -233,7 +252,7 @@ case "${1:-}" in
 esac
 
 # ------------------------------------------------------------------------------
-# 5. INSTALACIÓN DE PAQUETES (IDEMPOTENTE Y COMPATIBLE CON UBUNTU)
+# 5. INSTALACIÓN DE PAQUETES (IDEMPOTENTE PARA DEBIAN)
 # ------------------------------------------------------------------------------
 echo "================================================================="
 echo "☕ Instalando y Optimizando OpenJDK para Debian Workstation"
@@ -312,10 +331,29 @@ _JAVA_AWT_WM_NONREPARENTING=1
 # Suavizado de tipografías subpixel para pantallas 1080p
 _JAVA_OPTIONS="-Dawt.useSystemAAFontSettings=on -Dswing.aatext=true"
 
-# Optimización multihilo para Apache Maven (adaptada a los núcleos del sistema)
+# Optimización multihilo para Apache Maven (adaptada a los núcleos y RAM del sistema)
 MAVEN_ARGS="-T 1C"
-MAVEN_OPTS="-Xms512m -Xmx4096m -XX:+UseG1GC"
+MAVEN_OPTS="-Xms512m -Xmx${MAVEN_HEAP} -XX:+UseG1GC"
 EOF
+
+if command -v systemctl &>/dev/null; then
+    run_as_user env \
+        JAVA_HOME="$DEFAULT_JVM" \
+        _JAVA_AWT_WM_NONREPARENTING=1 \
+        _JAVA_OPTIONS="-Dawt.useSystemAAFontSettings=on -Dswing.aatext=true" \
+        MAVEN_ARGS="-T 1C" \
+        MAVEN_OPTS="-Xms512m -Xmx${MAVEN_HEAP} -XX:+UseG1GC" \
+        systemctl --user import-environment JAVA_HOME _JAVA_AWT_WM_NONREPARENTING _JAVA_OPTIONS MAVEN_ARGS MAVEN_OPTS 2>/dev/null || true
+fi
+if command -v dbus-update-activation-environment &>/dev/null; then
+    run_as_user env \
+        JAVA_HOME="$DEFAULT_JVM" \
+        _JAVA_AWT_WM_NONREPARENTING=1 \
+        _JAVA_OPTIONS="-Dawt.useSystemAAFontSettings=on -Dswing.aatext=true" \
+        MAVEN_ARGS="-T 1C" \
+        MAVEN_OPTS="-Xms512m -Xmx${MAVEN_HEAP} -XX:+UseG1GC" \
+        dbus-update-activation-environment --systemd JAVA_HOME _JAVA_AWT_WM_NONREPARENTING _JAVA_OPTIONS MAVEN_ARGS MAVEN_OPTS 2>/dev/null || true
+fi
 
 # 7.2. Shell Bash (predeterminada)
 cat << EOF | run_as_user tee "$BASHRC_D/java.sh" > /dev/null
@@ -333,7 +371,7 @@ fi
 export _JAVA_AWT_WM_NONREPARENTING=1
 export _JAVA_OPTIONS="-Dawt.useSystemAAFontSettings=on -Dswing.aatext=true"
 export MAVEN_ARGS="-T 1C"
-export MAVEN_OPTS="-Xms512m -Xmx4096m -XX:+UseG1GC"
+export MAVEN_OPTS="-Xms512m -Xmx${MAVEN_HEAP} -XX:+UseG1GC"
 EOF
 
 # 7.3. Shell Zsh (modular si existe ~/.zshrc)
@@ -356,12 +394,12 @@ fi
 export _JAVA_AWT_WM_NONREPARENTING=1
 export _JAVA_OPTIONS="-Dawt.useSystemAAFontSettings=on -Dswing.aatext=true"
 export MAVEN_ARGS="-T 1C"
-export MAVEN_OPTS="-Xms512m -Xmx4096m -XX:+UseG1GC"
+export MAVEN_OPTS="-Xms512m -Xmx${MAVEN_HEAP} -XX:+UseG1GC"
 EOF
 fi
 
 # ------------------------------------------------------------------------------
-# 8. ACELERACIÓN DE GRADLE PARA AMD RYZEN (16 HILOS / 32 GB RAM)
+# 8. ACELERACIÓN DE GRADLE ADAPTATIVA ($NPROC HILOS / ${TOTAL_RAM_MB} MB RAM)
 # ------------------------------------------------------------------------------
 echo "ℹ️ [4/4] Configurando aceleración multinúcleo para Gradle..."
 GRADLE_DIR="$USER_HOME/.gradle"
@@ -370,15 +408,15 @@ run_as_user mkdir -p "$GRADLE_DIR"
 
 if [ ! -f "$GRADLE_PROPS" ] || ! grep -q "org.gradle.parallel" "$GRADLE_PROPS" 2>/dev/null; then
     cat << EOF | run_as_user tee "$GRADLE_PROPS" > /dev/null
-# Optimizaciones de Gradle para AMD Ryzen 7 PRO (16 hilos) y 32 GB RAM
+# Optimizaciones de Gradle para Debian Workstation ($NPROC hilos / ${TOTAL_RAM_MB} MB RAM)
 org.gradle.daemon=true
 org.gradle.parallel=true
 org.gradle.workers.max=$NPROC
 org.gradle.caching=true
 org.gradle.vfs.watch=true
-org.gradle.jvmargs=-Xmx4g -XX:+UseG1GC -XX:+TieredCompilation -XX:TieredStopAtLevel=4
+org.gradle.jvmargs=-Xmx${GRADLE_HEAP} -XX:+UseG1GC -XX:+TieredCompilation -XX:TieredStopAtLevel=4
 EOF
-    echo "  ✅ Archivo ~/.gradle/gradle.properties optimizado con 16 workers y VFS watch."
+    echo "  ✅ Archivo ~/.gradle/gradle.properties optimizado con $NPROC workers, heap ${GRADLE_HEAP} y VFS watch."
 else
     echo "  ✅ Archivo ~/.gradle/gradle.properties ya configurado."
 fi
@@ -393,7 +431,7 @@ echo "✅ OpenJDK configurado con éxito para Debian Workstation y KDE Plasma 6:
 echo "  • OpenJDK:        v$JAVA_VER"
 echo "  • JAVA_HOME:      $DEFAULT_JVM"
 echo "  • Compilación:    Maven y Gradle optimizados para $NPROC hilos paralelos"
-echo "  • Memoria Heap:   Hasta 4 GB con recolector G1GC"
+echo "  • Memoria Heap:   Hasta ${GRADLE_HEAP} con recolector G1GC"
 echo "  • KDE Plasma 6:    ~/.config/environment.d/10-java.conf (IDEs y Wayland)"
 echo "  • Shells:         Bash (~/.bashrc.d/java.sh)$([ -f "$USER_HOME/.zshrc" ] && echo " & Zsh (~/.zshrc.d/java.zsh)")"
 echo "================================================================="

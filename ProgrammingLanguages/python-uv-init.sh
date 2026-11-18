@@ -1,10 +1,12 @@
 #!/bin/bash
 # ==============================================================================
 # python-uv-init.sh - Creador rápido de proyectos Python aislados con 'uv'
-# Optimizado para openSUSE Tumbleweed (Zero interferencia con el sistema)
+# Optimizado para Golden Dog Linux (Debian 13 / KDE Plasma 6)
 # ==============================================================================
 
 set -euo pipefail
+
+export UV_LINK_MODE="${UV_LINK_MODE:-copy}"
 
 # Colores para salida visual
 GREEN='\033[0;32m'
@@ -36,11 +38,16 @@ if [ -z "$PROJECT_NAME" ]; then
     exit 1
 fi
 
+if [ -d "$PROJECT_NAME" ]; then
+    echo -e "${YELLOW}❌ Error: El directorio './${PROJECT_NAME}' ya existe.${NC}"
+    exit 1
+fi
+
 # 2. Versión de Python
 PYTHON_VERSION="${2:-}"
 if [ -z "$PYTHON_VERSION" ]; then
-    read -rp "🐍 Versión de Python [3.12]: " PYTHON_VERSION
-    PYTHON_VERSION="${PYTHON_VERSION:-3.12}"
+    read -rp "🐍 Versión de Python [3.13]: " PYTHON_VERSION
+    PYTHON_VERSION="${PYTHON_VERSION:-3.13}"
 fi
 
 # 3. Tipo de proyecto / plantilla

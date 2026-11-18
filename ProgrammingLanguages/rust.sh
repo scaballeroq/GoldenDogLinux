@@ -36,6 +36,8 @@ else
     USER_HOME="${HOME:-/home/$REAL_USER}"
 fi
 
+REAL_UID=$(id -u "$REAL_USER" 2>/dev/null || echo "1000")
+
 if [ "$EUID" -ne 0 ]; then
     SUDO="sudo"
 else
@@ -67,15 +69,21 @@ log_error() { echo -e "${RED}[ERR]${NC}  $1"; }
 log_step()  { echo -e "${BLUE}>>${NC}    $1"; }
 
 run_as_user() {
+    local runtime_dir="${XDG_RUNTIME_DIR:-/run/user/$REAL_UID}"
+    local dbus_addr="${DBUS_SESSION_BUS_ADDRESS:-unix:path=$runtime_dir/bus}"
     if [ -n "${SUDO_USER:-}" ] && [ "$SUDO_USER" != "root" ]; then
-        sudo -u "$REAL_USER" env HOME="$USER_HOME" \
+        sudo -u "$REAL_USER" env HOME="$USER_HOME" USER="$REAL_USER" \
             CARGO_HOME="$CARGO_HOME" RUSTUP_HOME="$RUSTUP_HOME" \
             CARGO_BUILD_JOBS="$NPROC" MAKEFLAGS="-j$NPROC" \
-            PATH="$CARGO_HOME/bin:$USER_HOME/.local/bin:$PATH" "$@"
+            XDG_RUNTIME_DIR="$runtime_dir" \
+            DBUS_SESSION_BUS_ADDRESS="$dbus_addr" \
+            PATH="$CARGO_HOME/bin:$USER_HOME/.local/bin:/usr/bin:/bin" "$@"
     else
         env HOME="$USER_HOME" \
             CARGO_HOME="$CARGO_HOME" RUSTUP_HOME="$RUSTUP_HOME" \
             CARGO_BUILD_JOBS="$NPROC" MAKEFLAGS="-j$NPROC" \
+            XDG_RUNTIME_DIR="$runtime_dir" \
+            DBUS_SESSION_BUS_ADDRESS="$dbus_addr" \
             PATH="$CARGO_HOME/bin:$USER_HOME/.local/bin:$PATH" "$@"
     fi
 }
@@ -290,6 +298,9 @@ configure_cargo_optimizations() {
         use_sccache=1
     fi
 
+    local target_arch
+    target_arch=$(uname -m 2>/dev/null || echo "x86_64")
+
     cat <<EOF | run_as_user tee "$config_file" > /dev/null
 # ==============================================================================
 # Cargo Configuration - Debian Workstation
@@ -301,9 +312,9 @@ configure_cargo_optimizations() {
 jobs = $NPROC
 $(if [ "$use_sccache" -eq 1 ]; then echo 'rustc-wrapper = "sccache"'; fi)
 
-# Enlazador ultrarrápido Mold para sistemas Linux x86_64
-$(if [ "$use_mold" -eq 1 ]; then cat <<'MOLDEOF'
-[target.x86_64-unknown-linux-gnu]
+# Enlazador ultrarrápido Mold para sistemas Linux ($target_arch)
+$(if [ "$use_mold" -eq 1 ]; then cat <<MOLDEOF
+[target.${target_arch}-unknown-linux-gnu]
 rustflags = ["-C", "link-arg=-fuse-ld=mold"]
 MOLDEOF
 fi)
@@ -364,6 +375,13 @@ PATH=$CARGO_HOME/bin:\${PATH}
 CARGO_BUILD_JOBS=$NPROC
 EOF
 
+    if command -v systemctl &>/dev/null; then
+        run_as_user systemctl --user import-environment CARGO_HOME RUSTUP_HOME CARGO_BUILD_JOBS 2>/dev/null || true
+    fi
+    if command -v dbus-update-activation-environment &>/dev/null; then
+        run_as_user dbus-update-activation-environment --systemd CARGO_HOME RUSTUP_HOME CARGO_BUILD_JOBS 2>/dev/null || true
+    fi
+
     # 7.2. Integración modular Bash (~/.bashrc.d/rust.sh) - PREDETERMINADO
     cat <<EOF | run_as_user tee "$bashrc_d/rust.sh" > /dev/null
 # Rust & Cargo Environment
@@ -413,16 +431,14 @@ EOF
 
     # 7.5. Autocompletados para Bash y Zsh
     if command -v rustup &>/dev/null || [ -f "$CARGO_HOME/bin/rustup" ]; then
-        run_as_user rustup completions bash > "$bash_comp_dir/rustup" 2>/dev/null || true
-        run_as_user rustup completions bash cargo > "$bash_comp_dir/cargo" 2>/dev/null || true
+        run_as_user rustup completions bash 2>/dev/null | run_as_user tee "$bash_comp_dir/rustup" > /dev/null || true
+        run_as_user rustup completions bash cargo 2>/dev/null | run_as_user tee "$bash_comp_dir/cargo" > /dev/null || true
 
         if [ -f "$USER_HOME/.zshrc" ]; then
             local zsh_comp_dir="$USER_HOME/.local/share/zsh/site-functions"
             local zfunc_dir="$USER_HOME/.zfunc"
-            run_as_user rustup completions zsh > "$zsh_comp_dir/_rustup" 2>/dev/null || true
-            run_as_user rustup completions zsh cargo > "$zsh_comp_dir/_cargo" 2>/dev/null || true
-            run_as_user cp "$zsh_comp_dir/_rustup" "$zfunc_dir/_rustup" 2>/dev/null || true
-            run_as_user cp "$zsh_comp_dir/_cargo" "$zfunc_dir/_cargo" 2>/dev/null || true
+            run_as_user rustup completions zsh 2>/dev/null | run_as_user tee "$zsh_comp_dir/_rustup" "$zfunc_dir/_rustup" > /dev/null || true
+            run_as_user rustup completions zsh cargo 2>/dev/null | run_as_user tee "$zsh_comp_dir/_cargo" "$zfunc_dir/_cargo" > /dev/null || true
         fi
     fi
 

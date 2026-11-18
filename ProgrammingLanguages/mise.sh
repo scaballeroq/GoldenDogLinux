@@ -44,12 +44,16 @@ else
     USER_HOME="${HOME:-/home/$REAL_USER}"
 fi
 
+REAL_UID=$(id -u "$REAL_USER" 2>/dev/null || echo "1000")
+
 USER_BIN="$USER_HOME/.local/bin"
 USER_BIN_MISE="$USER_BIN/mise"
 MISE_DATA_DIR="$USER_HOME/.local/share/mise"
 MISE_SHIMS_DIR="$MISE_DATA_DIR/shims"
 ENV_CONF_DIR="$USER_HOME/.config/environment.d"
 ENV_CONF_FILE="$ENV_CONF_DIR/10-mise.conf"
+
+export PATH="$USER_BIN:$MISE_SHIMS_DIR:/usr/bin:$PATH"
 
 if [ "$EUID" -ne 0 ]; then
     SUDO="sudo"
@@ -67,10 +71,21 @@ require_root() {
 }
 
 run_as_user() {
+    local runtime_dir="${XDG_RUNTIME_DIR:-/run/user/$REAL_UID}"
+    local dbus_addr="${DBUS_SESSION_BUS_ADDRESS:-unix:path=$runtime_dir/bus}"
     if [ -n "${SUDO_USER:-}" ] && [ "$SUDO_USER" != "root" ]; then
-        sudo -u "$REAL_USER" env HOME="$USER_HOME" USER="$REAL_USER" "$@"
+        sudo -u "$REAL_USER" env \
+            HOME="$USER_HOME" \
+            USER="$REAL_USER" \
+            PATH="$USER_BIN:$MISE_SHIMS_DIR:/usr/bin:/bin" \
+            XDG_RUNTIME_DIR="$runtime_dir" \
+            DBUS_SESSION_BUS_ADDRESS="$dbus_addr" \
+            "$@"
     else
-        "$@"
+        env \
+            XDG_RUNTIME_DIR="$runtime_dir" \
+            DBUS_SESSION_BUS_ADDRESS="$dbus_addr" \
+            "$@"
     fi
 }
 
@@ -201,7 +216,7 @@ show_status() {
     # 5. Shims y PATH actual
     if [ -d "$MISE_SHIMS_DIR" ]; then
         local num_shims
-        num_shims=$(find "$MISE_SHIMS_DIR" -maxdepth 1 -type f -o -type l 2>/dev/null | wc -l)
+        num_shims=$(find "$MISE_SHIMS_DIR" -maxdepth 1 \( -type f -o -type l \) 2>/dev/null | wc -l)
         echo -e "• ${BOLD}Shims de Runtimes:${NC}     ${GREEN}✅ Presentes${NC} ($MISE_SHIMS_DIR, $num_shims shims registrados)"
     else
         echo -e "• ${BOLD}Shims de Runtimes:${NC}     ${CYAN}ℹ️ Directorio de shims vacío o pendiente${NC}"
@@ -248,12 +263,21 @@ install_deb() {
     require_root
     echo -e "${BLUE}📦 Configurando repositorio oficial DEB de Mise para Debian...${NC}"
 
-    $SUDO apt-get update -qq
-    $SUDO apt-get install -y curl gpg
+    local missing_deps=()
+    for pkg in curl gpg; do
+        if ! dpkg -s "$pkg" &>/dev/null && ! command -v "$pkg" &>/dev/null; then
+            missing_deps+=("$pkg")
+        fi
+    done
+    if [ ${#missing_deps[@]} -gt 0 ]; then
+        $SUDO apt-get update -qq
+        $SUDO apt-get install -y "${missing_deps[@]}"
+    fi
 
     $SUDO mkdir -p -m 755 /etc/apt/keyrings
     if [ ! -f "$KEYRING_PATH" ]; then
-        curl -fsSL "$REPO_KEY_URL" | $SUDO gpg --dearmor -o "$KEYRING_PATH"
+        curl -fsSL "$REPO_KEY_URL" | $SUDO gpg --batch --yes --dearmor -o "$KEYRING_PATH"
+        $SUDO chmod 644 "$KEYRING_PATH"
         echo -e "${GREEN}✔${NC} Clave GPG de Mise importada."
     fi
 
@@ -350,12 +374,12 @@ configure_completions() {
 
     local bash_comp_dir="$USER_HOME/.local/share/bash-completion/completions"
     run_as_user mkdir -p "$bash_comp_dir"
-    run_as_user "$bin" completion bash > "$bash_comp_dir/mise" 2>/dev/null || true
+    run_as_user "$bin" completion bash 2>/dev/null | run_as_user tee "$bash_comp_dir/mise" > /dev/null || true
 
     if [ -f "$USER_HOME/.zshrc" ]; then
         local zsh_comp_dir="$USER_HOME/.local/share/zsh/site-functions"
         run_as_user mkdir -p "$zsh_comp_dir"
-        run_as_user "$bin" completion zsh > "$zsh_comp_dir/_mise" 2>/dev/null || true
+        run_as_user "$bin" completion zsh 2>/dev/null | run_as_user tee "$zsh_comp_dir/_mise" > /dev/null || true
     fi
 
     echo -e "${GREEN}✔${NC} Autocompletados actualizados."
@@ -368,7 +392,7 @@ install_mise() {
     local force="${1:-false}"
 
     echo -e "${CYAN}=================================================================${NC}"
-    echo -e "${BOLD}⚡ CONFIGURACIÓN DE MISE (RUNTIME MANAGER) - UBUNTU${NC}"
+    echo -e "${BOLD}⚡ CONFIGURACIÓN DE MISE (RUNTIME MANAGER) - DEBIAN WORKSTATION${NC}"
     echo -e "${CYAN}=================================================================${NC}"
 
     export PATH="$USER_BIN:$MISE_SHIMS_DIR:/usr/bin:$PATH"
@@ -428,6 +452,31 @@ update_mise() {
     show_status
 }
 
+uninstall_mise() {
+    echo -e "${YELLOW}🗑️ Desinstalando configuración e integración de Mise...${NC}"
+
+    if [ -f "$USER_BIN_MISE" ]; then
+        run_as_user rm -f "$USER_BIN_MISE"
+        echo -e "${GREEN}✔${NC} Binario standalone eliminado ($USER_BIN_MISE)."
+    fi
+
+    if dpkg -s mise &>/dev/null; then
+        require_root
+        $SUDO apt-get remove -y mise || true
+        echo -e "${GREEN}✔${NC} Paquete DEB de Mise eliminado."
+    fi
+
+    run_as_user rm -f "$ENV_CONF_FILE" \
+        "$USER_HOME/.bashrc.d/mise.sh" \
+        "$USER_HOME/.zshrc.d/mise.zsh" \
+        "$USER_HOME/.local/share/bash-completion/completions/mise" \
+        "$USER_HOME/.local/share/zsh/site-functions/_mise"
+
+    echo -e "${GREEN}✔${NC} Configuraciones de KDE Plasma (environment.d), shells y autocompletados eliminados."
+    echo -e "${CYAN}ℹ️ Nota:${NC} Los runtimes descargados en $MISE_DATA_DIR se conservaron por seguridad."
+    echo -e "   Para eliminarlos por completo, ejecuta: rm -rf \"$MISE_DATA_DIR\""
+}
+
 # ------------------------------------------------------------------------------
 # 8. PROCESAR ARGUMENTOS CLI
 # ------------------------------------------------------------------------------
@@ -446,6 +495,10 @@ case "${1:-}" in
         ;;
     -i|--install|install)
         install_mise true
+        exit 0
+        ;;
+    -r|--uninstall|uninstall)
+        uninstall_mise
         exit 0
         ;;
     --standalone)

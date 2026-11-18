@@ -287,36 +287,28 @@ mise-status:
 # =============================================================================
 
 # Todos los lenguajes
-languages: mise node python rust dotnet java angular
+languages: mise node python rust java
     @echo "✅ Lenguajes instalados."
 
 # Node.js LTS
-node:
-    ./ProgrammingLanguages/nodejs.sh
+node *args:
+    ./ProgrammingLanguages/nodejs.sh {{args}}
 
 # Python con UV package manager
-python:
-    ./ProgrammingLanguages/python.sh
+python *args:
+    ./ProgrammingLanguages/python.sh {{args}}
 
 # Inicializador de proyectos Python con UV
-python-uv:
-    ./ProgrammingLanguages/python-uv-init.sh
+python-uv *args:
+    ./ProgrammingLanguages/python-uv-init.sh {{args}}
 
 # Rust
-rust:
-    ./ProgrammingLanguages/rust.sh
-
-# .NET SDK
-dotnet:
-    ./ProgrammingLanguages/Revisar/dotnet.sh
+rust *args:
+    ./ProgrammingLanguages/rust.sh {{args}}
 
 # Java (OpenJDK)
-java:
-    ./ProgrammingLanguages/java.sh
-
-# Angular CLI
-angular:
-    ./ProgrammingLanguages/Revisar/angular.sh
+java *args:
+    ./ProgrammingLanguages/java.sh {{args}}
 
 # =============================================================================
 # ENTORNOS DE DESARROLLO (IDEs)

@@ -6,7 +6,7 @@
 # Principio de Diseño:
 # - Python NO se instala de forma global a través de gestores de versiones (Mise/Pyenv)
 #   para garantizar la integridad absoluta de las herramientas del sistema Debian
-#   (Firewalld, APT, systemd, CUPS/HPLIP, KDE Plasma 6).
+#   (UFW, APT, systemd, CUPS, KDE Plasma 6).
 # - Se valida que el sistema tenga instalado y saludable el Python nativo de Debian.
 # - Para proyectos que requieran versiones específicas de Python (3.11, 3.12, etc.),
 #   se utiliza 'uv' de forma aislada por proyecto (per-project) sin tocar el sistema.
@@ -29,6 +29,8 @@ else
     USER_HOME="${HOME:-/home/$REAL_USER}"
 fi
 
+REAL_UID=$(id -u "$REAL_USER" 2>/dev/null || echo "1000")
+
 if [ "$EUID" -ne 0 ]; then
     SUDO="sudo"
 else
@@ -41,13 +43,19 @@ export PYTHONUNBUFFERED=1
 export PATH="$USER_HOME/.local/bin:$USER_HOME/.local/share/mise/shims:/usr/bin:$PATH"
 
 run_as_user() {
+    local runtime_dir="${XDG_RUNTIME_DIR:-/run/user/$REAL_UID}"
+    local dbus_addr="${DBUS_SESSION_BUS_ADDRESS:-unix:path=$runtime_dir/bus}"
     if [ -n "${SUDO_USER:-}" ] && [ "$SUDO_USER" != "root" ]; then
-        sudo -u "$REAL_USER" env HOME="$USER_HOME" \
+        sudo -u "$REAL_USER" env HOME="$USER_HOME" USER="$REAL_USER" \
             UV_LINK_MODE="copy" PYTHONUNBUFFERED=1 \
-            PATH="$USER_HOME/.local/bin:$USER_HOME/.local/share/mise/shims:$PATH" "$@"
+            XDG_RUNTIME_DIR="$runtime_dir" \
+            DBUS_SESSION_BUS_ADDRESS="$dbus_addr" \
+            PATH="$USER_HOME/.local/bin:$USER_HOME/.local/share/mise/shims:/usr/bin:/bin" "$@"
     else
-        UV_LINK_MODE="copy" PYTHONUNBUFFERED=1 \
-        PATH="$USER_HOME/.local/bin:$USER_HOME/.local/share/mise/shims:$PATH" "$@"
+        env UV_LINK_MODE="copy" PYTHONUNBUFFERED=1 \
+            XDG_RUNTIME_DIR="$runtime_dir" \
+            DBUS_SESSION_BUS_ADDRESS="$dbus_addr" \
+            PATH="$USER_HOME/.local/bin:$USER_HOME/.local/share/mise/shims:$PATH" "$@"
     fi
 }
 
@@ -61,7 +69,7 @@ show_help() {
 Filosofía:
   • El sistema operativo utiliza el Python nativo de Debian (/usr/bin/python3).
   • Python NO se instala globalmente en Mise para no romper herramientas de sistema
-    (Firewalld, APT, KDE Plasma 6).
+    (UFW, APT, KDE Plasma 6) y respetar PEP 668 (EXTERNALLY-MANAGED).
   • Los proyectos que necesiten versiones específicas de Python se gestionan
     de forma aislada mediante 'uv' (ej: 'uv init', 'uv venv --python 3.12').
 
@@ -84,7 +92,7 @@ EOF
 
 show_status() {
     echo "================================================================="
-    echo "🔍 ESTADO DEL ENTORNO PYTHON (NATIVO UBUNTU + GESTOR UV)"
+    echo "🔍 ESTADO DEL ENTORNO PYTHON (NATIVO DEBIAN + GESTOR UV)"
     echo "================================================================="
 
     local py_bin py_ver py_pkg venv_status pip_status mise_py uv_status uvx_status
@@ -113,15 +121,15 @@ show_status() {
         mise_py="✅ Ninguno (Intacto: /usr/bin/python3 protegido)"
     fi
 
-    if command -v uv &>/dev/null; then
+    if run_as_user mise exec uv@latest -- uv --version &>/dev/null || command -v uv &>/dev/null; then
         local uv_v
-        uv_v=$(uv --version 2>/dev/null | awk '{print $2}')
+        uv_v=$(run_as_user uv --version 2>/dev/null | awk '{print $2}' || echo "instalado")
         uv_status="✅ v$uv_v (Astral / Rust)"
     else
         uv_status="❌ No instalado"
     fi
 
-    if command -v uvx &>/dev/null; then
+    if run_as_user which uvx &>/dev/null || command -v uvx &>/dev/null; then
         uvx_status="✅ Activo (ejecutor de herramientas CLI efímeras)"
     else
         uvx_status="ℹ️ No disponible"
@@ -173,7 +181,7 @@ echo "🐍 Verificando Python Nativo de Debian y Gestor 'uv' (Mise)"
 echo "================================================================="
 
 # ------------------------------------------------------------------------------
-# 4. VERIFICAR PYTHON NATIVO DE UBUNTU
+# 4. VERIFICAR PYTHON NATIVO DE DEBIAN
 # ------------------------------------------------------------------------------
 echo "ℹ️ [1/4] Comprobando integridad del Python nativo de Debian..."
 MISSING_PKGS=()
@@ -243,6 +251,13 @@ PYTHONUNBUFFERED=1
 UV_LINK_MODE=copy
 EOF
 
+if command -v systemctl &>/dev/null; then
+    run_as_user systemctl --user import-environment PYTHONUNBUFFERED UV_LINK_MODE 2>/dev/null || true
+fi
+if command -v dbus-update-activation-environment &>/dev/null; then
+    run_as_user dbus-update-activation-environment --systemd PYTHONUNBUFFERED UV_LINK_MODE 2>/dev/null || true
+fi
+
 # 7.2. Shell Bash (predeterminada)
 cat << 'EOF' | run_as_user tee "$BASHRC_D/python.sh" > /dev/null
 # Python & uv Environment Settings (Debian Workstation)
@@ -262,9 +277,9 @@ EOF
 fi
 
 # 7.4. Autocompletados para Bash (uv y uvx)
-if command -v uv &>/dev/null; then
-    uv generate-shell-completion bash > "$BASH_COMPLETIONS_DIR/uv" 2>/dev/null || true
-    uvx --generate-shell-completion bash > "$BASH_COMPLETIONS_DIR/uvx" 2>/dev/null || true
+if command -v uv &>/dev/null || [ -x "$USER_HOME/.local/share/mise/shims/uv" ]; then
+    run_as_user uv generate-shell-completion bash 2>/dev/null | run_as_user tee "$BASH_COMPLETIONS_DIR/uv" > /dev/null || true
+    run_as_user uvx --generate-shell-completion bash 2>/dev/null | run_as_user tee "$BASH_COMPLETIONS_DIR/uvx" > /dev/null || true
 fi
 
 # 7.5. Autocompletados para Zsh (si existe ~/.zshrc)
@@ -273,11 +288,9 @@ if [ -f "$USER_HOME/.zshrc" ]; then
     ZFUNC_DIR="$USER_HOME/.zfunc"
     run_as_user mkdir -p "$ZSH_COMPLETIONS_DIR" "$ZFUNC_DIR"
 
-    if command -v uv &>/dev/null; then
-        uv generate-shell-completion zsh > "$ZSH_COMPLETIONS_DIR/_uv" 2>/dev/null || true
-        uv generate-shell-completion zsh > "$ZFUNC_DIR/_uv" 2>/dev/null || true
-        uvx --generate-shell-completion zsh > "$ZSH_COMPLETIONS_DIR/_uvx" 2>/dev/null || true
-        uvx --generate-shell-completion zsh > "$ZFUNC_DIR/_uvx" 2>/dev/null || true
+    if command -v uv &>/dev/null || [ -x "$USER_HOME/.local/share/mise/shims/uv" ]; then
+        run_as_user uv generate-shell-completion zsh 2>/dev/null | run_as_user tee "$ZSH_COMPLETIONS_DIR/_uv" "$ZFUNC_DIR/_uv" > /dev/null || true
+        run_as_user uvx --generate-shell-completion zsh 2>/dev/null | run_as_user tee "$ZSH_COMPLETIONS_DIR/_uvx" "$ZFUNC_DIR/_uvx" > /dev/null || true
     fi
 fi
 
