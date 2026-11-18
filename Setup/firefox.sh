@@ -30,6 +30,7 @@ POLICIES_DIR="/etc/firefox/policies"
 POLICIES_FILE="$POLICIES_DIR/policies.json"
 PACKAGE_NAME="firefox"
 L10N_PACKAGE="firefox-l10n-es-es"
+ENV_FILENAME="90-debian-multimedia.conf"
 
 # Colores ANSI para terminal
 BOLD='\033[1m'
@@ -52,6 +53,7 @@ else
 fi
 
 REAL_UID=$(id -u "$REAL_USER" 2>/dev/null || echo "1000")
+USER_ENV_FILE="$USER_HOME/.config/environment.d/$ENV_FILENAME"
 
 if [ "$EUID" -ne 0 ]; then
     SUDO="sudo"
@@ -114,13 +116,23 @@ ${BOLD}Ajustes incluidos en Debian 13 (Trixie / KDE Plasma 6 Wayland):${NC}
   • Aceleración HW:   VA-API habilitado para GPU AMD/Intel (decodificación 4K fluida)."
 }
 
+is_pkg_installed() {
+    local status
+    status=$(dpkg-query -W -f='${Status}' "$1" 2>/dev/null || true)
+    [ "$status" = "install ok installed" ]
+}
+
+get_pkg_version() {
+    dpkg-query -W -f='${Version}' "$1" 2>/dev/null || true
+}
+
 is_firefox_installed() {
-    dpkg -s "$PACKAGE_NAME" &>/dev/null
+    is_pkg_installed "$PACKAGE_NAME"
 }
 
 get_firefox_version() {
     if is_firefox_installed; then
-        dpkg -s "$PACKAGE_NAME" 2>/dev/null | grep -i "^Version:" | awk '{print $2}'
+        get_pkg_version "$PACKAGE_NAME"
     elif command -v firefox &>/dev/null; then
         firefox --version 2>/dev/null | awk '{print $NF}' || echo "Desconocida"
     else
@@ -130,7 +142,7 @@ get_firefox_version() {
 
 get_firefox_origin() {
     if is_firefox_installed; then
-        apt-cache policy "$PACKAGE_NAME" 2>/dev/null | grep -A 1 "\*\*\*" | tail -n 1 | awk '{print $2, $3}' || echo "APT local"
+        apt-cache policy "$PACKAGE_NAME" 2>/dev/null | awk '/\*\*\*/{getline; print $2, $3; found=1; exit} END{if (!found) print "APT local"}'
     else
         echo "n/a"
     fi
@@ -149,7 +161,7 @@ show_status() {
     fi
 
     # 2. Clave GPG
-    if [ -f "$KEYRING_FILE" ]; then
+    if [ -f "$KEYRING_FILE" ] && [ -s "$KEYRING_FILE" ]; then
         echo -e "• ${BOLD}Clave GPG Mozilla:${NC}        ${GREEN}✅ Presente en $KEYRING_FILE${NC}"
     else
         echo -e "• ${BOLD}Clave GPG Mozilla:${NC}        ${RED}❌ No encontrada${NC}"
@@ -158,17 +170,17 @@ show_status() {
     # 3. Pinning APT
     if [ -f "$PREFERENCES_FILE" ]; then
         local pin_prio
-        pin_prio=$(grep -i "^Pin-Priority:" "$PREFERENCES_FILE" 2>/dev/null | awk '{print $2}' || echo "n/a")
+        pin_prio=$(awk -F': *' 'tolower($1)=="pin-priority"{print $2; found=1; exit} END{if (!found) print "n/a"}' "$PREFERENCES_FILE" 2>/dev/null || echo "n/a")
         echo -e "• ${BOLD}Prioridad APT (Pinning):${NC}  ${GREEN}✅ Activa (Prioridad: $pin_prio)${NC}"
     else
         echo -e "• ${BOLD}Prioridad APT (Pinning):${NC}  ${YELLOW}⚠️ No configurada${NC}"
     fi
 
     # 4. Paquete Firefox
-    local ff_ver ff_orig
-    ff_ver=$(get_firefox_version)
-    ff_orig=$(get_firefox_origin)
     if is_firefox_installed; then
+        local ff_ver ff_orig
+        ff_ver=$(get_firefox_version)
+        ff_orig=$(get_firefox_origin)
         echo -e "• ${BOLD}Paquete Firefox:${NC}          ${GREEN}✅ Instalado (v${ff_ver})${NC}"
         echo -e "  - Origen del paquete:     $ff_orig"
     else
@@ -176,16 +188,16 @@ show_status() {
     fi
 
     # 5. Idioma Español
-    if dpkg -s "$L10N_PACKAGE" &>/dev/null; then
+    if is_pkg_installed "$L10N_PACKAGE"; then
         echo -e "• ${BOLD}Localización Español:${NC}     ${GREEN}✅ Instalada ($L10N_PACKAGE)${NC}"
     else
         echo -e "• ${BOLD}Localización Español:${NC}     ${YELLOW}⚠️ No instalada${NC}"
     fi
 
     # 6. Firefox ESR
-    if dpkg -s firefox-esr &>/dev/null; then
+    if is_pkg_installed firefox-esr; then
         local esr_v
-        esr_v=$(dpkg -s firefox-esr 2>/dev/null | grep -i "^Version:" | awk '{print $2}')
+        esr_v=$(get_pkg_version firefox-esr)
         echo -e "• ${BOLD}Firefox ESR:${NC}              ${YELLOW}⚠️ Presente en el sistema (v$esr_v)${NC}"
     else
         echo -e "• ${BOLD}Firefox ESR:${NC}              ${GREEN}✅ No presente (limpio)${NC}"
@@ -199,7 +211,7 @@ show_status() {
     fi
 
     # 8. Variable MOZ_ENABLE_WAYLAND
-    if [ -f "$USER_HOME/.config/environment.d/90-debian-multimedia.conf" ] && grep -q "MOZ_ENABLE_WAYLAND=1" "$USER_HOME/.config/environment.d/90-debian-multimedia.conf" 2>/dev/null; then
+    if [ -f "$USER_ENV_FILE" ] && grep -qE '^[[:space:]]*MOZ_ENABLE_WAYLAND=1([[:space:]]|$)' "$USER_ENV_FILE" 2>/dev/null; then
         echo -e "• ${BOLD}Entorno Wayland:${NC}          ${GREEN}✅ Configurado (MOZ_ENABLE_WAYLAND=1)${NC}"
     else
         echo -e "• ${BOLD}Entorno Wayland:${NC}          ${GREEN}✅ Nativo Wayland en Firefox moderno${NC}"
@@ -216,17 +228,38 @@ setup_repo() {
     echo -e "${BLUE}ℹ️ [1/4] Configurando repositorio oficial APT de Mozilla...${NC}"
 
     # 1. Asegurar directorio de llaveros seguros
-    $SUDO mkdir -p "$KEYRING_DIR"
-    $SUDO chmod 755 "$KEYRING_DIR"
+    $SUDO install -d -m 755 "$KEYRING_DIR"
 
-    # 2. Descargar e instalar la clave pública firmada por Mozilla
+    # 2. Descargar de forma atómica, validar e instalar la clave pública de Mozilla
     echo -e "  - Instalando clave de firma oficial de Mozilla..."
+    local tmp_key
+    tmp_key=$(mktemp)
     if command -v curl &>/dev/null; then
-        curl -fsSL "$KEYRING_URL" | $SUDO tee "$KEYRING_FILE" > /dev/null
+        if ! curl -fsSL "$KEYRING_URL" -o "$tmp_key"; then
+            rm -f "$tmp_key"
+            echo -e "${RED}❌ Error:${NC} No se pudo descargar la clave GPG de Mozilla desde $KEYRING_URL." >&2
+            exit 1
+        fi
+    elif command -v wget &>/dev/null; then
+        if ! wget -qO "$tmp_key" "$KEYRING_URL"; then
+            rm -f "$tmp_key"
+            echo -e "${RED}❌ Error:${NC} No se pudo descargar la clave GPG de Mozilla desde $KEYRING_URL." >&2
+            exit 1
+        fi
     else
-        wget -qO- "$KEYRING_URL" | $SUDO tee "$KEYRING_FILE" > /dev/null
+        rm -f "$tmp_key"
+        echo -e "${RED}❌ Error:${NC} Se requiere 'curl' o 'wget' para descargar la clave GPG." >&2
+        exit 1
     fi
-    $SUDO chmod 644 "$KEYRING_FILE"
+
+    if [ ! -s "$tmp_key" ] || ! grep -q "BEGIN PGP PUBLIC KEY BLOCK" "$tmp_key"; then
+        rm -f "$tmp_key"
+        echo -e "${RED}❌ Error:${NC} La clave descargada no tiene formato PGP válido." >&2
+        exit 1
+    fi
+
+    $SUDO install -m 644 "$tmp_key" "$KEYRING_FILE"
+    rm -f "$tmp_key"
 
     # 3. Configurar el archivo de orígenes APT de Mozilla
     echo -e "  - Configurando archivo de orígenes en $SOURCES_FILE..."
@@ -235,7 +268,7 @@ setup_repo() {
 
     # 4. Configurar Pinning prioritario para preferir paquetes oficiales sobre Debian ESR
     echo -e "  - Configurando prioridad APT (Pin-Priority: 1000)..."
-    $SUDO mkdir -p /etc/apt/preferences.d
+    $SUDO install -d -m 755 /etc/apt/preferences.d
     cat <<'EOF' | $SUDO tee "$PREFERENCES_FILE" > /dev/null
 Package: *
 Pin: origin packages.mozilla.org
@@ -259,12 +292,12 @@ remove_legacy() {
         $SUDO snap remove firefox || true
     fi
 
-    # Purgar Firefox ESR y sus paquetes de localización
-    if dpkg -s firefox-esr &>/dev/null; then
-        echo -e "  - Purgando Firefox ESR del sistema..."
-        $SUDO env DEBIAN_FRONTEND=noninteractive apt-get purge -y \
-            firefox-esr \
-            firefox-esr-l10n-* 2>/dev/null || true
+    # Purgar Firefox ESR y sus paquetes de localización (incluidos residuos config-files)
+    local esr_pkgs=()
+    mapfile -t esr_pkgs < <(dpkg-query -W -f='${Package}\t${Status}\n' 'firefox-esr*' 2>/dev/null | awk -F'\t' '$2 ~ /installed|config-files/{print $1}' || true)
+    if [ "${#esr_pkgs[@]}" -gt 0 ]; then
+        echo -e "  - Purgando Firefox ESR del sistema (${esr_pkgs[*]})..."
+        $SUDO env DEBIAN_FRONTEND=noninteractive apt-get purge -y "${esr_pkgs[@]}"
     fi
 
     echo -e "${GREEN}  ✅ Entorno limpio para Firefox nativo.${NC}"
@@ -313,14 +346,15 @@ EOF
     $SUDO chmod 644 "$POLICIES_FILE"
 
     # 3. Asegurar variable MOZ_ENABLE_WAYLAND en variables de entorno del usuario
-    local env_dir="$USER_HOME/.config/environment.d"
+    local env_dir
+    env_dir=$(dirname "$USER_ENV_FILE")
     run_as_user mkdir -p "$env_dir"
-    if [ -f "$env_dir/90-debian-multimedia.conf" ]; then
-        if ! grep -q "MOZ_ENABLE_WAYLAND=1" "$env_dir/90-debian-multimedia.conf"; then
-            echo "MOZ_ENABLE_WAYLAND=1" | run_as_user tee -a "$env_dir/90-debian-multimedia.conf" > /dev/null
+    if [ -f "$USER_ENV_FILE" ]; then
+        if ! grep -qE '^[[:space:]]*MOZ_ENABLE_WAYLAND=1([[:space:]]|$)' "$USER_ENV_FILE"; then
+            echo "MOZ_ENABLE_WAYLAND=1" | run_as_user tee -a "$USER_ENV_FILE" > /dev/null
         fi
     else
-        echo "MOZ_ENABLE_WAYLAND=1" | run_as_user tee "$env_dir/90-debian-multimedia.conf" > /dev/null
+        echo "MOZ_ENABLE_WAYLAND=1" | run_as_user tee "$USER_ENV_FILE" > /dev/null
     fi
 
     echo -e "${GREEN}  ✅ Políticas de aceleración gráfica VA-API y Wayland aplicadas con éxito.${NC}"
@@ -352,16 +386,25 @@ install_firefox() {
 # ------------------------------------------------------------------------------
 update_firefox() {
     require_root
-    if ! [ -f "$SOURCES_FILE" ]; then
-        echo -e "${YELLOW}⚠️ El repositorio oficial de Mozilla no está configurado. Configurándolo...${NC}"
+    if [ ! -f "$SOURCES_FILE" ] || [ ! -f "$KEYRING_FILE" ] || [ ! -f "$PREFERENCES_FILE" ]; then
+        echo -e "${YELLOW}⚠️ El repositorio oficial de Mozilla no está completo. Configurándolo...${NC}"
         setup_repo
+    fi
+
+    if ! is_firefox_installed; then
+        echo -e "${YELLOW}⚠️ Firefox no está instalado actualmente. Ejecuta '$0 --install' para instalarlo.${NC}"
+        return 1
     fi
 
     echo -e "${BLUE}ℹ️ Buscando actualizaciones de Firefox en packages.mozilla.org...${NC}"
     $SUDO apt-get update -qq
-    $SUDO env DEBIAN_FRONTEND=noninteractive apt-get install --only-upgrade -y \
-        "$PACKAGE_NAME" \
-        "$L10N_PACKAGE" 2>/dev/null || true
+
+    local pkgs=("$PACKAGE_NAME")
+    if is_pkg_installed "$L10N_PACKAGE"; then
+        pkgs+=("$L10N_PACKAGE")
+    fi
+
+    $SUDO env DEBIAN_FRONTEND=noninteractive apt-get install --only-upgrade -y "${pkgs[@]}"
 
     echo -e "${GREEN}✅ Proceso de actualización completado.${NC}"
 }
@@ -373,9 +416,20 @@ uninstall_firefox() {
     require_root
     echo -e "${YELLOW}⚠️ Desinstalando Mozilla Firefox del sistema...${NC}"
 
-    $SUDO env DEBIAN_FRONTEND=noninteractive apt-get purge -y \
-        "$PACKAGE_NAME" \
-        "$L10N_PACKAGE" 2>/dev/null || true
+    local pkgs=()
+    local pkg status
+    for pkg in "$PACKAGE_NAME" "$L10N_PACKAGE"; do
+        status=$(dpkg-query -W -f='${Status}' "$pkg" 2>/dev/null || true)
+        if [[ "$status" == *"installed"* || "$status" == *"config-files"* ]]; then
+            pkgs+=("$pkg")
+        fi
+    done
+
+    if [ "${#pkgs[@]}" -gt 0 ]; then
+        $SUDO env DEBIAN_FRONTEND=noninteractive apt-get purge -y "${pkgs[@]}"
+    else
+        echo -e "  - No se encontraron paquetes de Firefox instalados."
+    fi
 
     if [ -f "$POLICIES_FILE" ]; then
         $SUDO rm -f "$POLICIES_FILE"
@@ -387,6 +441,12 @@ uninstall_firefox() {
 # ------------------------------------------------------------------------------
 # 10. ENTRADA PRINCIPAL
 # ------------------------------------------------------------------------------
+if [ "$#" -gt 1 ]; then
+    echo -e "${RED}❌ Demasiados argumentos:${NC} $*" >&2
+    show_help
+    exit 1
+fi
+
 case "${1:-}" in
     -s|--status|status)
         show_status
