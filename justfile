@@ -4,15 +4,15 @@
 # =============================================================================
 
 # Instala todo el entorno por defecto (Auto-detección de CPU AMD/Intel y Portátil/Sobremesa)
-setup-all: post-install multimedia flatpak chrome laptop-auto tuning kde-setup shell security fonts fastfetch kitty ides git-setup languages podman-setup
+setup-all: post-install multimedia flatpak chrome tuning kde-setup shell security fonts fastfetch kitty ides git-setup languages podman-setup
     @echo "🚀 Entorno completo de Golden Dog Linux (KDE Plasma Wayland) configurado. Por favor, reinicia el sistema."
 
 # Perfil completo para Portátil AMD
-setup-laptop-amd: post-install-amd multimedia flatpak chrome laptop tuning kde-setup shell security fonts fastfetch kitty ides git-setup languages podman-setup
+setup-laptop-amd: post-install-amd multimedia flatpak chrome tuning kde-setup shell security fonts fastfetch kitty ides git-setup languages podman-setup
     @echo "🚀 Entorno Portátil AMD (Golden Dog Linux KDE) configurado con éxito. Por favor, reinicia el sistema."
 
 # Perfil completo para Portátil Intel
-setup-laptop-intel: post-install-intel multimedia flatpak chrome laptop tuning kde-setup shell security fonts fastfetch kitty ides git-setup languages podman-setup
+setup-laptop-intel: post-install-intel multimedia flatpak chrome tuning kde-setup shell security fonts fastfetch kitty ides git-setup languages podman-setup
     @echo "🚀 Entorno Portátil Intel (Golden Dog Linux KDE) configurado con éxito. Por favor, reinicia el sistema."
 
 # Perfil completo para Sobremesa AMD (sin optimizaciones de batería/tapa de portátil)
@@ -29,8 +29,6 @@ status:
     @echo "🔍 DIAGNÓSTICO INTEGRAL GOLDEN DOG LINUX (DEBIAN 13 KDE PLASMA)"
     @echo "================================================================="
     @./Setup/debian-tuning.sh --status
-    @echo ""
-    @./Setup/laptop-setup.sh --status
     @echo ""
     @./Setup/seguridad.sh --status
     @echo ""
@@ -67,18 +65,6 @@ intel-setup *args:
 # Estado del hardware y drivers Intel
 intel-status:
     ./Setup/intel-setup.sh --status
-
-# Optimización para portátiles (power-profiles-daemon, Bluetooth FastConnectable, cierre de tapa, Touchpad KWin Wayland, PowerDevil)
-laptop:
-    ./Setup/laptop-setup.sh
-
-# Ejecuta optimización de portátil automáticamente solo si se detecta batería/chasis portátil
-laptop-auto:
-    @if ls /sys/class/power_supply/BAT* >/dev/null 2>&1; then \
-        ./Setup/laptop-setup.sh; \
-    else \
-        echo "🖥️ Equipo de sobremesa detectado (sin batería): se omite laptop-setup.sh."; \
-    fi
 
 # Autenticación y desbloqueo por huella dactilar (fprintd, PAM)
 fingerprint *args:
