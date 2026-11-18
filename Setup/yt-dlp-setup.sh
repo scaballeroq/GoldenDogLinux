@@ -48,9 +48,13 @@ else
     USER_HOME="${HOME:-/home/$REAL_USER}"
 fi
 
+REAL_UID=$(id -u "$REAL_USER" 2>/dev/null || echo "1000")
+
 CONFIG_DIR="$USER_HOME/$CONFIG_DIR_REL"
 CONFIG_FILE="$USER_HOME/$CONFIG_FILE_REL"
 MISE_BIN="$USER_HOME/.local/bin/mise"
+
+export PATH="$USER_HOME/.local/bin:$USER_HOME/.local/share/mise/shims:/usr/local/bin:/usr/bin:/bin:$PATH"
 
 if [ "$EUID" -ne 0 ]; then
     SUDO="sudo"
@@ -68,14 +72,22 @@ require_root() {
 }
 
 run_as_user() {
+    local runtime_dir="${XDG_RUNTIME_DIR:-/run/user/$REAL_UID}"
+    local dbus_addr="${DBUS_SESSION_BUS_ADDRESS:-unix:path=$runtime_dir/bus}"
     if [ -n "${SUDO_USER:-}" ] && [ "$SUDO_USER" != "root" ]; then
         sudo -u "$REAL_USER" env \
             HOME="$USER_HOME" \
             USER="$REAL_USER" \
-            PATH="$USER_HOME/.local/bin:$USER_HOME/.local/share/mise/shims:$PATH" \
+            XDG_RUNTIME_DIR="$runtime_dir" \
+            DBUS_SESSION_BUS_ADDRESS="$dbus_addr" \
+            PATH="$USER_HOME/.local/bin:$USER_HOME/.local/share/mise/shims:/usr/local/bin:/usr/bin:/bin" \
             "$@"
     else
-        PATH="$USER_HOME/.local/bin:$USER_HOME/.local/share/mise/shims:$PATH" "$@"
+        env \
+            XDG_RUNTIME_DIR="$runtime_dir" \
+            DBUS_SESSION_BUS_ADDRESS="$dbus_addr" \
+            PATH="$USER_HOME/.local/bin:$USER_HOME/.local/share/mise/shims:$PATH" \
+            "$@"
     fi
 }
 
@@ -94,9 +106,9 @@ get_mise_executable() {
 # ------------------------------------------------------------------------------
 get_ytdlp_version() {
     if command -v yt-dlp &>/dev/null; then
-        yt-dlp --version 2>/dev/null || echo "Desconocida"
+        run_as_user yt-dlp --version 2>/dev/null || echo "Desconocida"
     elif dpkg -s yt-dlp &>/dev/null; then
-        dpkg -s yt-dlp 2>/dev/null | grep -i "^Version:" | awk '{print $2}'
+        dpkg -s yt-dlp 2>/dev/null | awk '/^Version:/ {print $2; exit}' || echo "Instalado"
     else
         echo "No instalado"
     fi
@@ -105,7 +117,7 @@ get_ytdlp_version() {
 get_ffmpeg_version() {
     if command -v ffmpeg &>/dev/null; then
         local ver
-        ver=$(ffmpeg -version 2>/dev/null | awk 'NR==1 {for(i=1;i<=NF;i++) if($i ~ /^[0-9]/) {print $i; exit}}')
+        ver=$(ffmpeg -version 2>/dev/null | awk 'NR==1 {for(i=1;i<=NF;i++) if($i ~ /^[0-9]/) {print $i; exit}}' || true)
         echo "${ver:-Instalado}"
     else
         echo "No instalado"
@@ -115,7 +127,7 @@ get_ffmpeg_version() {
 get_aria2_version() {
     if command -v aria2c &>/dev/null; then
         local ver
-        ver=$(aria2c --version 2>/dev/null | awk 'NR==1 {print $3}')
+        ver=$(aria2c --version 2>/dev/null | awk 'NR==1 {print $3}' || true)
         echo "${ver:-Instalado}"
     else
         echo "No instalado"
@@ -125,7 +137,7 @@ get_aria2_version() {
 get_mutagen_version() {
     if dpkg -s python3-mutagen &>/dev/null; then
         local ver
-        ver=$(dpkg -s python3-mutagen 2>/dev/null | grep -i "^Version:" | awk '{print $2}')
+        ver=$(dpkg -s python3-mutagen 2>/dev/null | awk '/^Version:/ {print $2; exit}' || true)
         echo "${ver:-Instalado}"
     else
         echo "No instalado"
@@ -136,32 +148,30 @@ get_js_engine_info() {
     local mise_cmd
     mise_cmd=$(get_mise_executable)
 
-    # 1. Deno en PATH o vía Mise
-    if command -v deno &>/dev/null; then
-        local deno_ver
-        deno_ver=$(deno --version 2>/dev/null | awk 'NR==1 {print $2}')
-        echo "Deno $deno_ver (Activo en PATH)"
-        return 0
+    # 1. Deno vía Mise (ruta real preferente) o PATH
+    if [ -n "$mise_cmd" ]; then
+        local deno_path
+        deno_path=$(run_as_user "$mise_cmd" where deno 2>/dev/null || true)
+        if [ -n "$deno_path" ] && [ -x "$deno_path/bin/deno" ]; then
+            local deno_ver
+            deno_ver=$(run_as_user "$deno_path/bin/deno" --version 2>/dev/null | awk 'NR==1 {print $2}' || true)
+            echo "Deno ${deno_ver:-instalado} (vía Mise: $deno_path)"
+            return 0
+        fi
     fi
 
-    if [ -n "$mise_cmd" ]; then
-        if run_as_user "$mise_cmd" where deno &>/dev/null; then
-            local deno_path
-            deno_path=$(run_as_user "$mise_cmd" where deno 2>/dev/null)
-            if [ -x "$deno_path/bin/deno" ]; then
-                local deno_ver
-                deno_ver=$("$deno_path/bin/deno" --version 2>/dev/null | awk 'NR==1 {print $2}')
-                echo "Deno $deno_ver (vía Mise: $deno_path)"
-                return 0
-            fi
-        fi
+    if command -v deno &>/dev/null; then
+        local deno_ver
+        deno_ver=$(run_as_user deno --version 2>/dev/null | awk 'NR==1 {print $2}' || true)
+        echo "Deno ${deno_ver:-instalado} (Activo en PATH)"
+        return 0
     fi
 
     # 2. Node.js como alternativa
     if command -v node &>/dev/null; then
         local node_ver
-        node_ver=$(node --version 2>/dev/null)
-        echo "Node.js $node_ver (Respaldo en PATH)"
+        node_ver=$(run_as_user node --version 2>/dev/null || true)
+        echo "Node.js ${node_ver:-instalado} (Respaldo en PATH)"
         return 0
     fi
 
@@ -306,13 +316,24 @@ generate_config() {
     run_as_user mkdir -p "$CONFIG_DIR"
 
     local js_opt="--js-runtimes deno,node,quickjs"
-    local mise_deno="$USER_HOME/.local/share/mise/shims/deno"
-    local mise_node="$USER_HOME/.local/share/mise/shims/node"
+    local mise_cmd mise_deno_real mise_deno_shim mise_node_shim
+    mise_cmd=$(get_mise_executable)
+    mise_deno_shim="$USER_HOME/.local/share/mise/shims/deno"
+    mise_node_shim="$USER_HOME/.local/share/mise/shims/node"
 
-    if [ -x "$mise_deno" ]; then
-        js_opt="--js-runtimes deno:$mise_deno,deno,node,quickjs"
-    elif [ -x "$mise_node" ]; then
-        js_opt="--js-runtimes node:$mise_node,node,deno,quickjs"
+    if [ -n "$mise_cmd" ]; then
+        mise_deno_real=$(run_as_user "$mise_cmd" where deno 2>/dev/null || true)
+        if [ -n "$mise_deno_real" ] && [ -x "$mise_deno_real/bin/deno" ]; then
+            js_opt="--js-runtimes deno:$mise_deno_real/bin/deno,deno,node,quickjs"
+        fi
+    fi
+
+    if [ "$js_opt" = "--js-runtimes deno,node,quickjs" ]; then
+        if [ -x "$mise_deno_shim" ]; then
+            js_opt="--js-runtimes deno:$mise_deno_shim,deno,node,quickjs"
+        elif [ -x "$mise_node_shim" ]; then
+            js_opt="--js-runtimes node:$mise_node_shim,node,deno,quickjs"
+        fi
     fi
 
     cat << EOF | run_as_user tee "$CONFIG_FILE" > /dev/null
@@ -330,6 +351,8 @@ generate_config() {
 --concurrent-fragments 5
 --no-overwrites
 --continue
+# Descomenta si deseas usar aria2c en descargas HTTP directas (para HLS/DASH el motor nativo es más estable):
+# --downloader aria2c
 
 # --- Formato y Contenedor Predeterminado ---
 --merge-output-format mp4/mkv
@@ -369,9 +392,9 @@ update_components() {
     echo -e "${CYAN}=================================================================${NC}"
 
     require_root
-    echo -e "${BLUE}📦 Actualizando yt-dlp, FFmpeg y aria2 vía APT...${NC}"
+    echo -e "${BLUE}📦 Actualizando yt-dlp, FFmpeg, aria2 y Mutagen vía APT...${NC}"
     $SUDO apt-get update -qq
-    $SUDO apt-get install --only-upgrade -y yt-dlp ffmpeg aria2 2>/dev/null || true
+    $SUDO apt-get install --only-upgrade -y "${REQUIRED_PACKAGES[@]}" 2>/dev/null || true
 
     local mise_cmd
     mise_cmd=$(get_mise_executable)
