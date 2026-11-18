@@ -96,14 +96,6 @@ fingerprint-enroll *finger:
 fingerprint-verify *finger:
     ./Setup/fingerprint-setup.sh --verify {{finger}}
 
-# Configuración de impresoras HP (CUPS, HPLIP, plugin propietario, reglas UFW)
-printer:
-    ./Setup/hp-printer-setup.sh
-
-# Estado del sistema de impresión HP
-printer-status:
-    ./Setup/hp-printer-setup.sh --status
-
 # Optimización funcional de KDE Plasma 6 (Dolphin, miniaturas, Ctrl+Alt+T, servicemenus KIO) SIN alterar la apariencia de Golden Dog Linux
 kde-setup *args:
     ./Setup/kde-settings.sh {{args}}
@@ -184,14 +176,6 @@ kitty *args:
 kitty-status:
     ./Setup/kitty.sh --status
 
-# Terminal Ghostty nativa Wayland (Tema Catppuccin Mocha, Blur, Dolphin)
-ghostty *args:
-    ./Setup/ghostty.sh {{args}}
-
-# Diagnóstico y estado de la terminal Ghostty
-ghostty-status:
-    ./Setup/ghostty.sh --status
-
 # Suite multimedia completa: códecs GStreamer, FFmpeg, VA-API Wayland y reproductores KDE
 multimedia *args:
     ./Setup/multimedia.sh {{args}}
@@ -223,14 +207,6 @@ security-status:
 # Abrir puertos locales de desarrollo en UFW (Vite: 5173, Next.js: 3000, FastAPI: 8000, 8080)
 dev-ports:
     ./Setup/seguridad.sh --dev-ports
-
-# Integración móvil con KDE Connect, sshfs (Dolphin) y cortafuegos UFW
-kdeconnect *args:
-    ./Setup/kdeconnect.sh {{args}}
-
-# Estado de la integración de KDE Connect y dispositivos emparejados
-kdeconnect-status:
-    ./Setup/kdeconnect.sh --status
 
 # =============================================================================
 # APLICACIONES DESACOPLADAS Y NAVEGADORES
