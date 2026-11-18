@@ -12,9 +12,9 @@ Las configuraciones están automatizadas a través de los scripts ubicados en la
 
 ## 1. Post-Instalación Base (`post-install.sh`)
 
-Prepara el sistema base detectando la CPU del equipo y ejecutando el aprovisionamiento adecuado:
-- **`post-install-amd.sh`**: Para AMD Ryzen 7 7730U / Radeon Graphics (Vega 8) (Mesa RADV, VA-API hardware, PipeWire, ZRAM, Flatpak Flathub).
-- **`post-install-intel.sh`**: Para procesadores Intel Core (i965/iHD VA-API, Kodi, PipeWire).
+Prepara el sistema base detectando la CPU/GPU del equipo (cualquier sobremesa o portátil **AMD** o **Intel**; gráficas **Nvidia excluidas**) y ejecutando el aprovisionamiento adecuado:
+- **`post-install-amd.sh`** + **`amd-setup.sh`**: Para procesadores y gráficas AMD (microcódigo, firmware AMD, Mesa RADV, VA-API `radeonsi`, PipeWire, ZRAM, Flatpak Flathub).
+- **`post-install-intel.sh`** + **`intel-setup.sh`**: Para procesadores y gráficas Intel (microcódigo Intel, VA-API `iHD`/`i965`, Mesa ANV Vulkan, PipeWire, ZRAM, Flatpak Flathub).
 
 Comando:
 ```bash

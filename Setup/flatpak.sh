@@ -2,7 +2,7 @@
 # ==============================================================================
 # flatpak.sh - Instalación, Gestión y Diagnóstico de Software Flatpak
 # Sistema: Golden Dog Linux (Debian 13 Trixie) | Escritorio: KDE Plasma (Wayland)
-# Hardware: AMD Ryzen 7 7730U / Radeon Graphics (Vega 8 Barcelo-R) (VA-API)
+# Hardware: Genérico AMD / Intel (Mesa / VA-API)
 # ==============================================================================
 # Filosofía y Arquitectura:
 # - Enfoque desacoplado y seguro: aplicaciones multimedia, contenedores y herramientas

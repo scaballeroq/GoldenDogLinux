@@ -39,7 +39,7 @@ sudo modprobe vhost_vsock
 ## 3. Integración de Sonido Nativo PipeWire (`/etc/libvirt/qemu.conf`)
 Para que las máquinas virtuales (Windows, macOS o Linux) reproduzcan audio directamente por el servidor PipeWire de tu usuario:
 ```ini
-user = "caballero"
+user = "<tu_usuario>"
 group = "kvm"
 ```
 

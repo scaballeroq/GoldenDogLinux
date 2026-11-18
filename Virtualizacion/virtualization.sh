@@ -2,8 +2,8 @@
 # ==============================================================================
 # virtualization.sh - Instalación y Optimización Avanzada de Virtualización (KVM/QEMU)
 # Sistema: Debian GNU/Linux (Debian 13 Trixie) | Escritorio: GNOME Shell (Wayland)
-# Hardware: HP ProBook 455 G10 | AMD Ryzen 7 7730U (Zen 3 / Barcelo-R, 8C/16T)
-# GPU: AMD Radeon Graphics (Vega 8 / 3D VirGL / VA-API) | Memoria: 32 GB RAM DDR4
+# Sistema: Golden Dog Linux (Debian 13) | Virtualización KVM/QEMU
+# Compatible con CPU/GPU AMD o Intel (3D VirGL / VA-API)
 # Almacenamiento: SSD NVMe Kioxia 512 GB (Btrfs NoCoW / Ext4) | Firewall: Firewalld
 # ==============================================================================
 
@@ -27,7 +27,7 @@ show_help() {
 Uso: $0 [OPCIONES]
 
 Script de aprovisionamiento y optimización de virtualización KVM/QEMU en Debian GNU/Linux.
-Optimizado para portátiles HP ProBook 455 G10 (AMD Ryzen 7 7730U Zen 3 + Radeon Vega 8).
+Optimizado para sistemas AMD e Intel (KVM/QEMU + 3D VirGL).
 Proporciona dos vías de gestión completas para desarrollo y producción:
   1. Cockpit Web Console (módulo cockpit-machines en https://localhost:9090)
   2. Virt-Manager (interfaz gráfica de escritorio nativa para GNOME Shell Wayland)
@@ -169,7 +169,9 @@ check_status() {
 
     echo -n "• Aceleración Gráfica 3D VirGL (/dev/dri/renderD128): "
     if [ -e /dev/dri/renderD128 ]; then
-        echo "✅ Disponible (AMD Radeon Vega 8 - Nodo DRM render)"
+        local gpu_name
+        gpu_name=$(lspci 2>/dev/null | grep -iE 'vga|3d|display' | head -n1 | cut -d: -f3 | xargs || echo "GPU Mesa")
+        echo "✅ Disponible ($gpu_name - Nodo DRM render)"
     else
         echo "ℹ️ No disponible"
     fi
@@ -361,35 +363,27 @@ echo "ℹ️ [3/13] Configurando optimizaciones de CPU y virtualización anidada
 sudo mkdir -p /etc/modprobe.d /etc/modules-load.d
 
 CPU_VENDOR=$(grep -m1 'vendor_id' /proc/cpuinfo | awk '{print $3}' || true)
+REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 if [ "$CPU_VENDOR" = "AuthenticAMD" ]; then
-    echo "  • Optimizando KVM para AMD Ryzen Zen 3 (nested=1, avic=1, npt=1)..."
-    cat <<EOF | sudo tee /etc/modprobe.d/kvm_amd.conf > /dev/null
-# Configuración KVM para procesadores AMD Ryzen / Zen 3 (HP ProBook 455 G10)
+    if [ -x "$REPO_ROOT/Setup/amd-setup.sh" ]; then
+        bash "$REPO_ROOT/Setup/amd-setup.sh" --kvm
+    else
+        echo "  • Optimizando KVM para AMD (nested=1, avic=1, npt=1)..."
+        cat <<EOF | sudo tee /etc/modprobe.d/kvm_amd.conf > /dev/null
+# Configuración KVM para procesadores AMD
 options kvm_amd nested=1 avic=1 npt=1
 EOF
-    # Intentar recargar kvm_amd de forma segura si no hay VMs activas
-    if lsmod | grep -q '^kvm_amd '; then
-        if sudo modprobe -r kvm_amd kvm 2>/dev/null; then
-            sudo modprobe kvm_amd 2>/dev/null || true
-            echo "  ✅ Módulo kvm_amd recargado con AVIC activo."
-        else
-            echo "  ℹ️ kvm_amd está en uso; los nuevos parámetros (AVIC) se activarán al reiniciar."
-        fi
-    else
         sudo modprobe kvm_amd 2>/dev/null || true
     fi
 elif [ "$CPU_VENDOR" = "GenuineIntel" ]; then
-    echo "  • Optimizando KVM para Intel Core (nested=1, ept=1, vpid=1, pml=1)..."
-    cat <<EOF | sudo tee /etc/modprobe.d/kvm_intel.conf > /dev/null
-# Configuración KVM para procesadores Intel Core / Xeon
+    if [ -x "$REPO_ROOT/Setup/intel-setup.sh" ]; then
+        bash "$REPO_ROOT/Setup/intel-setup.sh" --kvm
+    else
+        echo "  • Optimizando KVM para Intel (nested=1, ept=1, vpid=1, pml=1)..."
+        cat <<EOF | sudo tee /etc/modprobe.d/kvm_intel.conf > /dev/null
+# Configuración KVM para procesadores Intel
 options kvm_intel nested=1 ept=1 vpid=1 pml=1
 EOF
-    if lsmod | grep -q '^kvm_intel '; then
-        if sudo modprobe -r kvm_intel kvm 2>/dev/null; then
-            sudo modprobe kvm_intel 2>/dev/null || true
-            echo "  ✅ Módulo kvm_intel recargado."
-        fi
-    else
         sudo modprobe kvm_intel 2>/dev/null || true
     fi
 fi

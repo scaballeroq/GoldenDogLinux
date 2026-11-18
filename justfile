@@ -3,16 +3,24 @@
 # (Debian 13 Trixie + KDE Plasma 6 Wayland + Cockpit + UFW)
 # =============================================================================
 
-# Instala todo el entorno por defecto (Auto-detección de CPU / Portátil)
-setup-all: post-install multimedia flatpak chrome steam laptop tuning kde-setup shell security fonts fastfetch kitty yt-dlp virtualization cockpit ides git-setup languages podman-setup
+# Instala todo el entorno por defecto (Auto-detección de CPU AMD/Intel y Portátil/Sobremesa)
+setup-all: post-install multimedia flatpak chrome steam laptop-auto tuning kde-setup shell security fonts fastfetch kitty yt-dlp virtualization cockpit ides git-setup languages podman-setup
     @echo "🚀 Entorno completo de Golden Dog Linux (KDE Plasma Wayland) configurado. Por favor, reinicia el sistema."
 
-# Perfil completo para Portátil de desarrollo (AMD Ryzen + Virtualización + Contenedores)
+# Perfil completo para Portátil AMD
 setup-laptop-amd: post-install-amd multimedia flatpak chrome steam laptop tuning kde-setup shell security fonts fastfetch kitty yt-dlp virtualization cockpit ides git-setup languages podman-setup
-    @echo "🚀 Entorno Portátil AMD Ryzen (Golden Dog Linux KDE) configurado con éxito. Por favor, reinicia el sistema."
+    @echo "🚀 Entorno Portátil AMD (Golden Dog Linux KDE) configurado con éxito. Por favor, reinicia el sistema."
 
-# Perfil para Sobremesa Centro Multimedia (Intel Core / Media Center - Sin virtualización ni batería)
-setup-media-desktop: post-install-intel multimedia chrome tuning kde-setup shell security fonts fastfetch kitty yt-dlp kodi
+# Perfil completo para Portátil Intel
+setup-laptop-intel: post-install-intel multimedia flatpak chrome steam laptop tuning kde-setup shell security fonts fastfetch kitty yt-dlp virtualization cockpit ides git-setup languages podman-setup
+    @echo "🚀 Entorno Portátil Intel (Golden Dog Linux KDE) configurado con éxito. Por favor, reinicia el sistema."
+
+# Perfil completo para Sobremesa AMD (sin optimizaciones de batería/tapa de portátil)
+setup-desktop-amd: post-install-amd multimedia flatpak chrome steam tuning kde-setup shell security fonts fastfetch kitty yt-dlp virtualization cockpit ides git-setup languages podman-setup
+    @echo "🚀 Entorno Sobremesa AMD (Golden Dog Linux KDE) configurado con éxito. Por favor, reinicia el sistema."
+
+# Perfil completo para Sobremesa Intel (sin optimizaciones de batería/tapa de portátil)
+setup-desktop-intel: post-install-intel multimedia flatpak chrome steam tuning kde-setup shell security fonts fastfetch kitty yt-dlp virtualization cockpit ides git-setup languages podman-setup
     @echo "🚀 Entorno Sobremesa Intel (Golden Dog Linux KDE) configurado con éxito. Por favor, reinicia el sistema."
 
 # Diagnóstico integral del sistema, hardware, energía, red y entorno de desarrollo
@@ -32,21 +40,45 @@ status:
 # CONFIGURACIÓN BASE DEL SISTEMA
 # =============================================================================
 
-# Configuración base post-instalación (Auto-detección inteligente: AMD Ryzen vs Intel Core)
+# Configuración base post-instalación (Auto-detección inteligente: AMD vs Intel; Nvidia excluido)
 post-install:
     ./Setup/post-install.sh
 
-# Configuración post-instalación para AMD Ryzen (Kernel, firmware AMD, Mesa RADV, VA-API, PipeWire, Flatpak, KDE Discover, ZRAM)
+# Configuración post-instalación para AMD (Sobremesa o Portátil)
 post-install-amd:
     ./Setup/post-install-amd.sh
 
-# Configuración post-instalación para Intel Haswell/Core (Microcódigo Intel, i965/iHD VA-API, Kodi, PipeWire, KDE Discover)
+# Configuración post-instalación para Intel (Sobremesa o Portátil)
 post-install-intel:
     ./Setup/post-install-intel.sh
 
-# Optimización para portátiles de desarrollo (power-profiles-daemon, Bluetooth FastConnectable, cierre de tapa, Touchpad KWin Wayland, PowerDevil)
+# Configuración independiente de hardware y drivers AMD (Microcódigo, Mesa RADV/VA-API, KVM)
+amd-setup *args:
+    ./Setup/amd-setup.sh {{args}}
+
+# Estado del hardware y drivers AMD
+amd-status:
+    ./Setup/amd-setup.sh --status
+
+# Configuración independiente de hardware y drivers Intel (Microcódigo, iHD/i965 VA-API, ANV, KVM)
+intel-setup *args:
+    ./Setup/intel-setup.sh {{args}}
+
+# Estado del hardware y drivers Intel
+intel-status:
+    ./Setup/intel-setup.sh --status
+
+# Optimización para portátiles (power-profiles-daemon, Bluetooth FastConnectable, cierre de tapa, Touchpad KWin Wayland, PowerDevil)
 laptop:
     ./Setup/laptop-setup.sh
+
+# Ejecuta optimización de portátil automáticamente solo si se detecta batería/chasis portátil
+laptop-auto:
+    @if ls /sys/class/power_supply/BAT* >/dev/null 2>&1; then \
+        ./Setup/laptop-setup.sh; \
+    else \
+        echo "🖥️ Equipo de sobremesa detectado (sin batería): se omite laptop-setup.sh."; \
+    fi
 
 # Autenticación y desbloqueo por huella dactilar (fprintd, PAM)
 fingerprint *args:
@@ -372,15 +404,3 @@ podman-quadlets:
 podman-status:
     ./Podman/install/podman-install.sh --status
     ./Podman/lib/podman-utils.sh doctor
-
-# =============================================================================
-# OPTIMIZACIÓN Y ARQUITECTURA (amd64v3)
-# =============================================================================
-
-# Optimización amd64v3 (AVX2/FMA/BMI2 para arquitecturas compatibles y glibc-hwcaps)
-amd64v3:
-    ./Setup/amd64v3.sh
-
-# Estado y diagnóstico de la variante amd64v3
-amd64v3-status:
-    ./Setup/amd64v3.sh --status

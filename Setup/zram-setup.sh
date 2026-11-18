@@ -1,7 +1,7 @@
 #!/bin/bash
 # ==============================================================================
 # zram-setup.sh - Configuración de ZRAM con compresión ZSTD para Debian Workstation
-# Hardware: HP ProBook 455 G10 (AMD Ryzen 7 7730U / 32 GB RAM)
+# Sistema: Golden Dog Linux (Debian 13) | Optimizado para cualquier PC o portátil
 # Sistema: Debian GNU/Linux 13 (Trixie) | Entorno: GNOME Shell (Wayland)
 # ==============================================================================
 # Características:
@@ -101,7 +101,7 @@ apply_zram() {
     cat <<'EOF' | $SUDO tee /etc/default/zramswap > /dev/null
 # ==============================================================================
 # /etc/default/zramswap - Configuración ZRAM Debian Workstation
-# Hardware: AMD Ryzen 7 7730U / 32 GB RAM DDR4
+# Configuración ZRAM automática para Golden Dog Linux (Debian 13)
 # ==============================================================================
 # Algoritmo de compresión moderno
 ALGORITHM=zstd

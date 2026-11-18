@@ -2,7 +2,7 @@
 # ==============================================================================
 # rust.sh - Instalación y Optimización de Rust (Rustup + Cargo + Toolchain)
 # Debian Workstation (Debian 13 Trixie / GNOME Shell Wayland)
-# Arquitectura: AMD Ryzen 7 7730U (8C/16T) | 32 GB RAM | SSD NVMe Kioxia 512GB
+# Sistema: Golden Dog Linux (Debian 13) | Entorno: Wayland
 # ==============================================================================
 # Características de Optimización:
 # - Despliegue idempotente y rootless en espacio de usuario vía Rustup oficial.
@@ -11,7 +11,7 @@
 # - Enlazador ultrarrápido Mold (moderno para Linux) configurado en ~/.cargo/config.toml,
 #   reduciendo los tiempos de enlazado incremental entre 3x y 5x.
 # - Caché de compilación compartida con sccache para ahorrar ciclos de CPU y escrituras NVMe.
-# - Paralelismo ajustado a los 16 hilos del procesador AMD Ryzen 7 7730U (-j16).
+# - Paralelismo ajustado automáticamente a los hilos disponibles de la CPU.
 # - Instalación de componentes esenciales para desarrollo:
 #   * rust-analyzer (servidor LSP oficial para Neovim, VS Code, RustRover)
 #   * clippy (linter estático oficial de Rust)
@@ -42,7 +42,7 @@ else
     SUDO=""
 fi
 
-# Detectar núcleos e hilos de la CPU (AMD Ryzen 7 7730U -> 16 hilos)
+# Detectar núcleos e hilos de la CPU dinámicamente
 NPROC=$(nproc 2>/dev/null || echo 16)
 export CARGO_BUILD_JOBS="$NPROC"
 export MAKEFLAGS="-j$NPROC"
@@ -90,7 +90,7 @@ check_pkg() {
 show_help() {
     cat <<EOF
 🦀 Instalador y Optimizador de Rust - Debian Workstation
-   Hardware: AMD Ryzen 7 7730U (16 hilos) | 32 GB RAM | NVMe Kioxia | GNOME Wayland
+   Sistema: Golden Dog Linux (Debian 13 Wayland)
 
 Uso:
   $0 [OPCIÓN]
@@ -105,7 +105,7 @@ Opciones:
   --help, -h          Muestra este mensaje de ayuda.
 
 Características configuradas:
-  • Compilación:      $NPROC hilos paralelos (CARGO_BUILD_JOBS=$NPROC para Ryzen 7 7730U).
+  • Compilación:      $NPROC hilos paralelos (CARGO_BUILD_JOBS=$NPROC).
   • Enlazador:        Mold (enlazador de alta velocidad para reducir tiempos de link 3x-5x).
   • Caché OCI/Rust:   sccache para evitar recompilaciones recurrentes en el SSD NVMe.
   • Componentes IDE:  rust-analyzer, clippy, rustfmt y rust-src.
@@ -118,7 +118,7 @@ EOF
 show_status() {
     echo "================================================================="
     echo "🔍 ESTADO DEL ENTORNO RUST - DEBIAN WORKSTATION"
-    echo "   AMD Ryzen 7 7730U (16 hilos) | 32 GB RAM | NVMe | GNOME Wayland"
+    echo "   Golden Dog Linux (Debian 13) | $NPROC hilos"
     echo "================================================================="
 
     local rustc_ver cargo_ver rustup_ver analyzer_ver clippy_ver binstall_ver
@@ -186,7 +186,7 @@ show_status() {
         echo "• Binarios binstall:    $binstall_ver"
         echo "• Enlazador rápido:     $mold_status"
         echo "• Caché sccache:        $sccache_status"
-        echo "• Hilos de compilación: ✅ $NPROC hilos paralelos (Ryzen 7 7730U)"
+        echo "• Hilos de compilación: ✅ $NPROC hilos paralelos"
         echo "• Configuración Cargo:  $config_status"
         echo "• Entorno GNOME Shell:  $env_status"
         echo "• Directorio CARGO_HOME: $CARGO_HOME"
@@ -200,7 +200,7 @@ show_status() {
         echo "• Gestor Rustup:        ❌ No instalado"
         echo "• Enlazador rápido:     $mold_status"
         echo "• Caché sccache:        $sccache_status"
-        echo "• Hilos de compilación: ✅ $NPROC hilos disponibles (Ryzen 7 7730U)"
+        echo "• Hilos de compilación: ✅ $NPROC hilos disponibles"
         echo "• Configuración Cargo:  $config_status"
         echo "• Entorno GNOME Shell:  $env_status"
         echo "-----------------------------------------------------------------"
@@ -293,11 +293,11 @@ configure_cargo_optimizations() {
     cat <<EOF | run_as_user tee "$config_file" > /dev/null
 # ==============================================================================
 # Cargo Configuration - Debian Workstation
-# Hardware: AMD Ryzen 7 7730U (16 hilos) | 32 GB RAM | NVMe SSD Kioxia
+# Optimización de compilación paralela adaptada a la CPU actual
 # ==============================================================================
 
 [build]
-# Paralelismo optimizado para los 16 hilos del Ryzen 7 7730U
+# Paralelismo optimizado para los hilos disponibles del procesador
 jobs = $NPROC
 $(if [ "$use_sccache" -eq 1 ]; then echo 'rustc-wrapper = "sccache"'; fi)
 
@@ -470,7 +470,7 @@ case "${1:-}" in
     "")
         echo "================================================================="
         echo "🦀 OPTIMIZADOR Y CONFIGURADOR DE RUST - DEBIAN WORKSTATION"
-        echo "   AMD Ryzen 7 7730U (16 hilos) | 32 GB RAM | NVMe | Debian Workstation"
+        echo "   Golden Dog Linux (Debian 13) | $NPROC hilos"
         echo "================================================================="
         install_system_deps
         install_rustup

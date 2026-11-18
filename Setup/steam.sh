@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
 # ==============================================================================
 # steam.sh - Instalación de Steam, GameMode, MangoHud y Drivers 32-bit
-# Debian GNU/Linux | GNOME Shell (Wayland)
-# Hardware: AMD Ryzen 7 7730U / Radeon Graphics (Vega 8) (RADV)
+# Golden Dog Linux (Debian GNU/Linux) | Wayland
+# Gráficos: Mesa 32-bit / Vulkan (AMD RADV / Intel ANV) - Nvidia excluido
 # ==============================================================================
 
 set -euo pipefail
@@ -34,13 +34,13 @@ EOF
 
 show_status() {
     echo "================================================================="
-    echo "🔍 ESTADO DE STEAM Y GAMING - UBUNTU LINUX"
+    echo "🔍 ESTADO DE STEAM Y GAMING - GOLDEN DOG LINUX (DEBIAN)"
     echo "================================================================="
     echo "• Arquitectura i386:        $(if dpkg --print-foreign-architectures 2>/dev/null | grep -q "i386"; then echo '✅ Habilitada'; else echo '❌ No habilitada'; fi)"
     echo "• Steam nativo:             $(if command -v steam &>/dev/null; then echo '✅ Sí ('"$(which steam)"')'; else echo '❌ No instalado'; fi)"
     echo "• GameMode:                 $(if command -v gamemoded &>/dev/null; then echo '✅ Sí ('"$(gamemoded --version 2>/dev/null || echo 'Activo')"')'; else echo 'No instalado'; fi)"
     echo "• MangoHud:                 $(if command -v mangohud &>/dev/null; then echo '✅ Sí'; else echo 'No instalado'; fi)"
-    echo "• Mesa Vulkan 32-bit (RADV):$(if dpkg -s mesa-vulkan-drivers:i386 &>/dev/null; then echo '✅ Instalado'; else echo '⚠️ No instalado'; fi)"
+    echo "• Mesa Vulkan 32-bit (RADV/ANV):$(if dpkg -s mesa-vulkan-drivers:i386 &>/dev/null; then echo '✅ Instalado'; else echo '⚠️ No instalado'; fi)"
     echo "• Mesa DRI 32-bit:          $(if dpkg -s libgl1-mesa-dri:i386 &>/dev/null; then echo '✅ Instalado'; else echo '⚠️ No instalado'; fi)"
     echo "================================================================="
 }
@@ -57,7 +57,7 @@ case "${1:-}" in
 esac
 
 echo "================================================================="
-echo "🎮 CONFIGURANDO ENTORNO DE GAMING Y STEAM - UBUNTU LINUX"
+echo "🎮 CONFIGURANDO ENTORNO DE GAMING Y STEAM - GOLDEN DOG LINUX"
 echo "================================================================="
 
 # 1. Habilitar multiarquitectura i386

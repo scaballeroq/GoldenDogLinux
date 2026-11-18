@@ -8,7 +8,7 @@
 # - Soporta tanto la instalación desde cero como la reconfiguración idempotente.
 # - Paquetes modernos de Podman: passt (pasta de alto rendimiento), crun y catatonit.
 # - Almacenamiento overlay nativo del kernel para máxima velocidad I/O en SSD NVMe Kioxia.
-# - Aceleración por hardware para GPU AMD Radeon Graphics (Vega 8) vía grupos render/video.
+# - Aceleración por hardware para GPU (AMD / Intel) vía grupos render/video.
 # - Integración con Firewalld asignando la interfaz podman+ a la zona trusted.
 # - Permite enlace a puertos bajos (80, 443) en modo rootless vía sysctl.
 # - Activa loginctl linger para persistencia de contenedores tras cerrar sesión.
@@ -49,7 +49,7 @@ require_non_root() {
 show_help() {
     cat <<EOF
 🐳 Optimizador y Configurador de Podman Rootless - Debian Workstation
-   Hardware: AMD Ryzen 7 7730U | Radeon Vega 8 | NVMe Kioxia 512GB | GNOME Shell
+   Sistema: Golden Dog Linux (Debian 13 Wayland)
 
 Uso:
   $0 [OPCIÓN]
@@ -82,7 +82,7 @@ EOF
 show_status() {
     echo "================================================================="
     echo "🔍 ESTADO DE PODMAN ROOTLESS - UBUNTU WORKSTATION (GNOME SHELL)"
-    echo "   AMD Ryzen 7 7730U | Radeon Vega 8 | NVMe | Debian Workstation"
+    echo "   Golden Dog Linux | Debian Workstation (AMD / Intel)"
     echo "================================================================="
 
     local linger_val socket_status docker_host_val utils_status storage_info subuid_status
@@ -116,9 +116,9 @@ show_status() {
     # Comprobar GPU y grupos
     if [ -e /dev/dri/renderD128 ]; then
         if id -nG "$USER" 2>/dev/null | grep -qw "render"; then
-            gpu_status="✅ AMD Radeon Vega 8 (/dev/dri/renderD128) - Grupo render asignado"
+            gpu_status="✅ GPU (/dev/dri/renderD128) - Grupo render asignado"
         else
-            gpu_status="⚠️ AMD Radeon Vega 8 presente pero usuario NO está en grupo render"
+            gpu_status="⚠️ GPU presente en /dev/dri/renderD128 pero usuario NO está en grupo render"
         fi
     else
         gpu_status="ℹ️ /dev/dri/renderD128 no detectado"
@@ -326,7 +326,7 @@ configure_privileges_and_gpu() {
             fi
             if [ "$in_render" -eq 0 ]; then
                 sudo usermod -aG render,video "$USER" 2>/dev/null || true
-                log_ok "Usuario $USER agregado a grupos 'render' y 'video' (GPU AMD Radeon Vega 8)."
+                log_ok "Usuario $USER agregado a grupos 'render' y 'video' (aceleración GPU)."
             fi
             podman system migrate 2>/dev/null || true
             log_ok "Privilegios rootless y aceleración GPU configurados."
@@ -505,7 +505,7 @@ case "${1:-}" in
     "")
         echo "================================================================="
         echo "🐳 OPTIMIZADOR DE PODMAN ROOTLESS - UBUNTU WORKSTATION (GNOME)"
-        echo "   AMD Ryzen 7 7730U | Radeon Vega 8 | NVMe Kioxia | Debian Workstation"
+        echo "   Golden Dog Linux | Debian Workstation"
         echo "================================================================="
         require_non_root
         install_packages

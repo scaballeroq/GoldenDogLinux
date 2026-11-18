@@ -54,8 +54,7 @@ CORE_PACKAGES=(
 
 show_help() {
     cat <<EOF
-🎛️ Gestor de Cockpit Web Console - Debian Workstation
-Optimizado para HP ProBook 455 G10 (AMD Ryzen 7 7730U + Debian Workstation)
+🎛️ Gestor de Cockpit Web Console - Golden Dog Linux (Debian Workstation)
 
 Uso:
   $0 [OPCIÓN]
@@ -264,7 +263,7 @@ fi
 echo "ℹ️ [2/4] Configurando optimizaciones de rendimiento y sesión (/etc/cockpit/cockpit.conf)..."
 $SUDO mkdir -p /etc/cockpit
 cat <<EOF | $SUDO tee /etc/cockpit/cockpit.conf > /dev/null
-# Configuración optimizada de Cockpit para HP ProBook 455 G10 (Debian Workstation)
+# Configuración optimizada de Cockpit para Golden Dog Linux (Debian Workstation)
 [WebService]
 Origins = https://localhost:9090 https://127.0.0.1:9090
 MaxStartups = 5

@@ -2,7 +2,7 @@
 # ==============================================================================
 # antigravity.sh - Gestor e Instalador de Google Antigravity Desktop 2.0
 # Optimizado para Debian Workstation (Debian 13 Trixie GNOME Shell Wayland Mutter)
-# Hardware: HP ProBook 455 G10 | AMD Ryzen 7 7730U (Zen 3) | Radeon Graphics (Vega 8)
+# Sistema: Golden Dog Linux (Debian 13) | Entorno: Wayland (AMD / Intel)
 # ==============================================================================
 # Características:
 #  - Comprobación de estado (--status) e inspección de versión 100% rootless.
@@ -168,8 +168,11 @@ show_status() {
     local remote_v
     remote_v=$(get_remote_version)
 
-    echo -e "💻 ${BOLD}Sistema:${NC}          Debian $(grep -oP 'VERSION_ID="\K[^"]+' /etc/os-release 2>/dev/null || echo "Linux") (GNOME Shell Wayland Mutter)"
-    echo -e "⚡ ${BOLD}Hardware:${NC}         AMD Ryzen 7 7730U | Radeon Graphics (Mesa RADV/VA-API)"
+    local cpu_model gpu_model
+    cpu_model=$(grep -m1 'model name' /proc/cpuinfo | cut -d: -f2 | xargs || echo "Desconocido")
+    gpu_model=$(lspci 2>/dev/null | grep -iE 'vga|3d|display' | head -n1 | cut -d: -f3 | xargs || echo "Mesa Wayland")
+    echo -e "💻 ${BOLD}Sistema:${NC}          Debian $(grep -oP 'VERSION_ID="\K[^"]+' /etc/os-release 2>/dev/null || echo "Linux") (${XDG_SESSION_TYPE:-wayland})"
+    echo -e "⚡ ${BOLD}Hardware:${NC}         $cpu_model | $gpu_model"
     echo -e "👤 ${BOLD}Usuario objetivo:${NC} $REAL_USER ($USER_HOME)"
 
     echo ""
@@ -626,7 +629,7 @@ with asar.open("rb") as archive:
     output.write_bytes(archive.read(int(icon["size"])))
 PY
 
-# Configuración del lanzador de escritorio optimizado para Wayland (Mutter) y GPU AMD Radeon
+# Configuración del lanzador de escritorio optimizado para Wayland
 cat >"$desktop_staged" <<DESKTOP
 [Desktop Entry]
 Name=Google Antigravity

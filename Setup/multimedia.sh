@@ -1,16 +1,16 @@
 #!/usr/bin/env bash
 # ==============================================================================
 # multimedia.sh - Suite Multimedia, Códecs y Aceleración HW para Debian Workstation
-# Optimizado para Debian GNU/Linux 13 Trixie (GNOME Shell 48+ Wayland)
-# Hardware: HP ProBook 455 G10 (AMD Ryzen 7 7730U / Radeon Graphics Vega 8)
+# Optimizado para Golden Dog Linux (Debian 13 Trixie / KDE Plasma Wayland)
+# Compatible con cualquier PC o portátil AMD / Intel (Nvidia excluido)
 # ==============================================================================
 # Características:
 #   - Pila completa de códecs oficial Debian 13: FFmpeg 7.x, libavcodec-extra, audio (FLAC/Opus/Vorbis/MP3)
 #   - Pila GStreamer 1.26 Wayland: base, good, bad (módulo VA nativo libgstva), ugly, libav, gl, gtk4 y pipewire
-#   - Miniaturas e Imágenes GNOME 48 (Nautilus / Loupe): glycin-loaders, ffmpegthumbnailer, HEIF y WebP
-#   - Aceleración HW VA-API / Vulkan RADV en Wayland: radeonsi (H.264, HEVC 10-bit, VP9 10-bit), libva-wayland2
+#   - Miniaturas e Imágenes: glycin-loaders, ffmpegthumbnailer, HEIF y WebP
+#   - Aceleración HW VA-API / Vulkan en Wayland (delegada a amd-setup.sh / intel-setup.sh)
 #   - Audio de baja latencia: PipeWire 1.4, WirePlumber 0.5 y códecs Bluetooth SPA (LDAC/aptX/AAC)
-#   - Reproductores GNOME 48 / Wayland nativos: Showtime, Loupe, Snapshot, Amberol, Celluloid, MPV y VLC
+#   - Reproductores Wayland nativos: Gwenview, Haruna, MPV y VLC
 #   - Soporte desacoplado Flatpak / Flathub a nivel de sistema y usuario
 #   - Opciones CLI: --status / -s, --codecs, --players, --flatpak, --help / -h
 # ==============================================================================
@@ -123,19 +123,20 @@ EOF
 }
 
 show_status() {
-    local os_name gnome_ver
+    local os_name cpu_model gpu_info
     os_name=$(get_os_description)
-    gnome_ver=$(get_gnome_version)
+    cpu_model=$(grep -m1 'model name' /proc/cpuinfo | cut -d: -f2 | xargs || echo "Desconocido")
+    gpu_info=$(lspci 2>/dev/null | grep -iE 'vga|3d|display' | head -n1 | cut -d: -f3 | xargs || echo "Desconocida")
 
     echo "================================================================="
-    echo "🔍 ESTADO MULTIMEDIA Y ACELERACIÓN WAYLAND - DEBIAN WORKSTATION"
+    echo "🔍 ESTADO MULTIMEDIA Y ACELERACIÓN WAYLAND - GOLDEN DOG LINUX"
     echo "================================================================="
     echo "• Sistema Operativo:     $os_name (Kernel $(uname -r))"
-    echo "• Entorno Gráfico:       GNOME Shell $gnome_ver (${XDG_SESSION_TYPE:-wayland} / Mutter)"
-    echo "• Hardware:              HP ProBook 455 G10 (AMD Ryzen 7 7730U / Radeon Vega 8)"
+    echo "• Sesión Gráfica:        ${XDG_SESSION_DESKTOP:-KDE Plasma} (${XDG_SESSION_TYPE:-wayland})"
+    echo "• CPU / GPU:             $cpu_model | $gpu_info"
     echo "-----------------------------------------------------------------"
 
-    echo "• Aceleración Gráfica por Hardware (VA-API / Vulkan RADV):"
+    echo "• Aceleración Gráfica por Hardware (VA-API / Vulkan):"
     if command -v vainfo &>/dev/null; then
         local va_out va_driver va_h264 va_hevc va_hevc10 va_vp9 va_enc
         va_out=$(vainfo 2>&1 || true)
@@ -155,12 +156,17 @@ show_status() {
 
     if command -v vulkaninfo &>/dev/null; then
         local vk_dev
-        vk_dev=$(vulkaninfo --summary 2>/dev/null | grep -i "deviceName" | head -n1 | sed 's/.*= //' || echo "RADV activo")
-        echo "  - Vulkan RADV:         ✅ Instalado ($vk_dev)"
+        vk_dev=$(vulkaninfo --summary 2>/dev/null | grep -i "deviceName" | head -n1 | sed 's/.*= //' || echo "Vulkan activo")
+        echo "  - Vulkan Mesa:         ✅ Instalado ($vk_dev)"
     else
-        echo "  - Vulkan RADV:         ❌ vulkan-tools no instalado"
+        echo "  - Vulkan Mesa:         ❌ vulkan-tools no instalado"
     fi
-    echo "  - Entorno VA-API:      $(if [ -f "$USER_HOME/.config/environment.d/90-debian-multimedia.conf" ]; then echo "✅ Configurado (LIBVA_DRIVER_NAME=radeonsi)"; else echo "ℹ️ Automático por Mesa"; fi)"
+    if [ -f "$USER_HOME/.config/environment.d/90-gpu-hardware.conf" ]; then
+        echo "  - Entorno GPU HW:      ✅ Configurado ($USER_HOME/.config/environment.d/90-gpu-hardware.conf)"
+    else
+        echo "  - Entorno GPU HW:      ℹ️ Automático por Mesa"
+    fi
+    echo "  - Entorno Multimedia:  $(if [ -f "$USER_HOME/.config/environment.d/90-debian-multimedia.conf" ]; then echo "✅ Configurado (Wayland + GStreamer VA)"; else echo "ℹ️ Por defecto"; fi)"
 
     echo "-----------------------------------------------------------------"
     echo "• Pila de Códecs, FFmpeg y Herramientas de Audio:"
@@ -276,17 +282,26 @@ install_codecs() {
         libspa-0.2-bluetooth \
         libspa-0.2-jack
 
-    # Configurar variables de sesión Wayland para aceleración VA-API y Vulkan en AMD Radeon (Barcelo-R / Vega 8)
+    # Variables genéricas Wayland/GStreamer para multimedia
     local env_dir="$USER_HOME/.config/environment.d"
     run_as_user mkdir -p "$env_dir"
     cat <<'EOF' | run_as_user tee "$env_dir/90-debian-multimedia.conf" > /dev/null
-# Aceleración por hardware VA-API / Vulkan RADV en Debian 13 (GNOME Wayland)
-LIBVA_DRIVER_NAME=radeonsi
-VDPAU_DRIVER=radeonsi
-AMD_VULKAN_ICD=RADV
+# Aceleración multimedia genérica en Wayland (Golden Dog Linux)
 MOZ_ENABLE_WAYLAND=1
 GST_PLUGIN_FEATURE_RANK=vah264dec:MAX,vah265dec:MAX,vavp9dec:MAX,vaav1dec:MAX
 EOF
+
+    # Variables específicas de GPU delegadas al script independiente de AMD o Intel
+    local script_dir gpu_lspci cpu_vendor
+    script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+    gpu_lspci=$(lspci 2>/dev/null | grep -iE 'vga|3d|display' || true)
+    cpu_vendor=$(grep -m1 'vendor_id' /proc/cpuinfo | awk '{print $3}' || true)
+
+    if echo "$gpu_lspci" | grep -qiE 'amd|ati|radeon' || [ "$cpu_vendor" = "AuthenticAMD" ]; then
+        [ -x "$script_dir/amd-setup.sh" ] && bash "$script_dir/amd-setup.sh" --env
+    elif echo "$gpu_lspci" | grep -qi 'intel' || [ "$cpu_vendor" = "GenuineIntel" ]; then
+        [ -x "$script_dir/intel-setup.sh" ] && bash "$script_dir/intel-setup.sh" --env
+    fi
 
     # Limpiar caché de miniaturas fallidas para que Nautilus regenere con ffmpegthumbnailer / HEIF / WebP
     if [ -d "$USER_HOME/.cache/thumbnails/fail" ]; then
@@ -317,18 +332,18 @@ install_players() {
     echo "⚙️ Aplicando perfil óptimo de MPV para KDE Wayland (gpu-next + Vulkan + VA-API + PipeWire)..."
     cat <<'EOF' | run_as_user tee "$mpv_config_dir/mpv.conf" > /dev/null
 # ==============================================================================
-# mpv.conf - Optimizado para Debian 13 Trixie (GNOME Shell 48 Wayland)
-# Hardware: HP ProBook 455 G10 (AMD Ryzen 7 7730U / Radeon Vega 8 Barcelo-R)
+# mpv.conf - Perfil genérico optimizado para Wayland + Vulkan + VA-API + PipeWire
+# Compatible con cualquier GPU AMD o Intel en Golden Dog Linux (Debian 13)
 # ==============================================================================
 
-# Motor de vídeo de nueva generación sobre Wayland + Vulkan RADV
+# Motor de vídeo sobre Wayland + Vulkan (RADV/ANV)
 vo=gpu-next
 gpu-api=vulkan
 gpu-context=waylandvk
 hwdec=vaapi
 hwdec-codecs=all
 
-# Gestión de color y DMABUF nativo para Mutter (GNOME Wayland)
+# Gestión de color y DMABUF nativo en Wayland
 target-colorspace-hint=yes
 
 # Servidor de audio PipeWire nativo de baja latencia
@@ -336,7 +351,7 @@ ao=pipewire
 volume=100
 volume-max=150
 
-# Calidad y fluidez de reproducción en topología Triple Monitor 1080p @ 60Hz
+# Calidad y fluidez de reproducción
 profile=high-quality
 video-sync=display-resample
 interpolation=no

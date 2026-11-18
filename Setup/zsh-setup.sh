@@ -1,8 +1,7 @@
 #!/usr/bin/env bash
 # ==============================================================================
 # zsh-setup.sh - Instalación y Replicación del Entorno Zsh en Debian
-# Sistema: Debian GNU/Linux 13 (Trixie) | Escritorio: GNOME Shell (Wayland)
-# Hardware: HP ProBook 455 G10 (AMD Ryzen 7 7730U / 32 GB RAM)
+# Sistema: Golden Dog Linux (Debian 13 Trixie) | Escritorio: KDE Plasma (Wayland)
 # ==============================================================================
 # Características:
 #   - Instalación de Zsh, zsh-autosuggestions y zsh-syntax-highlighting vía APT.

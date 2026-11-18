@@ -24,8 +24,9 @@ Ecosistema de contenedores rootless con Quadlets nativos de systemd (`podman-ins
 - **`virtualization.sh`**: Configuración de KVM/QEMU, Libvirt, virt-manager, Polkit sin contraseña para el grupo `libvirt`, backend nftables y reglas UFW (`virbr0` y Cockpit).
 
 ### ⚙️ [Setup](./Setup/)
-Scripts de configuración del sistema, optimización funcional y endurecimiento:
-- **`post-install.sh`**, **`post-install-amd.sh`**, **`post-install-intel.sh`**: Despachador por CPU, firmware, Mesa/Vulkan/VA-API, PipeWire y soporte Flatpak en KDE Discover (`plasma-discover-backend-flatpak`).
+Scripts de configuración del sistema, optimización funcional y endurecimiento (compatible con cualquier PC de sobremesa o portátil **AMD** o **Intel**; tarjetas gráficas **Nvidia excluidas**):
+- **`post-install.sh`**, **`post-install-amd.sh`**, **`post-install-intel.sh`**: Despachador por CPU/GPU, paquetes base, PipeWire, ZRAM y soporte Flatpak en KDE Discover (`plasma-discover-backend-flatpak`).
+- **`amd-setup.sh`** & **`intel-setup.sh`**: Scripts independientes para cada fabricante (microcódigo, firmware, drivers Mesa RADV/ANV, VA-API, variables Wayland y parámetros KVM).
 - **`kde-settings.sh`**: Mejoras **únicamente funcionales** para KDE Plasma 6 (Dolphin en modo detallado con miniaturas multimedia, servicemenus KIO para Kitty y Antigravity, atajo `Ctrl+Alt+T`).
 - **`kdeconnect.sh`**: Integración de KDE Connect + `sshfs` (Dolphin) y reglas de UFW (`1714:1764` TCP/UDP).
 - **`cockpit.sh`**: Verificación y ampliación modular de Cockpit (`cockpit-podman`, `cockpit-machines`, `cockpit-storaged`, `cockpit-files`, `IdleTimeout=15`) y regla UFW (`9090/tcp`).
@@ -35,7 +36,7 @@ Scripts de configuración del sistema, optimización funcional y endurecimiento:
 - **`hp-printer-setup.sh`**: Pila de impresión CUPS/HPLIP y reglas UFW (`631/tcp`, `5353/udp`).
 - **`kitty.sh`** & **`ghostty.sh`**: Terminales aceleradas por GPU con integración en KDE (`kglobalshortcutsrc`) y Dolphin (`servicemenus`).
 - **`multimedia.sh`** & **`flatpak.sh`**: Códecs, VA-API, reproductores KDE (`gwenview`, `haruna`/`mpv`, `vlc`) y apps Flatpak con `xdg-desktop-portal-kde`.
-- **`chrome.sh`**, **`firefox.sh`**, **`steam.sh`**, **`shell.sh`**, **`zsh-setup.sh`**, **`starship.sh`**, **`fonts.sh`**, **`fastfetch.sh`**, **`fingerprint-setup.sh`**, **`zram-setup.sh`**, **`yt-dlp-setup.sh`**, **`amd64v3.sh`**.
+- **`chrome.sh`**, **`firefox.sh`**, **`steam.sh`**, **`shell.sh`**, **`zsh-setup.sh`**, **`starship.sh`**, **`fonts.sh`**, **`fastfetch.sh`**, **`fingerprint-setup.sh`**, **`zram-setup.sh`**, **`yt-dlp-setup.sh`**.
 
 ### 📦 [ProgrammingLanguages](./ProgrammingLanguages/) & 💻 [IDE](./IDE/)
 Runtimes aislados con `mise` y `uv` (`python.sh`, `nodejs.sh`, `rust.sh`, `java.sh`, etc.) y herramientas de desarrollo (`git.sh`, `antigravity.sh`, `antigravity-cli.sh`, `antigravity-ide.sh`, `opencode.sh`).
@@ -45,11 +46,14 @@ Runtimes aislados con `mise` y `uv` (`python.sh`, `nodejs.sh`, `rust.sh`, `java.
 ## ⚡ Automatización mediante Justfile
 
 ```bash
-# Instalación completa desatendida del entorno
+# Instalación completa automática (detecta AMD/Intel y Portátil/Sobremesa)
 just setup-all
 
-# Perfil específico para Portátil AMD Ryzen
+# Perfiles explícitos por hardware
 just setup-laptop-amd
+just setup-laptop-intel
+just setup-desktop-amd
+just setup-desktop-intel
 
 # Diagnóstico integral
 just status

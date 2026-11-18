@@ -1,13 +1,13 @@
 #!/usr/bin/env bash
 # ==============================================================================
 # chrome.sh - Instalación, Optimización y Diagnóstico de Google Chrome
-# Sistema: Debian GNU/Linux | Escritorio: GNOME Shell (Wayland)
-# Hardware: AMD Ryzen 7 7730U / Radeon Graphics (Vega 8) (VA-API)
+# Sistema: Debian GNU/Linux | Escritorio: Wayland
+# Aceleración: VA-API / Ozone Wayland (AMD / Intel)
 # ==============================================================================
 # Características:
 # - Gestión idempotente del repositorio APT oficial firmado por Google.
 # - Comprobación inteligente de clave GPG moderna (/etc/apt/keyrings/google-chrome.gpg).
-# - Optimización nativa para Wayland y aceleración por GPU (Ozone + VA-API AMD).
+# - Optimización nativa para Wayland y aceleración por GPU (Ozone + VA-API).
 # - Diagnóstico integral del estado del navegador, repositorio y aceleración gráfica.
 # ==============================================================================
 
@@ -70,7 +70,7 @@ ${BOLD}Opciones:${NC}
   (sin argumentos)        Instala Google Chrome y activa el repositorio oficial de forma idempotente.
   -i, --install           Fuerza la configuración del repositorio e instalación del paquete.
   -u, --update            Busca e instala actualizaciones de Google Chrome desde el repositorio oficial.
-  -w, --wayland           Optimiza el lanzador de escritorio para GNOME Shell Wayland y aceleración VA-API (AMD Vega).
+  -w, --wayland           Optimiza el lanzador de escritorio para Wayland y aceleración VA-API (AMD/Intel).
       --restore-desktop   Restaura el lanzador de escritorio original del sistema.
   -s, --status            Muestra diagnóstico detallado del repositorio, paquete, Wayland y aceleración GPU.
   -r, --uninstall         Desinstala Google Chrome del sistema.
@@ -173,7 +173,7 @@ update_chrome() {
 }
 
 optimize_wayland() {
-    echo -e "${BLUE}🚀 Optimizando lanzador para GNOME Shell Wayland y aceleración GPU (AMD Vega)...${NC}"
+    echo -e "${BLUE}🚀 Optimizando lanzador para Wayland y aceleración GPU (VA-API)...${NC}"
     if [ ! -f "$SYSTEM_DESKTOP" ]; then
         echo -e "${RED}❌ Error: No se encontró $SYSTEM_DESKTOP. Instala Chrome primero.${NC}"
         return 1

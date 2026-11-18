@@ -10,11 +10,12 @@ This repository contains a modular, automated set of configuration scripts for *
 ## 📂 Repository Structure
 
 - **[Bash.Setup](./Bash.Setup/)**: Modular shell configuration for Bash (`~/.bashrc.d`) and Zsh (`~/.zshrc.d`), including UFW aliases (`fw*`), `QT_QPA_PLATFORMTHEME="kde"`, and functional KDE helpers (`kde_settings.sh`).
-- **[Setup](./Setup/)**: System setup scripts adapted for KDE Plasma 6 and UFW:
+- **[Setup](./Setup/)**: Generic system setup scripts for any **AMD** or **Intel** desktop or laptop (**Nvidia GPUs excluded**), adapted for KDE Plasma 6 and UFW:
   - `post-install.sh`, `post-install-amd.sh`, `post-install-intel.sh` (with `plasma-discover-backend-flatpak`).
+  - `amd-setup.sh` & `intel-setup.sh`: Standalone hardware scripts for AMD and Intel (microcode, firmware, Mesa RADV/ANV, VA-API, Wayland env, and KVM tuning).
   - `kde-settings.sh` (functional-only: Dolphin detailed view & thumbnails, KIO servicemenus, `Ctrl+Alt+T` — zero visual theme changes).
   - `kdeconnect.sh`, `cockpit.sh`, `seguridad.sh`, `hp-printer-setup.sh` (all integrated with native **UFW**).
-  - `debian-tuning.sh` (sysctl, limits, ZRAM, **KDE Baloo** exclusions), `laptop-setup.sh` (KWin Wayland touchpad & PowerDevil), `kitty.sh`, `ghostty.sh`, `multimedia.sh`, `flatpak.sh`, `chrome.sh`, `firefox.sh`, `steam.sh`, `shell.sh`, `zsh-setup.sh`, `starship.sh`, `fonts.sh`, `fastfetch.sh`, `fingerprint-setup.sh`, `zram-setup.sh`, `yt-dlp-setup.sh`, `amd64v3.sh`.
+  - `debian-tuning.sh` (sysctl, limits, ZRAM, **KDE Baloo** exclusions), `laptop-setup.sh` (KWin Wayland touchpad & PowerDevil), `kitty.sh`, `ghostty.sh`, `multimedia.sh`, `flatpak.sh`, `chrome.sh`, `firefox.sh`, `steam.sh`, `shell.sh`, `zsh-setup.sh`, `starship.sh`, `fonts.sh`, `fastfetch.sh`, `fingerprint-setup.sh`, `zram-setup.sh`, `yt-dlp-setup.sh`.
 - **[Podman](./Podman/)**: Rootless Podman & systemd Quadlets setup.
 - **[Virtualizacion](./Virtualizacion/)**: KVM/QEMU, Libvirt, Virt-Manager, and UFW integration.
 - **[ProgrammingLanguages](./ProgrammingLanguages/)** & **[IDE](./IDE/)**: `mise`, `uv`, `git`, Antigravity, OpenCode.

@@ -1,8 +1,7 @@
 #!/usr/bin/env bash
 # ==============================================================================
-# debian-tuning.sh - Optimizador de Rendimiento para Debian Workstation (GNOME)
-# Hardware: HP ProBook 455 G10 (AMD Ryzen 7 7730U / SSD NVMe Kioxia / 32 GB RAM)
-# Sistema: Debian GNU/Linux 13 (Trixie) | Entorno: GNOME Shell (Wayland)
+# debian-tuning.sh - Optimizador de Rendimiento para Golden Dog Linux (Debian 13)
+# Compatible con cualquier PC o portátil (AMD / Intel) con SSD/NVMe y ZRAM
 # ==============================================================================
 # Características:
 #   - Kernel Linux moderno y gestión de memoria optimizada (vm.page-cluster = 0)
@@ -75,8 +74,7 @@ get_os_description() {
 # ------------------------------------------------------------------------------
 show_help() {
     cat <<EOF
-⚡ Optimizador de Rendimiento - Debian 13 Workstation (GNOME Shell)
-Hardware: HP ProBook 455 G10 (AMD Ryzen 7 7730U / SSD NVMe / 32 GB RAM / ZRAM)
+⚡ Optimizador de Rendimiento - Golden Dog Linux (Debian 13)
 
 Uso:
   $0 [OPCIÓN]
@@ -100,8 +98,8 @@ Optimizaciones incluidas:
                          systemd system/user DefaultTasksMax=infinity.
   3. Systemd Timeouts:   DefaultTimeoutStopSec=10s para apagados y reinicios rápidos sin bloqueos.
   4. GNOME Tracker 3:    Exclusiones de node_modules, .git, .venv y ahorro de batería al desconectar AC.
-  5. Memoria ZRAM:       Compresión ZSTD al 50% de RAM (16 GB ZRAM) con prioridad máxima (100).
-  6. Servicios NVMe:     fstrim.timer (mantenimiento SSD NVMe) e irqbalance (reparto multi-core Zen 3).
+  5. Memoria ZRAM:       Compresión ZSTD al 50% de RAM con prioridad máxima (100).
+  6. Servicios NVMe:     fstrim.timer (mantenimiento SSD/NVMe) e irqbalance (reparto multi-core).
 EOF
 }
 
@@ -114,7 +112,10 @@ show_status() {
     echo "================================================================="
     echo "• Sistema Operativo:             $os_name"
     echo "• Kernel activo:                 $(uname -r)"
-    echo "• Hardware:                      HP ProBook 455 G10 (AMD Ryzen 7 7730U / 32 GB RAM)"
+    local cpu_model ram_total
+    cpu_model=$(grep -m1 'model name' /proc/cpuinfo | cut -d: -f2 | xargs || echo "Desconocido")
+    ram_total=$(free -h | awk '/^Mem:/ {print $2}' || echo "n/a")
+    echo "• Hardware:                      $cpu_model ($ram_total RAM)"
     echo "-----------------------------------------------------------------"
     echo "• Sysctl Kernel & Memoria:"
     echo "  - fs.inotify.max_user_watches: $(sysctl -n fs.inotify.max_user_watches 2>/dev/null || echo 'n/a') (Objetivo: >= 1048576)"
@@ -179,7 +180,7 @@ apply_sysctl() {
     cat <<'EOF' | $SUDO tee /etc/sysctl.d/99-debian-tuning.conf > /dev/null
 # =============================================================================
 # OPTIMIZACIÓN DE RENDIMIENTO - DEBIAN 13 WORKSTATION
-# Hardware: AMD Ryzen 7 7730U / SSD NVMe Kioxia / 32 GB RAM / ZRAM
+# Optimización de Kernel Sysctl para Golden Dog Linux (Debian 13) / ZRAM
 # ==============================================================================
 
 # Inotify ampliado: previene fallos al vigilar proyectos grandes (Vite, React, Rust, IDEs)

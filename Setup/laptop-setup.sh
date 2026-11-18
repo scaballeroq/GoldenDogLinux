@@ -75,7 +75,13 @@ show_status() {
     echo "• Bluetooth Service:           $(if systemctl is-active --quiet bluetooth 2>/dev/null; then echo "✅ Activo"; else echo "❌ Inactivo"; fi)"
     echo "• Bluetooth Batería/FastConn:  $(if grep -q "Experimental = true" /etc/bluetooth/main.conf 2>/dev/null && grep -q "FastConnectable = true" /etc/bluetooth/main.conf 2>/dev/null; then echo "✅ Configurado"; else echo "❌ No configurado"; fi)"
     echo "• Logind Lid (Docked/AC):      $(if [ -f /etc/systemd/logind.conf.d/lid-docked.conf ]; then echo "✅ Configurado"; else echo "❌ No configurado"; fi)"
-    echo "• Control Nativo de Brillo:    $(if systemctl is-active --quiet "systemd-backlight@backlight:amdgpu_bl1.service" 2>/dev/null; then echo "✅ Nativo (systemd-backlight + PowerDevil)"; else echo "ℹ️ Activo vía kernel"; fi)"
+    local backlight_status="ℹ️ Activo vía kernel"
+    local bl_dev
+    bl_dev=$(ls /sys/class/backlight/ 2>/dev/null | head -n1 || true)
+    if [ -n "$bl_dev" ] && systemctl is-active --quiet "systemd-backlight@backlight:${bl_dev}.service" 2>/dev/null; then
+        backlight_status="✅ Nativo ($bl_dev + PowerDevil)"
+    fi
+    echo "• Control Nativo de Brillo:    $backlight_status"
     echo "• Touchpad Tap-to-Click:       ✅ Activo por defecto en Plasma 6 Wayland"
     echo "• Touchpad Natural Scroll:     $(if grep -q "NaturalScroll=true" "$USER_HOME/.config/kcminputrc" 2>/dev/null; then echo "✅ Activo"; else echo "❌ Desactivado"; fi)"
     echo "• PowerDevil Plasma 6:         $(if [ -f "$USER_HOME/.config/powerdevilrc" ]; then echo "✅ Configurado"; else echo "❌ Por defecto"; fi)"
@@ -162,9 +168,10 @@ for dev in $(run_as_user qdbus6 org.kde.KWin /org/kde/KWin/InputDevice org.kde.K
 done
 
 if [ "$touchpads_found" -eq 0 ]; then
-    run_as_user kwriteconfig6 --file kcminputrc --group "Libinput" --group "1739" --group "52745" --group "SYNA30BF:00 06CB:CE09" --key "NaturalScroll" true 2>/dev/null || true
+    echo "   ℹ️ No se detectó touchpad activo en KWin Wayland (se omite configuración de Natural Scroll)."
+else
+    echo "   ✅ Desplazamiento natural (Natural Scroll) configurado en $touchpads_found touchpad(s)."
 fi
-echo "   ✅ Desplazamiento natural (Natural Scroll) configurado."
 
 # 5. Configuración de Energía en KDE Plasma 6 (PowerDevil)
 echo "ℹ️ [5/5] Configurando perfiles de energía en KDE Plasma 6 (PowerDevil)..."
@@ -194,8 +201,12 @@ if [ -f "$USER_HOME/.config/autostart/set-screen-brightness.desktop" ]; then
     rm -f "$USER_HOME/.config/autostart/set-screen-brightness.desktop"
 fi
 
-if systemctl is-active --quiet switcheroo-control 2>/dev/null; then
-    echo "🧹 Desactivando switcheroo-control (innecesario en GPU única AMD Vega)..."
+gpu_count=0
+if command -v lspci &>/dev/null; then
+    gpu_count=$(lspci | grep -ciE 'vga|3d|display' || echo "0")
+fi
+if [ "$gpu_count" -le 1 ] && systemctl is-active --quiet switcheroo-control 2>/dev/null; then
+    echo "🧹 Desactivando switcheroo-control (innecesario en sistemas con una sola GPU)..."
     $SUDO systemctl disable --now switcheroo-control.service 2>/dev/null || true
 fi
 

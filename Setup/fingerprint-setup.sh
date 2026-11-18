@@ -1,7 +1,7 @@
 #!/bin/bash
 # =============================================================================
-# fingerprint-setup.sh - Configuración de Huella Dactilar en Debian (GNOME)
-# Optimizado para HP ProBook 455 G10 (Sensor Synaptics / fprintd)
+# fingerprint-setup.sh - Configuración de Huella Dactilar en Debian (fprintd)
+# Compatible con lectores biométricos soportados por libfprint / fprintd
 # =============================================================================
 # Características:
 #   - Autenticación en pantalla de bloqueo (GDM y GNOME Shell)

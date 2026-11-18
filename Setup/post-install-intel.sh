@@ -1,14 +1,16 @@
 #!/bin/bash
 # ==============================================================================
-# post-install-intel.sh - Post-instalación para Debian con Intel Core y Gráficos Intel
-# Optimizado para Intel Core / HD Graphics / Iris / Xe y Media Center (Kodi/Streaming)
+# post-install-intel.sh - Post-instalación genérica para Debian con CPU/GPU Intel
+# Válido para cualquier ordenador de sobremesa o portátil Intel (sin soporte Nvidia)
 # Sistema: Golden Dog Linux (Debian 13 Trixie) | Entorno: KDE Plasma (Wayland)
 # ==============================================================================
 
 set -euo pipefail
 
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+
 echo "================================================================="
-echo "INICIANDO POST-INSTALACIÓN: GOLDEN DOG LINUX (KDE) - INTEL CORE"
+echo "INICIANDO POST-INSTALACIÓN: GOLDEN DOG LINUX (KDE) - INTEL"
 echo "================================================================="
 
 CODENAME=$(grep '^VERSION_CODENAME=' /etc/os-release | cut -d= -f2 || true)
@@ -19,19 +21,17 @@ fi
 echo "Debian detectado: $CODENAME"
 
 # 1. Actualización Base y Herramientas de Gestión de Repositorios
-echo "ℹ️ [1/10] Actualizando repositorios y herramientas base..."
+echo "ℹ️ [1/9] Actualizando repositorios y herramientas base..."
 sudo apt update
-sudo apt install -y curl wget ca-certificates gnupg lsb-release
+sudo apt install -y curl wget ca-certificates gnupg lsb-release pciutils
 
 # 2. Habilitar Repositorios Extra (Contrib, Non-Free, Non-Free-Firmware)
-echo "ℹ️ [2/10] Habilitando contrib, non-free y non-free-firmware para $CODENAME..."
-# Soporte para formato moderno deb822 (/etc/apt/sources.list.d/debian.sources)
+echo "ℹ️ [2/9] Habilitando contrib, non-free y non-free-firmware para $CODENAME..."
 if [ -f /etc/apt/sources.list.d/debian.sources ]; then
     sudo sed -i '/^Components:/ {/contrib/! s/$/ contrib/}' /etc/apt/sources.list.d/debian.sources 2>/dev/null || true
     sudo sed -i '/^Components:/ {/non-free/! s/$/ non-free/}' /etc/apt/sources.list.d/debian.sources 2>/dev/null || true
     sudo sed -i '/^Components:/ {/non-free-firmware/! s/$/ non-free-firmware/}' /etc/apt/sources.list.d/debian.sources 2>/dev/null || true
 fi
-# Soporte para sources.list tradicional
 if [ -f /etc/apt/sources.list ]; then
     sudo sed -i '/^deb / {/contrib/! s/\(main\)/\1 contrib non-free non-free-firmware/}' /etc/apt/sources.list 2>/dev/null || true
 fi
@@ -43,7 +43,7 @@ sudo apt upgrade -y
 echo "ttf-mscorefonts-installer msttcorefonts/accepted-mscorefonts-eula select true" | sudo debconf-set-selections 2>/dev/null || true
 
 # 4. Software Esencial y Utilidades de Sistema (KDE Plasma)
-echo "ℹ️ [3/10] Instalando utilidades esenciales del sistema..."
+echo "ℹ️ [3/9] Instalando utilidades esenciales del sistema..."
 sudo apt install -y \
     build-essential \
     linux-headers-amd64 \
@@ -79,41 +79,16 @@ sudo apt install -y \
 # Compatibilidad FUSE para AppImages en Debian (transición time64 libfuse2t64 vs libfuse2)
 sudo apt install -y libfuse2t64 2>/dev/null || sudo apt install -y libfuse2 2>/dev/null || true
 
-# 5. Microcódigo y Firmware Intel oficial
-echo "ℹ️ [4/10] Instalando microcódigo Intel y firmware oficial..."
-sudo apt install -y \
-    intel-microcode \
-    firmware-linux \
-    firmware-linux-nonfree \
-    firmware-misc-nonfree 2>/dev/null || sudo apt install -y intel-microcode firmware-linux-nonfree 2>/dev/null || true
-
-# 6. Stack Gráfico Intel (Mesa / VA-API / Vulkan / Monitorización)
-echo "ℹ️ [5/10] Instalando controladores gráficos Intel Mesa, Vulkan y VA-API..."
-sudo apt install -y \
-    intel-media-va-driver \
-    i965-va-driver \
-    mesa-va-drivers \
-    mesa-vdpau-drivers \
-    mesa-vulkan-drivers \
-    vulkan-tools \
-    vainfo \
-    intel-gpu-tools \
-    mesa-utils \
-    libgl1-mesa-dri 2>/dev/null || sudo apt install -y intel-media-va-driver i965-va-driver mesa-va-drivers vainfo || true
-
-# Driver propietario opcional de Intel para codificación no-libre si está disponible
-sudo apt install -y intel-media-va-driver-non-free 2>/dev/null || true
-
-# Vulkan 32-bit (solo si Wine/Proton o multiarch están activos)
-if dpkg --print-foreign-architectures 2>/dev/null | grep -q "i386"; then
-    echo "ℹ️ [6/10] Arquitectura i386 detectada: Instalando Mesa Vulkan 32-bit..."
-    sudo apt install -y mesa-vulkan-drivers:i386 libgl1-mesa-dri:i386 || true
+# 5. Hardware, Microcódigo, Firmware y Stack Gráfico Intel independiente
+echo "ℹ️ [4/9] Ejecutando configuración independiente de hardware Intel (intel-setup.sh)..."
+if [ -x "$SCRIPT_DIR/intel-setup.sh" ]; then
+    bash "$SCRIPT_DIR/intel-setup.sh"
 else
-    echo "ℹ️ [6/10] Arquitectura i386 no habilitada (se omite driver 32-bit)."
+    echo "⚠️ No se encontró $SCRIPT_DIR/intel-setup.sh"
 fi
 
-# 7. Codecs Multimedia, FFmpeg, GStreamer y PipeWire
-echo "ℹ️ [7/10] Instalando códecs multimedia, plugins GStreamer y centro multimedia..."
+# 6. Códecs Multimedia, FFmpeg y GStreamer
+echo "ℹ️ [5/9] Instalando códecs multimedia y plugins GStreamer..."
 sudo DEBIAN_FRONTEND=noninteractive apt install -y \
     ffmpeg \
     libavcodec-extra \
@@ -123,19 +98,17 @@ sudo DEBIAN_FRONTEND=noninteractive apt install -y \
     gstreamer1.0-plugins-ugly \
     gstreamer1.0-libav \
     gstreamer1.0-gl \
-    gstreamer1.0-pipewire \
-    kodi \
-    kodi-inputstream-adaptive \
-    kodi-inputstream-rtmp 2>/dev/null || true
+    gstreamer1.0-pipewire 2>/dev/null || true
 
 # Servidor de audio PipeWire & WirePlumber nativo
+echo "ℹ️ [6/9] Verificando PipeWire & WirePlumber..."
 sudo apt install -y pipewire pipewire-alsa pipewire-pulse wireplumber 2>/dev/null || true
 systemctl --user enable --now pipewire pipewire-pulse wireplumber 2>/dev/null || true
 
-# 8. Memoria ZRAM
-echo "ℹ️ [8/10] Configurando swap comprimida en RAM (ZRAM con ZSTD)..."
-if [ -f "$(dirname "$0")/zram-setup.sh" ]; then
-    bash "$(dirname "$0")/zram-setup.sh"
+# 7. Memoria ZRAM
+echo "ℹ️ [7/9] Configurando swap comprimida en RAM (ZRAM con ZSTD)..."
+if [ -f "$SCRIPT_DIR/zram-setup.sh" ]; then
+    bash "$SCRIPT_DIR/zram-setup.sh"
 else
     sudo apt install -y zram-tools 2>/dev/null || true
     if [ -f /etc/default/zramswap ]; then
@@ -146,8 +119,8 @@ else
     fi
 fi
 
-# 9. Integración de Flathub para Flatpak
-echo "ℹ️ [9/10] Registrando repositorio Flathub..."
+# 8. Integración de Flathub para Flatpak
+echo "ℹ️ [8/9] Registrando repositorio Flathub..."
 flatpak remote-add --if-not-exists flathub https://dl.flathub.org/repo/flathub.flatpakrepo 2>/dev/null || true
 
 # Limpieza de paquetes residuales
@@ -155,8 +128,8 @@ echo "ℹ️ Limpiando dependencias huérfanas..."
 sudo apt autoremove -y
 sudo apt clean
 
-# 10. Verificación
-echo "ℹ️ [10/10] Verificando aceleración VA-API de Intel..."
+# 9. Verificación
+echo "ℹ️ [9/9] Verificando aceleración VA-API de Intel..."
 vainfo 2>/dev/null || echo "⚠️ vainfo reportó advertencias, verifica permisos o reinicia para cargar el nuevo kernel y firmware."
 
 echo "================================================================="

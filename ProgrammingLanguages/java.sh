@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # ==============================================================================
 # java.sh - Instalación y Optimización de OpenJDK para Debian Workstation
-# Arquitectura: AMD Ryzen 7 7730U (16 hilos) | 32 GB RAM | GNOME Shell Wayland
+# Sistema: Golden Dog Linux (Debian 13) | Entorno: Wayland
 # ==============================================================================
 # Características:
 # - Despliegue idempotente de OpenJDK (openjdk-21-jdk y openjdk-21-jre)
@@ -312,7 +312,7 @@ _JAVA_AWT_WM_NONREPARENTING=1
 # Suavizado de tipografías subpixel para pantallas 1080p
 _JAVA_OPTIONS="-Dawt.useSystemAAFontSettings=on -Dswing.aatext=true"
 
-# Optimización multihilo para Apache Maven (AMD Ryzen 7 7730U: 16 hilos)
+# Optimización multihilo para Apache Maven (adaptada a los núcleos del sistema)
 MAVEN_ARGS="-T 1C"
 MAVEN_OPTS="-Xms512m -Xmx4096m -XX:+UseG1GC"
 EOF

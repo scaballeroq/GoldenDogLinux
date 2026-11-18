@@ -549,7 +549,7 @@ cmd_quadlet_reload() {
 cmd_doctor() {
     echo "================================================================="
     echo "🩺 DIAGNÓSTICO DE PODMAN ROOTLESS - UBUNTU LINUX (GNOME SHELL)"
-    echo "   AMD Ryzen 7 7730U | Radeon Vega 8 GPU | NVMe"
+    echo "   Golden Dog Linux (Debian 13)"
     echo "================================================================="
 
     # 1. Podman CLI
@@ -622,10 +622,10 @@ cmd_doctor() {
         log_info "Cortafuegos: UFW inactivo o no instalado"
     fi
 
-    # 10. Aceleración Gráfica (AMD Radeon Graphics (Vega 8))
+    # 10. Aceleración Gráfica (/dev/dri/renderD128)
     if [ -e /dev/dri/renderD128 ]; then
         if id -nG "$USER" 2>/dev/null | grep -qw "render"; then
-            log_ok "Aceleración GPU: AMD Vega 8 (/dev/dri/renderD128) - Grupo 'render' activo"
+            log_ok "Aceleración GPU: /dev/dri/renderD128 - Grupo 'render' activo"
         else
             log_info "Aceleración GPU: /dev/dri/renderD128 presente pero usuario no está en grupo 'render'"
         fi
@@ -656,7 +656,7 @@ cmd_doctor() {
 usage() {
     cat <<EOF
 🐳 podman-utils - Gestor de Proyectos y Contenedores Quadlets (Ubuntu Linux)
-   Optimizado para: AMD Ryzen 7 PRO (8C/16T) | Radeon Vega 8 GPU | GNOME Shell
+   Compatible con: Cualquier PC o portátil AMD / Intel en Golden Dog Linux
 
 Uso:
   podman-utils <comando> [argumentos]
