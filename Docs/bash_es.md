@@ -89,7 +89,7 @@ Incluye funciones en bash para simplificar tareas recurrentes:
 * **`up <N>`**: Sube `N` niveles en el árbol de directorios de manera sencilla (ej. `up 3`).
 * **`duh`**: Muestra el tamaño de las carpetas en el directorio actual, ordenadas por su peso en disco.
 * **Procesamiento Multimedia**:
-  - `webm2mp4`: Convierte grabaciones en formato WebM (comunes en el escritorio de GNOME) a MP4 estándar.
+  - `webm2mp4`: Convierte grabaciones en formato WebM (comunes en Wayland) a MP4 estándar.
   - `img2jpg` / `img2png`: Convierte y optimiza imágenes rápidamente vía consola.
 
 ---
@@ -111,12 +111,12 @@ Utilidades para automatizar la extracción multimedia:
 
 ---
 
-## 7. Entorno GNOME (`gnome_settings.sh`)
+## 7. Entorno KDE Plasma 6 (`kde_settings.sh`)
 
-Aplica configuraciones automáticas para el entorno de escritorio GNOME:
-- Habilitación de la luz nocturna nocturna (filtro de luz azul).
-- Configuración del formato horario de 24 horas y fecha completa en la barra superior.
-- Optimización de velocidad de animaciones e instalación rápida de extensiones.
+Aplica configuraciones automáticas para el entorno de escritorio KDE Plasma 6:
+- Habilitación de la luz nocturna (filtro de luz azul).
+- Configuración del formato horario de 24 horas y fecha en el panel.
+- Optimización de velocidad de animaciones en KWin.
 
 ---
 

@@ -14,10 +14,10 @@
 #   * Maven: MAVEN_ARGS="-T 1C" (1 hilo por núcleo), MAVEN_OPTS con G1GC y heap escalado a 4GB.
 #   * Gradle: Generación de ~/.gradle/gradle.properties con parallel, caching,
 #     daemon, 16 workers y vfs.watch (inotify en ext4/btrfs).
-# - Integración gráfica con GNOME Shell sobre Wayland:
-#   * _JAVA_AWT_WM_NONREPARENTING=1 (previene ventanas grises en Swing/AWT en Mutter Wayland).
+# - Integración gráfica con KDE Plasma 6 sobre Wayland:
+#   * _JAVA_AWT_WM_NONREPARENTING=1 (previene ventanas grises en Swing/AWT en KWin Wayland).
 #   * Renderizado de fuentes subpixel LCD antialiasing (-Dawt.useSystemAAFontSettings=on -Dswing.aatext=true).
-# - Integración modular con GNOME Shell (environment.d) y Shells (Bash / Zsh).
+# - Integración modular con KDE Plasma 6 (environment.d) y Shells (Bash / Zsh).
 # - Comandos CLI: --status / -s, --update / -u, --alternatives / -a, --help / -h.
 # ==============================================================================
 
@@ -119,14 +119,14 @@ resolve_default_jvm() {
 # ------------------------------------------------------------------------------
 show_help() {
     cat <<EOF
-☕ Gestor y Optimizador de OpenJDK - Debian Workstation (GNOME Shell + AMD Ryzen)
+☕ Gestor y Optimizador de OpenJDK - Debian Workstation (KDE Plasma 6 + AMD Ryzen)
 
 Uso:
   $0 [OPCIÓN]
 
 Opciones:
   (sin argumentos)    Instala y optimiza OpenJDK (openjdk-21-jdk LTS),
-                      Maven, certificados para AutoFirma/DNIe e integración con GNOME Shell.
+                      Maven, certificados para AutoFirma/DNIe e integración con KDE Plasma 6.
   --status, -s        Muestra el diagnóstico completo del entorno Java, Maven, variables y JVMs.
   --alternatives, -a  Lista las JVMs instaladas y muestra las alternativas del sistema.
   --update, -u        Actualiza los paquetes de OpenJDK, Maven y certificados desde APT.
@@ -137,7 +137,7 @@ EOF
 
 show_status() {
     echo "================================================================="
-    echo "🔍 ESTADO DEL ENTORNO OPENJDK (DEBIAN WORKSTATION + GNOME SHELL)"
+    echo "🔍 ESTADO DEL ENTORNO OPENJDK (DEBIAN WORKSTATION + KDE PLASMA 6)"
     echo "================================================================="
 
     local java_ver javac_ver mvn_ver jvm_active cacerts_status alts_active
@@ -178,7 +178,7 @@ show_status() {
     echo "• JAVA_HOME detectado:     $jvm_active"
     echo "• Almacén CA (cacerts):    $cacerts_status"
     echo "• Hilos de compilación:    $NPROC hilos paralelos (Ryzen 7 PRO)"
-    echo "• Entorno GNOME Shell:     $(if [ -f "$env_conf" ]; then echo "✅ Configurado ($env_conf)"; else echo "ℹ️ No presente"; fi)"
+    echo "• Entorno KDE Plasma 6:     $(if [ -f "$env_conf" ]; then echo "✅ Configurado ($env_conf)"; else echo "ℹ️ No presente"; fi)"
     echo "• Integración Bash:        $(if [ -f "$bashrc_file" ]; then echo "✅ Activo ($bashrc_file)"; else echo "ℹ️ No presente"; fi)"
     echo "• Aceleración Gradle:      $(if [ -f "$gradle_file" ]; then echo "✅ Optimizado ($gradle_file)"; else echo "ℹ️ No presente"; fi)"
 
@@ -292,21 +292,21 @@ fi
 echo "  ✅ JAVA_HOME resuelto: $DEFAULT_JVM"
 
 # ------------------------------------------------------------------------------
-# 7. INTEGRACIÓN CON GNOME SHELL, WAYLAND Y SHELLS
+# 7. INTEGRACIÓN CON KDE PLASMA 6, WAYLAND Y SHELLS
 # ------------------------------------------------------------------------------
-echo "ℹ️ [3/4] Configurando variables de entorno para GNOME Shell y Shells..."
+echo "ℹ️ [3/4] Configurando variables de entorno para KDE Plasma 6 y Shells..."
 
 ENV_DIR="$USER_HOME/.config/environment.d"
 BASHRC_D="$USER_HOME/.bashrc.d"
 run_as_user mkdir -p "$ENV_DIR" "$BASHRC_D"
 
-# 7.1. Sesión gráfica GNOME Shell (systemd user environment)
+# 7.1. Sesión gráfica KDE Plasma 6 (systemd user environment)
 cat << EOF | run_as_user tee "$ENV_DIR/10-java.conf" > /dev/null
-# OpenJDK Environment (GNOME Shell + Wayland)
+# OpenJDK Environment (KDE Plasma 6 + Wayland)
 JAVA_HOME=$DEFAULT_JVM
 PATH=$DEFAULT_JVM/bin:\${PATH}
 
-# Integración gráfica Wayland Mutter (evita ventanas grises en aplicaciones AWT/Swing)
+# Integración gráfica Wayland KWin (evita ventanas grises en aplicaciones AWT/Swing)
 _JAVA_AWT_WM_NONREPARENTING=1
 
 # Suavizado de tipografías subpixel para pantallas 1080p
@@ -389,11 +389,11 @@ fi
 JAVA_VER=$(java -version 2>&1 | head -n 1 | awk -F '"' '{print $2}' || echo "Instalado")
 
 echo "================================================================="
-echo "✅ OpenJDK configurado con éxito para Debian Workstation y GNOME:"
+echo "✅ OpenJDK configurado con éxito para Debian Workstation y KDE Plasma 6:"
 echo "  • OpenJDK:        v$JAVA_VER"
 echo "  • JAVA_HOME:      $DEFAULT_JVM"
 echo "  • Compilación:    Maven y Gradle optimizados para $NPROC hilos paralelos"
 echo "  • Memoria Heap:   Hasta 4 GB con recolector G1GC"
-echo "  • GNOME Shell:    ~/.config/environment.d/10-java.conf (IDEs y Wayland)"
+echo "  • KDE Plasma 6:    ~/.config/environment.d/10-java.conf (IDEs y Wayland)"
 echo "  • Shells:         Bash (~/.bashrc.d/java.sh)$([ -f "$USER_HOME/.zshrc" ] && echo " & Zsh (~/.zshrc.d/java.zsh)")"
 echo "================================================================="

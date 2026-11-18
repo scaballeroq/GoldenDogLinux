@@ -4,8 +4,8 @@
 # Compatible con lectores biométricos soportados por libfprint / fprintd
 # =============================================================================
 # Características:
-#   - Autenticación en pantalla de bloqueo (GDM y GNOME Shell)
-#   - Autenticación gráfica de administración (PolKit GNOME)
+#   - Autenticación en pantalla de bloqueo (SDDM y KDE Plasma 6)
+#   - Autenticación gráfica de administración (PolKit KDE)
 #   - Autenticación en terminal (sudo con PAM)
 #   - Gestión de sensores compatibles mediante fprintd
 #   - Opciones CLI: --status, --enroll, --verify, --delete, --help
@@ -42,7 +42,7 @@ run_as_user() {
 
 show_help() {
     cat <<EOF
-👆 Configurador de Huella Dactilar (fprintd) - Debian Workstation (GNOME)
+👆 Configurador de Huella Dactilar (fprintd) - Debian Workstation (KDE Plasma 6)
 
 Uso:
   $0 [OPCIÓN]
@@ -76,8 +76,8 @@ show_status() {
     echo "• Huellas registradas para '$REAL_USER':"
     run_as_user fprintd-list "$REAL_USER" 2>/dev/null || echo "    (Sin huellas registradas o fprintd no inicializado)"
     echo "================================================================="
-    echo "💡 Puedes administrar tus huellas también desde GNOME en:"
-    echo "   'Configuración -> Sistema -> Usuarios -> Inicio de sesión con huella'"
+    echo "💡 Puedes administrar tus huellas también desde KDE Plasma 6 en:"
+    echo "   'Preferencias del Sistema -> Usuarios -> Configurar autenticación por huella dactilar'"
 }
 
 case "${1:-}" in

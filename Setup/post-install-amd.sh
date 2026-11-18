@@ -51,15 +51,10 @@ sudo apt install -y \
     curl \
     wget \
     btop \
-    htop \
     inxi \
     fuse3 \
     exfatprogs \
-    vlc \
-    gimp \
-    gparted \
     7zip \
-    p7zip-full \
     unrar \
     zip \
     unzip \

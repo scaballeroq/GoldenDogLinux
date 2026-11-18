@@ -2,9 +2,9 @@
 # =============================================================================
 # hp-printer-setup.sh - Configuración de Impresora HP (LaserJet Pro M15w)
 # =============================================================================
-# Optimizado para Debian Workstation (GNOME Shell):
+# Optimizado para Debian Workstation (KDE Plasma 6):
 #   - Conexión por cable USB y Red inalámbrica (Wi-Fi / mDNS)
-#   - Servicios CUPS, Avahi y soporte nativo de impresión en GNOME
+#   - Servicios CUPS, Avahi y soporte nativo de impresión en KDE Plasma
 #   - Instalación guiada del plugin propietario requerido (hp-plugin)
 #   - Pertenencia a grupos 'lp' y 'lpadmin'
 #   - Reglas de Firewalld para descubrimiento y colas de impresión
@@ -32,7 +32,7 @@ fi
 
 show_help() {
     cat <<EOF
-🖨️ Instalador y Configurador de Impresoras HP - Debian Workstation (GNOME)
+🖨️ Instalador y Configurador de Impresoras HP - Debian Workstation (KDE Plasma 6)
 
 Uso:
   $0 [OPCIÓN]
@@ -70,8 +70,8 @@ show_status() {
     echo "• Colas de impresión activas en CUPS (lpstat):"
     lpstat -p -d 2>/dev/null || echo "    (No hay impresoras configuradas actualmente)"
     echo "================================================================="
-    echo "💡 Puedes administrar tus impresoras también desde GNOME en:"
-    echo "   'Configuración -> Impresoras' o ejecutando 'system-config-printer'"
+    echo "💡 Puedes administrar tus impresoras también desde KDE Plasma 6 en:"
+    echo "   'Preferencias del Sistema -> Impresoras' o ejecutando 'system-config-printer'"
 }
 
 install_plugin() {

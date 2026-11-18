@@ -85,22 +85,22 @@ get_os_description() {
 APPS_CATALOG=(
     # Gestión del Sistema y Contenedores (Core)
     "com.github.tchx84.Flatseal|Flatseal|core|1|Gestor gráfico de permisos y sandbox para Flatpaks"
-    "io.podman_desktop.PodmanDesktop|Podman Desktop|core|1|Panel gráfico de gestión para Podman, contenedores y Quadlets"
+    "io.podman_desktop.PodmanDesktop|Podman Desktop|core|0|Panel gráfico de gestión para Podman, contenedores y Quadlets"
     "io.github.flattool.Warehouse|Warehouse|core|1|Gestor versátil de Flatpaks, limpieza de restos y control de runtimes"
     
     # Multimedia Desacoplado
-    "org.videolan.VLC|VLC Media Player|multimedia|1|Reproductor multimedia universal con códecs completos integrados"
-    "io.github.celluloid_player.Celluloid|Celluloid|multimedia|1|Reproductor GTK/MPV optimizado para Wayland y aceleración VA-API"
-    "com.obsproject.Studio|OBS Studio|multimedia|1|Grabación y streaming con soporte Wayland PipeWire y códecs aislados"
-    "org.kde.kdenlive|Kdenlive|multimedia|1|Editor y montador de vídeo no lineal profesional (FFmpeg / MLT)"
+    "org.videolan.VLC|VLC Media Player|multimedia|0|Reproductor multimedia universal con códecs completos integrados"
+    "io.github.celluloid_player.Celluloid|Celluloid|multimedia|0|Reproductor GTK/MPV optimizado para Wayland y aceleración VA-API"
+    "com.obsproject.Studio|OBS Studio|multimedia|0|Grabación y streaming con soporte Wayland PipeWire y códecs aislados"
+    "org.kde.kdenlive|Kdenlive|multimedia|0|Editor y montador de vídeo no lineal profesional (FFmpeg / MLT)"
     "org.shotcut.Shotcut|Shotcut|multimedia|0|Editor de vídeo profesional no lineal con códecs completos"
     "tv.kodi.Kodi|Kodi Media Center|multimedia|0|Centro multimedia avanzado para streaming y reproducción local"
     "com.stremio.Stremio|Stremio|multimedia|0|Plataforma moderna de agregación de contenido multimedia y streaming"
     "org.audacityteam.Audacity|Audacity|multimedia|0|Editor y grabador de audio profesional multi-pista"
-    "com.spotify.Client|Spotify|multimedia|1|Cliente oficial de reproducción de música en streaming"
+    "com.spotify.Client|Spotify|multimedia|0|Cliente oficial de reproducción de música en streaming"
     
     # Comunicación y Colaboración (Aislamiento Wayland)
-    "dev.vencord.Vesktop|Vesktop (Discord)|comms|1|Discord optimizado para Wayland con soporte PipeWire screen sharing"
+    "dev.vencord.Vesktop|Vesktop (Discord)|comms|0|Discord optimizado para Wayland con soporte PipeWire screen sharing"
     "org.telegram.desktop|Telegram Desktop|comms|0|Mensajería rápida y segura en sandbox Flatpak"
 
     # Desarrollo y Bases de Datos
@@ -119,9 +119,6 @@ APPS_CATALOG=(
     # Diseño y Creatividad
     "org.gimp.GIMP|GIMP|graphics|0|Editor avanzado de imágenes con códecs y runtimes desacoplados"
     "org.inkscape.Inkscape|Inkscape|graphics|0|Editor profesional de gráficos vectoriales (SVG)"
-    
-    # Compatibilidad y Gaming
-    "com.valvesoftware.Steam.CompatibilityTool.Proton-GE|Proton-GE|gaming|0|Capa de compatibilidad avanzada para Steam Play"
 )
 
 # ------------------------------------------------------------------------------
@@ -178,7 +175,6 @@ resolve_app_id() {
         spotify) echo "com.spotify.Client" ;;
         vesktop|discord) echo "dev.vencord.Vesktop" ;;
         telegram|telegram-desktop) echo "org.telegram.desktop" ;;
-        proton|proton-ge) echo "com.valvesoftware.Steam.CompatibilityTool.Proton-GE" ;;
         bruno) echo "com.usebruno.Bruno" ;;
         dbeaver) echo "io.dbeaver.DBeaverCommunity" ;;
         obsidian) echo "md.obsidian.Obsidian" ;;
@@ -348,9 +344,6 @@ install_suite() {
             comms)
                 if [ "$category" = "comms" ]; then should_install=1; fi
                 ;;
-            gaming)
-                if [ "$category" = "gaming" ]; then should_install=1; fi
-                ;;
             dev)
                 if [ "$category" = "dev" ]; then should_install=1; fi
                 ;;
@@ -427,8 +420,7 @@ Opciones principales:
       --graphics          Instala suite de diseño gráfico (GIMP, Inkscape).
       --web               Instala navegadores web en sandbox (Mozilla Firefox).
       --comms             Instala herramientas de comunicación (Vesktop/Discord, Telegram).
-      --gaming            Instala herramientas de gaming (Proton-GE).
-      --overrides         Aplica overrides de temas de GNOME (prefer-dark) y aceleración GPU.
+      --overrides         Aplica overrides de temas GTK (prefer-dark) y aceleración GPU.
   -u, --update            Actualiza todas las aplicaciones y runtimes instalados (sistema y usuario).
   -c, --clean             Elimina runtimes y extensiones huérfanas ('flatpak uninstall --unused').
   -h, --help              Muestra este mensaje de ayuda.
@@ -508,10 +500,6 @@ case "${1:-}" in
         ;;
     --comms)
         install_suite "comms" "$TARGET_SCOPE"
-        exit 0
-        ;;
-    --gaming)
-        install_suite "gaming" "$TARGET_SCOPE"
         exit 0
         ;;
     install)

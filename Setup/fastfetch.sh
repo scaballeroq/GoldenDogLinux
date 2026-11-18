@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # ==============================================================================
 # fastfetch.sh - Instalación y Configuración Estética de Fastfetch
-# Sistema: Debian GNU/Linux | Escritorio: GNOME Shell (Wayland)
+# Sistema: Debian GNU/Linux | Escritorio: KDE Plasma 6 (Wayland)
 # ==============================================================================
 # Características:
 # - Detección inteligente y modo rootless: no ejecuta sudo ni APT si ya está instalado.
@@ -331,7 +331,7 @@ interactive_menu() {
 # ------------------------------------------------------------------------------
 show_status() {
     echo "================================================================="
-    echo "📊 ESTADO DE FASTFETCH (Debian GNOME Wayland)"
+    echo "📊 ESTADO DE FASTFETCH (Debian KDE Plasma 6 Wayland)"
     echo "================================================================="
     echo "👤 Usuario:                $REAL_USER"
 
@@ -392,7 +392,7 @@ show_help() {
 Uso: $(basename "$0") [OPCIONES]
 
 Instalación, diagnóstico y gestión de la configuración estética de Fastfetch
-para Debian GNU/Linux y GNOME Shell (Wayland).
+para Debian GNU/Linux y KDE Plasma 6 (Wayland).
 
 OPCIONES:
   -s, --status              Muestra el estado de instalación, versión y tema activo.

@@ -103,7 +103,7 @@ is_wayland_optimized() {
 
 show_status() {
     echo -e "${CYAN}=================================================================${NC}"
-    echo -e "${BOLD}🔍 DIAGNÓSTICO DE GOOGLE CHROME - UBUNTU LINUX (GNOME WAYLAND)${NC}"
+    echo -e "${BOLD}🔍 DIAGNÓSTICO DE GOOGLE CHROME - DEBIAN LINUX (KDE PLASMA 6 WAYLAND)${NC}"
     echo -e "${CYAN}=================================================================${NC}"
 
     if [ -f "$SOURCES_FILE" ]; then

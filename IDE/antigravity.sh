@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # ==============================================================================
 # antigravity.sh - Gestor e Instalador de Google Antigravity Desktop 2.0
-# Optimizado para Debian Workstation (Debian 13 Trixie GNOME Shell Wayland Mutter)
+# Optimizado para Debian Workstation (Debian 13 Trixie KDE Plasma 6 Wayland)
 # Sistema: Golden Dog Linux (Debian 13) | Entorno: Wayland (AMD / Intel)
 # ==============================================================================
 # Características:
@@ -10,8 +10,8 @@
 #  - Detección inteligente de versión oficial (v2.x) evitando descargas redundantes.
 #  - Helper /usr/local/bin/update-antigravity con rollback atómico y sandboxing SUID 4755.
 #  - Extracción automática de icono nativo en alta resolución (512x512) desde app.asar.
-#  - Integración nativa GNOME Shell Wayland (flags Ozone auto, aceleración GPU Mesa RADV).
-#  - Menú contextual para Nautilus (GNOME Files) mediante scripts de usuario.
+#  - Integración nativa KDE Plasma 6 Wayland (flags Ozone auto, aceleración GPU Mesa RADV).
+#  - Menú contextual para Dolphin (KIO ServiceMenu) mediante entrada de escritorio.
 #  - Detección y aviso de conflictos con el paquete APT heredado (antigravity_old.sh).
 #  - Opciones completas: --status, --check, --force, --uninstall y --help.
 # ==============================================================================
@@ -61,9 +61,7 @@ else
     USER_HOME="${HOME:-/home/$REAL_USER}"
 fi
 
-# Integraciones de escritorio de usuario (GNOME Nautilus y opcional Dolphin)
-NAUTILUS_SCRIPTS_DIR="$USER_HOME/.local/share/nautilus/scripts"
-NAUTILUS_SCRIPT_FILE="$NAUTILUS_SCRIPTS_DIR/Abrir con Antigravity"
+# Integraciones de escritorio de usuario (Dolphin KIO ServiceMenu)
 KIO_USER_DIR="$USER_HOME/.local/share/kio/servicemenus"
 KIO_USER_FILE="$KIO_USER_DIR/open-in-antigravity.desktop"
 KIO_SYS_FILE="/usr/share/kio/servicemenus/open-in-antigravity.desktop"
@@ -233,10 +231,10 @@ show_status() {
     fi
 
     echo ""
-    echo -e "${BOLD}🖥️  Integración GNOME Shell / Wayland / Nautilus:${NC}"
+    echo -e "${BOLD}🖥️  Integración KDE Plasma 6 / Wayland / Dolphin:${NC}"
     if [ -f "$DESKTOP_FILE" ]; then
         if grep -q "ozone-platform-hint" "$DESKTOP_FILE" 2>/dev/null; then
-            echo -e "  • Lanzador de escritorio: ${GREEN}$DESKTOP_FILE${NC} (Wayland nativo Mutter)"
+            echo -e "  • Lanzador de escritorio: ${GREEN}$DESKTOP_FILE${NC} (Wayland nativo KWin)"
         else
             echo -e "  • Lanzador de escritorio: ${YELLOW}$DESKTOP_FILE${NC} (Heredado de APT / sin flags Wayland)"
         fi
@@ -250,10 +248,10 @@ show_status() {
         echo -e "  • Icono de aplicación:   ${YELLOW}No presente${NC}"
     fi
 
-    if [ -f "$NAUTILUS_SCRIPT_FILE" ]; then
-        echo -e "  • Menú Nautilus (GNOME):  ${GREEN}Activo ($NAUTILUS_SCRIPT_FILE)${NC}"
+    if [ -f "$KIO_USER_FILE" ] || [ -f "$KIO_SYS_FILE" ]; then
+        echo -e "  • Menú Dolphin (KIO):     ${GREEN}Activo (${KIO_USER_FILE})${NC}"
     else
-        echo -e "  • Menú Nautilus (GNOME):  ${YELLOW}No instalado${NC}"
+        echo -e "  • Menú Dolphin (KIO):     ${YELLOW}No instalado${NC}"
     fi
 
     echo ""
@@ -396,7 +394,6 @@ if [ "$action" = "uninstall" ]; then
     if [ -n "${SUDO_USER:-}" ] && [ "$SUDO_USER" != "root" ]; then
         user_home=$(getent passwd "$SUDO_USER" | cut -d: -f6)
         rm -f "$user_home/.local/share/kio/servicemenus/open-in-antigravity.desktop"
-        rm -f "$user_home/.local/share/nautilus/scripts/Abrir con Antigravity"
     fi
     command -v update-desktop-database >/dev/null 2>&1 && update-desktop-database /usr/share/applications >/dev/null 2>&1 || true
     command -v gtk-update-icon-cache >/dev/null 2>&1 && gtk-update-icon-cache -f -t -q /usr/share/icons/hicolor 2>/dev/null || true
@@ -744,7 +741,6 @@ uninstall_app() {
     else
         echo "Eliminando archivos del sistema..."
         sudo rm -rf "$INSTALL_ROOT" "$COMMAND_LINK" "$DESKTOP_FILE" "$ICON_FILE" "$PIXMAP_FILE" "$KIO_SYS_FILE"
-        rm -f "$NAUTILUS_SCRIPT_FILE" 2>/dev/null || true
         rm -f "$KIO_USER_FILE" 2>/dev/null || true
     fi
 
@@ -805,14 +801,25 @@ install_or_update() {
         fi
     fi
 
-    # 4. Asegurar integración de menú contextual de Nautilus (GNOME Files)
-    if [ ! -f "$NAUTILUS_SCRIPT_FILE" ]; then
-        run_as_user mkdir -p "$NAUTILUS_SCRIPTS_DIR"
-        cat <<'NAUTILUS_LOCAL' > "$NAUTILUS_SCRIPT_FILE"
-#!/usr/bin/env bash
-exec /usr/local/bin/antigravity "$@"
-NAUTILUS_LOCAL
-        chmod +x "$NAUTILUS_SCRIPT_FILE"
+    # 4. Asegurar integración de menú contextual en Dolphin (KIO ServiceMenu)
+    if [ ! -f "$KIO_USER_FILE" ] && [ ! -f "$KIO_SYS_FILE" ]; then
+        run_as_user mkdir -p "$KIO_USER_DIR"
+        cat <<'KIO_LOCAL' | run_as_user tee "$KIO_USER_FILE" > /dev/null
+[Desktop Entry]
+Type=Service
+ServiceTypes=KonqPopupMenu/Plugin
+MimeType=inode/directory;
+Actions=openInAntigravity;
+X-KDE-Priority=TopLevel
+
+[Desktop Action openInAntigravity]
+Name=Abrir con Antigravity
+Name[es]=Abrir con Antigravity
+Name[en]=Open with Antigravity
+Icon=antigravity
+Exec=/usr/local/bin/antigravity %u
+KIO_LOCAL
+        run_as_user chmod +x "$KIO_USER_FILE" 2>/dev/null || true
     fi
 
     # Refrescar bases de datos de escritorio e iconos
@@ -825,8 +832,8 @@ NAUTILUS_LOCAL
     if [ -x "$launcher" ]; then
         echo -e "${GREEN}✅ Google Antigravity Desktop verificado y disponible en:${NC} $launcher"
         echo -e "💡 Ejecutable: ${BOLD}antigravity${NC}"
-        echo -e "💡 GNOME Shell: Lanzador nativo Wayland configurado en el menú de aplicaciones"
-        echo -e "💡 Nautilus: Click derecho en carpetas/archivos -> 'Scripts' -> 'Abrir con Antigravity'"
+        echo -e "💡 KDE Plasma 6: Lanzador nativo Wayland configurado en el menú de aplicaciones"
+        echo -e "💡 Dolphin: Click derecho en carpetas -> 'Abrir con Antigravity'"
     else
         echo -e "${YELLOW}ℹ️  Instalación preparada. Ejecute './IDE/antigravity.sh' con sudo o '--force' para completar la instalación.${NC}"
     fi
@@ -843,7 +850,7 @@ show_help() {
     echo -e "  ${CYAN}-s, --status${NC}        Muestra el estado completo de la instalación e integraciones (rootless)"
     echo -e "  ${CYAN}-c, --check${NC}         Comprueba si hay actualizaciones disponibles sin instalar (código de salida)"
     echo -e "  ${CYAN}-f, --force${NC}         Fuerza la descarga y reinstalación de la versión más reciente"
-    echo -e "  ${CYAN}--uninstall${NC}         Desinstala Antigravity Desktop y elimina accesos e integración de Nautilus"
+    echo -e "  ${CYAN}--uninstall${NC}         Desinstala Antigravity Desktop y elimina accesos e integración de Dolphin"
     echo -e "  ${CYAN}-h, --help${NC}          Muestra este mensaje de ayuda"
     echo ""
     echo -e "${BOLD}Ejemplos:${NC}"

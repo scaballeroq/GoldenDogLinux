@@ -2,7 +2,7 @@
 sidebar_position: 1
 ---
 
-# Endurecimiento de Seguridad y Cortafuegos en Debian GNU/Linux (GNOME Shell)
+# Endurecimiento de Seguridad y Cortafuegos en Debian GNU/Linux (KDE Plasma 6)
 
 Esta guía detalla el proceso de seguridad, red y endurecimiento del sistema (hardening) automatizado en [`Setup/seguridad.sh`](../Setup/seguridad.sh), optimizado para una estación de trabajo y desarrollo local con **Golden Dog Linux (Debian GNU/Linux)**.
 
@@ -20,8 +20,8 @@ En cumplimiento de las políticas del monorepo, **UFW queda permanentemente desa
    sudo systemctl enable --now firewalld
    ```
 
-2. **Reglas para GNOME Shell, GSConnect y Desarrollo**:
-   - **GSConnect (`kdeconnect` service en Firewalld)**: Permite la sincronización de notificaciones, control multimedia, portapapeles compartido y transferencia de archivos entre tu teléfono y tu PC sin dependencias de KDE/Qt.
+2. **Reglas para KDE Plasma 6, KDE Connect y Desarrollo**:
+   - **KDE Connect (`kdeconnect` service en Firewalld)**: Permite la sincronización de notificaciones, control multimedia, portapapeles compartido y transferencia de archivos entre tu teléfono y tu PC.
    - **Descubrimiento Local (`mdns`)**: Permite detectar impresoras (HP LaserJet), dispositivos multimedia y servicios locales.
    - **Acceso Remoto (`ssh`)**: Mantiene el acceso seguro por SSH.
    - **Máquinas Virtuales y Contenedores**:

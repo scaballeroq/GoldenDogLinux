@@ -2,9 +2,9 @@
 sidebar_position: 2
 ---
 
-# System Configuration in Debian GNU/Linux (GNOME Shell Wayland)
+# System Configuration in Debian GNU/Linux (KDE Plasma 6 Wayland)
 
-This guide details the base system setup, terminal optimization, essential tooling, multimedia support, and desktop personalization applied to an **Debian GNU/Linux** workstation with **GNOME Shell**.
+This guide details the base system setup, terminal optimization, essential tooling, multimedia support, and desktop personalization applied to a **Debian GNU/Linux** workstation with **KDE Plasma 6**.
 
 Configurations are automated via scripts in the `Setup/` folder and orchestrated with the `justfile`.
 
@@ -43,8 +43,8 @@ Configured with:
 - 75% background opacity and background blur (*blur 32*) accelerated by Mesa RADV GPU.
 - Catppuccin Mocha color scheme (#181825).
 - JetBrainsMono Nerd Font.
-- Global `Ctrl+Alt+T` keybinding in GNOME Shell.
-- Nautilus context menu script ("Open in Kitty").
+- Global `Ctrl+Alt+T` keybinding in KDE Plasma 6.
+- Dolphin context menu (KIO ServiceMenu: "Open in Kitty").
 
 ### Developer Fonts (Nerd Fonts)
 Automated installation of:
@@ -55,14 +55,13 @@ Aesthetic hardware and system banner supporting official Debian theme (`debian`)
 
 ---
 
-## 3. GNOME Shell Desktop & GSConnect (`gnome-settings.sh` & `gsconnect.sh`)
+## 3. KDE Plasma 6 Desktop & KDE Connect (`kde-settings.sh` & `kdeconnect.sh`)
 
-- **Dark Mode**: Enforces `prefer-dark` and `Yaru-dark` theme.
-- **Night Light**: Warm 4000K color temperature for eye comfort.
-- **Window Controls**: Visible minimize and maximize buttons.
-- **Nautilus Scripts**: Right-click context actions for Kitty, Google Antigravity, and VS Code.
-- **GSConnect**: Native GNOME KDE Connect daemon with zero KDE/Qt dependencies, integrated into Firewalld (ports 1714-1764 TCP/UDP).
-- **Extensions**: Support for Dash to Dock, AppIndicator, Blur my Shell, and Tiling Shell.
+- **Dark Mode**: Enforces dark theme and Plasma 6 appearance settings.
+- **Night Light**: Warm color temperature for eye comfort.
+- **Window Controls**: KWin Wayland window behavior and controls.
+- **Dolphin ServiceMenus**: Right-click context actions for Kitty, Ghostty, Google Antigravity, and VS Code.
+- **KDE Connect**: Native KDE Connect integration in Plasma 6, integrated into Firewalld (ports 1714-1764 TCP/UDP).
 
 ---
 
@@ -79,9 +78,8 @@ Aesthetic hardware and system banner supporting official Debian theme (`debian`)
 
 ```bash
 just post-install        # Smart post-install dispatcher
-just gnome-setup         # Configure GNOME desktop
-just gnome-extensions    # Install and activate extensions
-just gsconnect           # Configure GSConnect and Firewalld
+just kde-setup           # Configure KDE Plasma 6 desktop
+just kde-status          # Show KDE Plasma 6 configuration status
 just shell               # Install modern CLI tools
 just kitty               # Configure Kitty terminal
 just fonts               # Install Nerd Fonts

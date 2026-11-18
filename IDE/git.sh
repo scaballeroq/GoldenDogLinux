@@ -1,7 +1,7 @@
 #!/bin/bash
 # ==============================================================================
 # git.sh - Instalación, Optimización y Configuración de Git, Delta, Lazygit y gh
-# Debian Workstation (GNOME Shell Wayland)
+# Debian Workstation (KDE Plasma 6 Wayland)
 # ==============================================================================
 # Características:
 # - Despliegue idempotente: comprueba paquetes primero y evita invocar

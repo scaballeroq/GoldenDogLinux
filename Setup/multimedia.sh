@@ -69,15 +69,6 @@ get_os_description() {
     fi
 }
 
-get_gnome_version() {
-    local ver
-    ver=$(gnome-shell --version 2>/dev/null | awk '{print $3}' || true)
-    if [ -z "$ver" ]; then
-        ver=$(run_as_user gnome-shell --version 2>/dev/null | awk '{print $3}' || true)
-    fi
-    echo "${ver:-48}"
-}
-
 check_user_service() {
     local svc="$1"
     local active_state enabled_state
@@ -99,26 +90,26 @@ check_user_service() {
 # ------------------------------------------------------------------------------
 show_help() {
     cat <<EOF
-🎬 Suite Multimedia y Aceleración Gráfica - Debian 13 Trixie (GNOME Shell Wayland)
+🎬 Suite Multimedia y Aceleración Gráfica - Debian 13 Trixie (KDE Plasma 6 Wayland)
 
 Uso:
   $0 [OPCIÓN]
 
 Opciones:
-  (sin argumentos)    Aplica toda la suite: Códecs, VA-API Wayland, Miniaturas GNOME, Reproductores y Flatpak.
+  (sin argumentos)    Aplica toda la suite: Códecs, VA-API Wayland, Miniaturas KDE, Reproductores y Flatpak.
   --status, -s        Muestra diagnóstico detallado de VA-API, Vulkan, GStreamer, Miniaturas, PipeWire y Apps.
-  --codecs            Instala y configura códecs APT, FFmpeg, GStreamer 1.26, miniaturas GNOME y VA-API.
-  --players           Instala y optimiza reproductores nativos GNOME 48 / Wayland (Showtime, Celluloid, MPV, VLC).
-  --flatpak           Configura el repositorio Flathub e instala soporte Flatpak en GNOME Software.
+  --codecs            Instala y configura códecs APT, FFmpeg, GStreamer 1.26, miniaturas Dolphin y VA-API.
+  --players           Instala y optimiza reproductores nativos KDE Plasma 6 / Wayland (Gwenview, Haruna, MPV, VLC).
+  --flatpak           Configura el repositorio Flathub e instala soporte Flatpak en KDE Discover.
   --help, -h          Muestra este mensaje de ayuda.
 
 Componentes gestionados en Debian 13 (Trixie):
   • Aceleración HW:     Mesa VA-API (radeonsi Gallium), libva-wayland2, Vulkan RADV y variables de sesión.
   • Códecs Audio/Video: FFmpeg 7.x, libavcodec-extra, FLAC, Opus, Vorbis, LAME y MediaInfo.
-  • GStreamer 1.26:     base, good, bad (libgstva nativo), ugly, libav, gl, gtk4 (gtk4paintablesink) y pipewire.
-  • GNOME 48 / Nautilus:glycin-loaders (Loupe), ffmpegthumbnailer, Totem (video-thumbnailer), HEIF y WebP.
+  • GStreamer 1.26:     base, good, bad (libgstva nativo), ugly, libav, gl y pipewire.
+  • KDE / Dolphin:      ffmpegthumbs, kio-extras, ffmpegthumbnailer, HEIF y AVIF.
   • Audio PipeWire 1.4: pipewire-audio, pipewire-alsa, pipewire-pulse, wireplumber y libspa-0.2-bluetooth.
-  • Reproductores:      Showtime (GNOME Core GTK4), Loupe, Snapshot, Amberol, Celluloid, MPV (gpu-next) y VLC.
+  • Reproductores:      Gwenview, Haruna (Qt6/MPV), MPV (gpu-next) y VLC.
 EOF
 }
 
@@ -176,21 +167,20 @@ show_status() {
     echo "  - MediaInfo:           $(if command -v mediainfo &>/dev/null; then echo "✅ Instalado"; else echo "❌ No instalado"; fi)"
 
     echo "-----------------------------------------------------------------"
-    echo "• Pila GStreamer 1.26 (GNOME Wayland + GTK4 + PipeWire):"
+    echo "• Pila GStreamer 1.26 (KDE Plasma Wayland + PipeWire):"
     local gst_va_lib="/usr/lib/x86_64-linux-gnu/gstreamer-1.0/libgstva.so"
     echo "  - Plugins Base/Good:   $(if dpkg -s gstreamer1.0-plugins-base &>/dev/null && dpkg -s gstreamer1.0-plugins-good &>/dev/null; then echo "✅ Instalados"; else echo "❌ No instalados"; fi)"
     echo "  - Plugins Bad (VA HW): $(if [ -f "$gst_va_lib" ]; then echo "✅ Instalado (libgstva.so activo)"; elif dpkg -s gstreamer1.0-plugins-bad &>/dev/null; then echo "✅ Instalado"; else echo "❌ No instalado"; fi)"
     echo "  - Plugins Ugly/Libav:  $(if dpkg -s gstreamer1.0-plugins-ugly &>/dev/null && dpkg -s gstreamer1.0-libav &>/dev/null; then echo "✅ Instalados"; else echo "❌ No instalados"; fi)"
-    echo "  - Render GTK4 Wayland: $(if dpkg -s gstreamer1.0-gtk4 &>/dev/null; then echo "✅ Instalado (gtk4paintablesink)"; else echo "❌ No instalado"; fi)"
     echo "  - Enlace PipeWire:     $(if dpkg -s gstreamer1.0-pipewire &>/dev/null; then echo "✅ Instalado (pipewiresink)"; else echo "❌ No instalado"; fi)"
     echo "  - GStreamer Tools:     $(if command -v gst-inspect-1.0 &>/dev/null; then echo "✅ Instalado (gstreamer1.0-tools)"; else echo "❌ No instalado"; fi)"
 
     echo "-----------------------------------------------------------------"
-    echo "• Miniaturas e Imágenes en GNOME 48 (Nautilus & Loupe):"
-    echo "  - Glycin Loaders:      $(if dpkg -s glycin-loaders &>/dev/null; then echo "✅ Instalado ( Loupe sandboxed image decoding )"; else echo "❌ No instalado"; fi)"
+    echo "• Miniaturas e Imágenes en KDE Plasma 6 (Dolphin & Gwenview):"
+    echo "  - FFmpegThumbs (KDE):  $(if dpkg -s ffmpegthumbs &>/dev/null; then echo "✅ Instalado (miniaturas de vídeo en Dolphin)"; else echo "❌ No instalado"; fi)"
+    echo "  - KIO Extras (KDE):    $(if dpkg -s kio-extras &>/dev/null; then echo "✅ Instalado (soporte de miniaturas KIO)"; else echo "❌ No instalado"; fi)"
     echo "  - FFmpeg Thumbnailer:  $(if command -v ffmpegthumbnailer &>/dev/null; then echo "✅ Instalado (miniaturas de vídeo rápidas)"; else echo "❌ No instalado"; fi)"
-    echo "  - Soporte HEIF / AVIF: $(if dpkg -s heif-gdk-pixbuf &>/dev/null && dpkg -s heif-thumbnailer &>/dev/null; then echo "✅ Instalado (heif-gdk-pixbuf + thumbnailer)"; else echo "❌ No instalado"; fi)"
-    echo "  - Soporte WebP:        $(if dpkg -s webp-pixbuf-loader &>/dev/null; then echo "✅ Instalado (webp-pixbuf-loader)"; else echo "❌ No instalado"; fi)"
+    echo "  - Soporte HEIF / AVIF: $(if dpkg -s heif-thumbnailer &>/dev/null && command -v avifenc &>/dev/null; then echo "✅ Instalado (heif-thumbnailer + libavif-bin)"; elif dpkg -s heif-thumbnailer &>/dev/null; then echo "✅ Instalado (heif-thumbnailer)"; else echo "❌ No instalado"; fi)"
 
     echo "-----------------------------------------------------------------"
     echo "• Servidor de Audio PipeWire 1.4 & Bluetooth SPA:"
@@ -226,10 +216,10 @@ show_status() {
 }
 
 # ------------------------------------------------------------------------------
-# 3. INSTALACIÓN DE CÓDECS, MINIATURAS GNOME Y ACELERACIÓN HW (VA-API / VULKAN)
+# 3. INSTALACIÓN DE CÓDECS, MINIATURAS KDE Y ACELERACIÓN HW (VA-API / VULKAN)
 # ------------------------------------------------------------------------------
 install_codecs() {
-    echo "🎵 [1/3] Instalando suite de códecs, miniaturas GNOME 48 y aceleración VA-API Wayland..."
+    echo "🎵 [1/3] Instalando suite de códecs, miniaturas Dolphin y aceleración VA-API Wayland..."
 
     # Asegurar componentes contrib, non-free y non-free-firmware en Debian 13 (deb822 y clásico)
     if [ -f /etc/apt/sources.list.d/debian.sources ]; then
@@ -257,15 +247,10 @@ install_codecs() {
         gstreamer1.0-plugins-ugly \
         gstreamer1.0-libav \
         gstreamer1.0-gl \
-        gstreamer1.0-gtk4 \
         gstreamer1.0-pipewire \
         gstreamer1.0-vaapi \
         gstreamer1.0-tools \
-        glycin-loaders \
         ffmpegthumbnailer \
-        totem \
-        webp-pixbuf-loader \
-        heif-gdk-pixbuf \
         heif-thumbnailer \
         libavif-bin \
         mesa-va-drivers \
@@ -303,7 +288,7 @@ EOF
         [ -x "$script_dir/intel-setup.sh" ] && bash "$script_dir/intel-setup.sh" --env
     fi
 
-    # Limpiar caché de miniaturas fallidas para que Nautilus regenere con ffmpegthumbnailer / HEIF / WebP
+    # Limpiar caché de miniaturas fallidas para que Dolphin regenere con ffmpegthumbs / HEIF
     if [ -d "$USER_HOME/.cache/thumbnails/fail" ]; then
         run_as_user rm -rf "$USER_HOME/.cache/thumbnails/fail"
     fi
@@ -315,67 +300,14 @@ EOF
 # 4. INSTALACIÓN Y OPTIMIZACIÓN DE REPRODUCTORES KDE PLASMA WAYLAND
 # ------------------------------------------------------------------------------
 install_players() {
-    echo "🎬 [2/3] Instalando y optimizando reproductores nativos para KDE Plasma Wayland..."
+    echo "🖼️ [2/3] Verificando visor de imágenes y miniaturas nativas de KDE Plasma Wayland..."
     $SUDO apt-get update -qq
     $SUDO env DEBIAN_FRONTEND=noninteractive apt-get install -y \
         gwenview \
         ffmpegthumbs \
-        kio-extras \
-        mpv \
-        vlc 2>/dev/null || true
-    $SUDO env DEBIAN_FRONTEND=noninteractive apt-get install -y haruna 2>/dev/null || true
+        kio-extras 2>/dev/null || true
 
-    # Configuración de alto rendimiento de MPV para Wayland y PipeWire
-    local mpv_config_dir="$USER_HOME/.config/mpv"
-    run_as_user mkdir -p "$mpv_config_dir"
-
-    echo "⚙️ Aplicando perfil óptimo de MPV para KDE Wayland (gpu-next + Vulkan + VA-API + PipeWire)..."
-    cat <<'EOF' | run_as_user tee "$mpv_config_dir/mpv.conf" > /dev/null
-# ==============================================================================
-# mpv.conf - Perfil genérico optimizado para Wayland + Vulkan + VA-API + PipeWire
-# Compatible con cualquier GPU AMD o Intel en Golden Dog Linux (Debian 13)
-# ==============================================================================
-
-# Motor de vídeo sobre Wayland + Vulkan (RADV/ANV)
-vo=gpu-next
-gpu-api=vulkan
-gpu-context=waylandvk
-hwdec=vaapi
-hwdec-codecs=all
-
-# Gestión de color y DMABUF nativo en Wayland
-target-colorspace-hint=yes
-
-# Servidor de audio PipeWire nativo de baja latencia
-ao=pipewire
-volume=100
-volume-max=150
-
-# Calidad y fluidez de reproducción
-profile=high-quality
-video-sync=display-resample
-interpolation=no
-deband=no
-
-# Interfaz OSD moderna y limpia
-osc=yes
-osd-bar=no
-border=yes
-keep-open=yes
-save-position-on-quit=yes
-
-# Idiomas preferidos de audio y subtítulos
-alang=es,spa,en,eng
-slang=es,spa,en,eng
-sub-auto=fuzzy
-
-# Capturas de pantalla en PNG sin pérdida
-screenshot-format=png
-screenshot-high-bit-depth=yes
-screenshot-directory=~/Pictures
-EOF
-
-    echo "  ✅ Reproductores KDE Plasma Wayland (Gwenview, Haruna/MPV, VLC) listos."
+    echo "  ✅ Visor nativo KDE (Gwenview) y miniaturas (ffmpegthumbs) listos (sin reproductores de audio/vídeo adicionales)."
 }
 
 # ------------------------------------------------------------------------------
@@ -396,12 +328,6 @@ setup_flatpak() {
 
     # Registrar Flathub para el usuario actual (idempotente)
     run_as_user flatpak remote-add --user --if-not-exists flathub https://dl.flathub.org/repo/flathub.flatpakrepo 2>/dev/null || true
-
-    # Instalar VLC vía Flatpak solo si no está presente en APT ni en Flatpak
-    if ! dpkg -s vlc &>/dev/null && ! flatpak list 2>/dev/null | grep -qi "org.videolan.VLC"; then
-        echo "🚀 Instalando reproductor VLC desacoplado vía Flatpak..."
-        $SUDO flatpak install -y --noninteractive flathub org.videolan.VLC 2>/dev/null || true
-    fi
 
     echo "  ✅ Integración de Flatpak, portales XDG de KDE y Flathub verificada."
 }
@@ -432,7 +358,7 @@ case "${1:-}" in
         ;;
     "")
         echo "================================================================="
-        echo "🎬 CONFIGURANDO SUITE MULTIMEDIA Y WAYLAND EN DEBIAN 13 (GNOME)"
+        echo "🎬 CONFIGURANDO SUITE MULTIMEDIA Y WAYLAND EN DEBIAN 13 (KDE PLASMA 6)"
         echo "================================================================="
         install_codecs
         install_players
@@ -440,7 +366,7 @@ case "${1:-}" in
         echo ""
         show_status
         echo "================================================================="
-        echo "✅ Configuración multimedia para Debian 13 GNOME completada."
+        echo "✅ Configuración multimedia para Debian 13 KDE Plasma 6 completada."
         echo "================================================================="
         ;;
     *)

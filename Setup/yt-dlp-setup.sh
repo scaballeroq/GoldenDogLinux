@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # ==============================================================================
 # yt-dlp-setup.sh - Instalación, Optimización y Diagnóstico de yt-dlp y FFmpeg
-# Sistema: Debian GNU/Linux | Escritorio: GNOME Shell (Wayland)
+# Sistema: Debian GNU/Linux | Escritorio: KDE Plasma 6 (Wayland)
 # ==============================================================================
 # Características:
 # - Stack multimedia de alto rendimiento: yt-dlp + FFmpeg oficial + aria2.
@@ -198,7 +198,7 @@ ${BOLD}Características configuradas:${NC}
   • ${BOLD}Metadatos & Tags:${NC}   Mutagen y FFmpeg para incrustar carátulas, capítulos y metadatos en MP4/M4A/MP3/Opus.
   • ${BOLD}Aceleración:${NC}       Descargas multihilo concurrentes con fragmentos paralelos.
   • ${BOLD}Motor JavaScript:${NC}   Deno (gestionado con Mise) para resolver los retos n-sig/n-token de YouTube.
-  • ${BOLD}Configuración:${NC}      Genera $CONFIG_FILE con opciones optimizadas para Debian GNOME.
+  • ${BOLD}Configuración:${NC}      Genera $CONFIG_FILE con opciones optimizadas para Debian KDE Plasma 6.
 
 ${BOLD}Ejemplos:${NC}
   $0                    # Instalación y verificación estándar idempotente
@@ -208,7 +208,7 @@ ${BOLD}Ejemplos:${NC}
 
 show_status() {
     echo -e "${CYAN}=================================================================${NC}"
-    echo -e "${BOLD}🔍 ESTADO MULTIMEDIA YT-DLP - DEBIAN GNU/LINUX (GNOME)${NC}"
+    echo -e "${BOLD}🔍 ESTADO MULTIMEDIA YT-DLP - DEBIAN GNU/LINUX (KDE PLASMA 6)${NC}"
     echo -e "${CYAN}=================================================================${NC}"
 
     # 1. yt-dlp
@@ -317,7 +317,7 @@ generate_config() {
 
     cat << EOF | run_as_user tee "$CONFIG_FILE" > /dev/null
 # =============================================================================
-# CONFIGURACIÓN GLOBAL DE YT-DLP - DEBIAN GNU/LINUX (GNOME SHELL WAYLAND)
+# CONFIGURACIÓN GLOBAL DE YT-DLP - DEBIAN GNU/LINUX (KDE PLASMA 6 WAYLAND)
 # =============================================================================
 
 # --- Metadatos, Portadas y Capítulos ---
@@ -334,7 +334,7 @@ generate_config() {
 # --- Formato y Contenedor Predeterminado ---
 --merge-output-format mp4/mkv
 
-# --- Integración con Gestor de Archivos (Nautilus) ---
+# --- Integración con Gestor de Archivos (Dolphin) ---
 --no-mtime
 --windows-filenames
 

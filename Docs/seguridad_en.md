@@ -2,7 +2,7 @@
 sidebar_position: 1
 ---
 
-# Security Hardening and Firewall in Debian GNU/Linux (GNOME Shell)
+# Security Hardening and Firewall in Debian GNU/Linux (KDE Plasma 6)
 
 This guide details the security, network, and system hardening automated in [`Setup/seguridad.sh`](../Setup/seguridad.sh), optimized for a local development workstation on **Golden Dog Linux (Debian GNU/Linux)**.
 
@@ -20,8 +20,8 @@ Per monorepo master rules, **UFW is permanently disabled** and **Firewalld** (`f
    sudo systemctl enable --now firewalld
    ```
 
-2. **Rules for GNOME Shell, GSConnect, and Development**:
-   - **GSConnect (`kdeconnect` service in Firewalld)**: Enables notification sync, media controls, shared clipboard, and file transfer without any KDE/Qt libraries.
+2. **Rules for KDE Plasma 6, KDE Connect, and Development**:
+   - **KDE Connect (`kdeconnect` service in Firewalld)**: Enables notification sync, media controls, shared clipboard, and file transfer between your phone and PC.
    - **Local Discovery (`mdns`)**: Enables printer discovery (HP LaserJet) and local network services.
    - **Remote Access (`ssh`)**: Maintains secure SSH access.
    - **Virtual Machines & Containers**:

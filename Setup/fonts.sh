@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # ==============================================================================
 # fonts.sh - Instalación, Verificación y Gestión de Fuentes de Desarrollo (Nerd Fonts)
-# Sistema: Debian GNU/Linux | Escritorio: GNOME Shell (Wayland)
+# Sistema: Debian GNU/Linux | Escritorio: KDE Plasma 6 (Wayland)
 # ==============================================================================
 # Características:
 # - Soporte para fuentes de desarrollo con ligaduras y glifos Nerd Fonts:
@@ -259,7 +259,7 @@ update_cache() {
 # ------------------------------------------------------------------------------
 show_status() {
     echo "================================================================="
-    echo "🔤 ESTADO DE FUENTES NERD FONTS (Debian GNOME Wayland)"
+    echo "🔤 ESTADO DE FUENTES NERD FONTS (Debian KDE Plasma 6 Wayland)"
     echo "================================================================="
     echo "👤 Usuario:         $REAL_USER"
     echo "📁 Directorio:      $FONT_DIR"
@@ -315,7 +315,7 @@ show_help() {
 Uso: $(basename "$0") [OPCIONES] [FUENTES...]
 
 Instalación, verificación y gestión optimizada de fuentes de desarrollo (Nerd Fonts)
-para Debian GNU/Linux y GNOME Shell (Wayland).
+para Debian GNU/Linux y KDE Plasma 6 (Wayland).
 
 OPCIONES:
   -s, --status         Muestra el estado detallado de las fuentes instaladas y fontconfig.

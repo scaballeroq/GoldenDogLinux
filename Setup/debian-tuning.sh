@@ -9,7 +9,7 @@
 #   - Monitoreo masivo de archivos (Inotify 1M watches) para IDEs y compiladores
 #   - Límites de descriptores de archivos (1M nofile) y tareas Systemd (TasksMax=infinity)
 #   - Optimización de red con TCP BBR + FQ (módulo kernel persistente en modules-load.d)
-#   - Ajuste de GNOME Tracker 3 Miner (exclusiones de desarrollo y ahorro en batería)
+#   - Ajuste de KDE Baloo File Indexer (exclusiones de desarrollo)
 #   - Servicios de mantenimiento: fstrim.timer para SSD NVMe e irqbalance multi-core
 #   - Opciones CLI: --status / -s, --sysctl, --limits, --tracker, --zram, --services,
 #                   --no-install, --help / -h
@@ -84,7 +84,7 @@ Opciones principales:
   --status, -s           Muestra el estado actual de sysctl, límites, ZRAM, Tracker y servicios.
   --sysctl               Aplica únicamente la configuración de Kernel Sysctl y TCP BBR.
   --limits               Aplica límites de descriptores y memoria (limits.d y systemd).
-  --tracker              Configura exclusiones en GNOME Tracker 3 para proyectos de desarrollo.
+  --baloo                Configura exclusiones en KDE Baloo para proyectos de desarrollo.
   --zram                 Verifica y aplica la configuración óptima de ZRAM (zstd al 50% de RAM).
   --services             Habilita servicios de mantenimiento (fstrim.timer e irqbalance).
   --no-install           Aplica ajustes de configuración sin descargar paquetes adicionales.
@@ -97,7 +97,7 @@ Optimizaciones incluidas:
   2. Límites de Proceso: Descriptores de archivo (1M nofile), memlock unlimited,
                          systemd system/user DefaultTasksMax=infinity.
   3. Systemd Timeouts:   DefaultTimeoutStopSec=10s para apagados y reinicios rápidos sin bloqueos.
-  4. GNOME Tracker 3:    Exclusiones de node_modules, .git, .venv y ahorro de batería al desconectar AC.
+  4. KDE Baloo:          Exclusiones de node_modules, .git, .venv y compilaciones.
   5. Memoria ZRAM:       Compresión ZSTD al 50% de RAM con prioridad máxima (100).
   6. Servicios NVMe:     fstrim.timer (mantenimiento SSD/NVMe) e irqbalance (reparto multi-core).
 EOF

@@ -1,7 +1,7 @@
 #!/bin/bash
 # =============================================================================
 # podman-utils.sh - CLI para Gestion de Proyectos y Contenedores Quadlets
-# Ubuntu Linux (GNOME Shell + Wayland)
+# Debian Linux (KDE Plasma 6 + Wayland)
 # =============================================================================
 
 if [[ "${BASH_SOURCE[0]}" == "${0}" ]]; then
@@ -548,7 +548,7 @@ cmd_quadlet_reload() {
 # =============================================================================
 cmd_doctor() {
     echo "================================================================="
-    echo "🩺 DIAGNÓSTICO DE PODMAN ROOTLESS - UBUNTU LINUX (GNOME SHELL)"
+    echo "🩺 DIAGNÓSTICO DE PODMAN ROOTLESS - DEBIAN LINUX (KDE PLASMA 6)"
     echo "   Golden Dog Linux (Debian 13)"
     echo "================================================================="
 

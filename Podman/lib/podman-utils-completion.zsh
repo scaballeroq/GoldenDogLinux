@@ -1,6 +1,6 @@
 #compdef podman-utils
 # =============================================================================
-# Zsh Completion for podman-utils (Ubuntu Linux + GNOME Shell)
+# Zsh Completion for podman-utils (Debian Linux + KDE Plasma 6)
 # =============================================================================
 
 _podman_utils_get_repo_dir() {

@@ -2,9 +2,9 @@
 sidebar_position: 2
 ---
 
-# Configuración del Sistema en Debian GNU/Linux (GNOME Shell Wayland)
+# Configuración del Sistema en Debian GNU/Linux (KDE Plasma 6 Wayland)
 
-Esta guía detalla el proceso de configuración base, optimización de la terminal, instalación de herramientas esenciales, soporte multimedia y personalización del entorno de usuario aplicados a un sistema **Debian GNU/Linux** con **GNOME Shell**.
+Esta guía detalla el proceso de configuración base, optimización de la terminal, instalación de herramientas esenciales, soporte multimedia y personalización del entorno de usuario aplicados a un sistema **Debian GNU/Linux** con **KDE Plasma 6**.
 
 Las configuraciones están automatizadas a través de los scripts ubicados en la carpeta `Setup` y orquestadas mediante el `justfile`.
 
@@ -44,8 +44,8 @@ Configura Kitty con:
 - Opacidad al 75% con desenfoque de fondo (*blur 32*) acelerado por GPU Mesa RADV.
 - Esquema de color Catppuccin Mocha (#181825).
 - Tipografía JetBrainsMono Nerd Font.
-- Atajo global `Ctrl+Alt+T` en GNOME Shell.
-- Script contextual en Nautilus para "Abrir en Kitty".
+- Atajo global `Ctrl+Alt+T` en KDE Plasma 6.
+- Menú contextual en Dolphin (KIO ServiceMenu) para "Abrir en Kitty".
 
 ### Fuentes de Desarrollo (Nerd Fonts)
 Descarga e instala fuentes optimizadas para programación y glifos de terminal:
@@ -56,14 +56,13 @@ Muestra información estética del hardware y sistema. Soporta temas oficiales d
 
 ---
 
-## 3. Escritorio GNOME Shell y GSConnect (`gnome-settings.sh` y `gsconnect.sh`)
+## 3. Escritorio KDE Plasma 6 y KDE Connect (`kde-settings.sh` y `kdeconnect.sh`)
 
-- **Modo Oscuro**: Aplica `prefer-dark` y tema `Yaru-dark`.
-- **Luz Nocturna**: Temperatura cálida a 4000K para descanso visual.
-- **Ventanas**: Botones minimizar y maximizar visibles.
-- **Nautilus Scripts**: Menú contextual con accesos a Kitty, Google Antigravity y VS Code.
-- **GSConnect**: Integración nativa de KDE Connect sin dependencias de KDE/Qt, con reglas en Firewalld (puertos 1714-1764 TCP/UDP).
-- **Extensiones**: Soporte para Dash to Dock, AppIndicator, Blur my Shell y Tiling Shell.
+- **Tema y Modo Oscuro**: Configuración de tema oscuro y apariencia de Plasma 6.
+- **Luz Nocturna**: Temperatura cálida para descanso visual.
+- **Ventanas**: Controles de ventana y comportamiento de KWin Wayland.
+- **Dolphin ServiceMenus**: Menú contextual con accesos a Kitty, Ghostty, Google Antigravity y VS Code.
+- **KDE Connect**: Integración nativa con el teléfono en KDE Plasma 6, con reglas en Firewalld (puertos 1714-1764 TCP/UDP).
 
 ---
 
@@ -80,9 +79,8 @@ Muestra información estética del hardware y sistema. Soporta temas oficiales d
 
 ```bash
 just post-install        # Despachador de post-instalación
-just gnome-setup         # Configura entorno GNOME
-just gnome-extensions    # Instala y activa extensiones
-just gsconnect           # Configura GSConnect y Firewalld
+just kde-setup           # Configura entorno KDE Plasma 6
+just kde-status          # Muestra el estado de la configuración KDE Plasma 6
 just shell               # Instala herramientas CLI modernas
 just kitty               # Configura terminal Kitty
 just fonts               # Instala fuentes Nerd Fonts

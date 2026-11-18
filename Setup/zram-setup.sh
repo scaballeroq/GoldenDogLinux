@@ -2,7 +2,7 @@
 # ==============================================================================
 # zram-setup.sh - Configuración de ZRAM con compresión ZSTD para Debian Workstation
 # Sistema: Golden Dog Linux (Debian 13) | Optimizado para cualquier PC o portátil
-# Sistema: Debian GNU/Linux 13 (Trixie) | Entorno: GNOME Shell (Wayland)
+# Sistema: Debian GNU/Linux 13 (Trixie) | Entorno: KDE Plasma 6 (Wayland)
 # ==============================================================================
 # Características:
 #   - Swap comprimida en memoria RAM utilizando 'zram-tools' y algoritmo ZSTD.

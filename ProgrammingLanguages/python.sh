@@ -1,17 +1,17 @@
 #!/bin/bash
 # ==============================================================================
 # python.sh - Verificación de Python Nativo (Debian) y Gestor 'uv' vía Mise
-# Debian Workstation (GNOME Shell + Wayland / Systemd User Environment)
+# Debian Workstation (KDE Plasma 6 + Wayland / Systemd User Environment)
 # ==============================================================================
 # Principio de Diseño:
 # - Python NO se instala de forma global a través de gestores de versiones (Mise/Pyenv)
 #   para garantizar la integridad absoluta de las herramientas del sistema Debian
-#   (Firewalld, APT, systemd, CUPS/HPLIP, GNOME Shell).
+#   (Firewalld, APT, systemd, CUPS/HPLIP, KDE Plasma 6).
 # - Se valida que el sistema tenga instalado y saludable el Python nativo de Debian.
 # - Para proyectos que requieran versiones específicas de Python (3.11, 3.12, etc.),
 #   se utiliza 'uv' de forma aislada por proyecto (per-project) sin tocar el sistema.
 # - Optimización con UV_LINK_MODE=copy para compatibilidad con snapshots y clonado.
-# - Integración con GNOME Shell (environment.d) y Shells (Bash predeterminado / Zsh).
+# - Integración con KDE Plasma 6 (environment.d) y Shells (Bash predeterminado / Zsh).
 # - Generación automática de autocompletados nativos para 'uv' y 'uvx'.
 # - Comandos CLI: --status / -s, --update / -u, --help / -h.
 # ==============================================================================
@@ -61,7 +61,7 @@ show_help() {
 Filosofía:
   • El sistema operativo utiliza el Python nativo de Debian (/usr/bin/python3).
   • Python NO se instala globalmente en Mise para no romper herramientas de sistema
-    (Firewalld, APT, GNOME Shell).
+    (Firewalld, APT, KDE Plasma 6).
   • Los proyectos que necesiten versiones específicas de Python se gestionan
     de forma aislada mediante 'uv' (ej: 'uv init', 'uv venv --python 3.12').
 
@@ -141,7 +141,7 @@ show_status() {
     echo "   • Gestor uv:            $uv_status"
     echo "   • Runner uvx:           $uvx_status"
     echo "   • Modo enlace:          UV_LINK_MODE=copy (compatible y portable)"
-    echo "   • Entorno GNOME Shell:  $(if [ -f "$USER_HOME/.config/environment.d/10-python.conf" ]; then echo "✅ Configurado"; else echo "ℹ️ No presente"; fi)"
+    echo "   • Entorno KDE Plasma 6:  $(if [ -f "$USER_HOME/.config/environment.d/10-python.conf" ]; then echo "✅ Configurado"; else echo "ℹ️ No presente"; fi)"
     echo "   • Autocompletado Bash:  $(if [ -f "$USER_HOME/.local/share/bash-completion/completions/uv" ]; then echo "✅ uv & uvx activos"; else echo "ℹ️ No generado"; fi)"
     echo "================================================================="
 }
@@ -226,7 +226,7 @@ run_as_user mise use --global uv@latest
 run_as_user mise reshim 2>/dev/null || true
 
 # ------------------------------------------------------------------------------
-# 7. INTEGRACIÓN CON GNOME SHELL, SHELLS Y AUTOCOMPLETADOS
+# 7. INTEGRACIÓN CON KDE PLASMA 6, SHELLS Y AUTOCOMPLETADOS
 # ------------------------------------------------------------------------------
 echo "ℹ️ [4/4] Configurando variables de entorno y autocompletados..."
 
@@ -236,9 +236,9 @@ BASH_COMPLETIONS_DIR="$USER_HOME/.local/share/bash-completion/completions"
 
 run_as_user mkdir -p "$ENV_DIR" "$BASHRC_D" "$BASH_COMPLETIONS_DIR"
 
-# 7.1. Integración con sesión gráfica GNOME Shell (systemd user)
+# 7.1. Integración con sesión gráfica KDE Plasma 6 (systemd user)
 cat << 'EOF' | run_as_user tee "$ENV_DIR/10-python.conf" > /dev/null
-# Integración de Python & uv para Wayland / GNOME Shell
+# Integración de Python & uv para Wayland / KDE Plasma 6
 PYTHONUNBUFFERED=1
 UV_LINK_MODE=copy
 EOF
@@ -289,12 +289,12 @@ UV_VER=$(run_as_user mise exec uv@latest -- uv --version 2>/dev/null || echo "uv
 PIP_VER=$(python3 -m pip --version 2>/dev/null | awk '{print $2}' || echo "pip del sistema")
 
 echo "================================================================="
-echo "✅ Entorno Python & uv listo para Debian Workstation y GNOME:"
+echo "✅ Entorno Python & uv listo para Debian Workstation y KDE Plasma 6:"
 echo "  • Python Sistema: $PYTHON_VER (/usr/bin/python3 nativo)"
 echo "  • Gestor pip:     v$PIP_VER (paquetes nativos Debian)"
 echo "  • Gestor uv:      $UV_VER (para proyectos y entornos aislados)"
 echo "  • Modo enlace:    UV_LINK_MODE=copy"
-echo "  • Entorno GNOME:  ~/.config/environment.d/10-python.conf"
+echo "  • Entorno KDE:  ~/.config/environment.d/10-python.conf"
 echo "  • Shells:         Bash (predeterminada)$([ -f "$USER_HOME/.zshrc" ] && echo " & Zsh (compatible)") con autocompletados (uv / uvx)"
 echo "  • Proyectos:      Ejecuta './ProgrammingLanguages/python-uv-init.sh' para crear nuevos entornos"
 echo "================================================================="

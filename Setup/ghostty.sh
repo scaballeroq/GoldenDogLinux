@@ -6,13 +6,13 @@
 # ==============================================================================
 # Características:
 # - Esquema de color oscuro oficial Catppuccin Mocha nativo de Ghostty.
-# - Aceleración por GPU nativa en Wayland con soporte GTK4 y Libadwaita.
+# - Aceleración por GPU nativa en Wayland (KDE Plasma 6 / KWin).
 # - Opacidad configurable (80%) con desenfoque nativo (background-blur = true).
 # - Tipografía JetBrainsMono Nerd Font con ligaduras completas y fallbacks.
 # - Pestañas estilo Adwaita (tabs) y decoración nativa Wayland.
 # - Cursor moderno tipo barra (bar) con parpadeo suave.
 # - Scrollback ampliado (10.000.000 bytes) y soporte táctil multitáctil para touchpad.
-# - Integración contextual completa en Nautilus (Extensión Python 1er nivel + Script).
+# - Integración contextual completa en Dolphin (KIO ServiceMenu 'Abrir en Ghostty').
 # - Opciones CLI: --status / -s, --config-only / --no-install, --default-terminal,
 #   --bind-ctrl-alt-t, --help / -h.
 # ==============================================================================
@@ -95,11 +95,11 @@ Uso:
 Opciones principales:
   (sin argumentos)        Instala Ghostty mediante el instalador oficial/comunitario si no
                           está presente, genera la configuración Catppuccin Mocha y aplica
-                          la integración con GNOME y Nautilus.
+                          la integración con KDE Plasma 6 y Dolphin.
   -s, --status            Muestra el estado detallado de Ghostty, versión, fuentes y atajos.
   --no-install, --config  Genera y valida la configuración en ~/.config/ghostty/ sin invocar
                           instaladores ni requerir privilegios de superusuario (sudo).
-  --bind-ctrl-alt-t       Asigna explícitamente el atajo global Ctrl+Alt+T a Ghostty en GNOME.
+  --bind-ctrl-alt-t       Asigna explícitamente el atajo global Ctrl+Alt+T a Ghostty en KDE Plasma.
   --default-terminal      Establece Ghostty como la terminal predeterminada en update-alternatives.
   -h, --help              Muestra este mensaje de ayuda.
 
@@ -107,9 +107,9 @@ Características aplicadas:
   • Instalador oficial:   curl -fsSL https://raw.githubusercontent.com/mkasberg/ghostty-ubuntu/HEAD/install.sh
   • Tema:                 Catppuccin Mocha oficial integrado.
   • Tipografía:           JetBrainsMono Nerd Font (ligaduras completas y glifos).
-  • Efectos Wayland:      Opacidad 80% con desenfoque (blur nativo) y GTK4/Adwaita.
+  • Efectos Wayland:      Opacidad 80% con desenfoque (blur nativo) y decoración nativa.
   • Cursor & Ventanas:    Cursor bar parpadeante, sin confirmación al cerrar y márgenes balanceados.
-  • Integración Nautilus: Extensión Python de 1er nivel ("Abrir en Ghostty") y script auxiliar.
+  • Integración Dolphin:  KIO ServiceMenu ("Abrir en Ghostty").
 EOF
 }
 
@@ -228,7 +228,7 @@ setup_config() {
 
     cat <<EOF | run_as_user tee "$config_file" > /dev/null
 # =============================================================================
-# GHOSTTY CONFIGURATION - DEBIAN 13 WORKSTATION (GNOME SHELL WAYLAND)
+# GHOSTTY CONFIGURATION - DEBIAN 13 WORKSTATION (KDE PLASMA 6 WAYLAND)
 # Sistema: Golden Dog Linux (Debian 13 Trixie) | Wayland (Mesa OpenGL)
 # Tema: Catppuccin Mocha con Transparencia, Blur nativo y Tipografía Nerd Font
 # =============================================================================
@@ -258,7 +258,7 @@ confirm-close-surface = false
 cursor-style = bar
 cursor-style-blink = true
 
-# --- Integración GTK / GNOME Wayland ---
+# --- Integración GTK / Wayland ---
 window-decoration = auto
 gtk-titlebar = true
 gtk-tabs-location = top
@@ -371,7 +371,7 @@ case "${1:-}" in
         ;;
     --bind-ctrl-alt-t)
         echo "==========================================================="
-        echo "⌨️ REASIGNANDO CTRL+ALT+T A GHOSTTY EN GNOME SHELL"
+        echo "⌨️ REASIGNANDO CTRL+ALT+T A GHOSTTY EN KDE PLASMA 6"
         echo "==========================================================="
         setup_keybinding true
         exit 0
@@ -382,7 +382,7 @@ case "${1:-}" in
         ;;
     "")
         echo "==========================================================="
-        echo "👻 CONFIGURANDO GHOSTTY TERMINAL EN DEBIAN 13 (GNOME WAYLAND)"
+        echo "👻 CONFIGURANDO GHOSTTY TERMINAL EN DEBIAN 13 (KDE PLASMA 6 WAYLAND)"
         echo "==========================================================="
         install_ghostty
         setup_config

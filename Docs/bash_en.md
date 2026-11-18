@@ -89,7 +89,7 @@ Includes helper shell functions to simplify recurring tasks:
 * **`up <N>`**: Steps up `N` directory levels easily (e.g. `up 3`).
 * **`duh`**: Displays folder sizes in the current directory, sorted by weight on disk.
 * **Multimedia Processing**:
-  - `webm2mp4`: Converts WebM screen recordings (common in GNOME) to standard MP4 files.
+  - `webm2mp4`: Converts WebM screen recordings (common in Wayland) to standard MP4 files.
   - `img2jpg` / `img2png`: Rapidly converts and optimizes image formats via console.
 
 ---
@@ -111,12 +111,12 @@ Utilities to automate media extraction:
 
 ---
 
-## 7. GNOME Environment (`gnome_settings.sh`)
+## 7. KDE Plasma 6 Environment (`kde_settings.sh`)
 
-Applies automatic configurations for the GNOME desktop environment:
+Applies automatic configurations for the KDE Plasma 6 desktop environment:
 - Enables Night Light (blue-light filter).
-- Configures 24-hour time format and full date on the top panel.
-- Optimizes animation speeds and quick extension management.
+- Configures 24-hour time format and date on the panel.
+- Optimizes KWin animation speeds.
 
 ---
 

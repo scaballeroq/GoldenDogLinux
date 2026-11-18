@@ -1,7 +1,7 @@
 #!/bin/bash
 # ==============================================================================
 # nodejs.sh - Instalación y Optimización de Node.js (Última LTS) vía Mise
-# Debian Workstation (GNOME Shell + Wayland / Systemd User Environment)
+# Debian Workstation (KDE Plasma 6 + Wayland / Systemd User Environment)
 # ==============================================================================
 # Características:
 # - Despliegue idempotente y rootless en espacio de usuario vía Mise.
@@ -9,7 +9,7 @@
 #   llamadas innecesarias a 'sudo' ni bloqueos del gestor APT si ya existen.
 # - Optimización multinúcleo para compilación de módulos nativos C++ (node-gyp).
 # - Habilitación de Corepack (pnpm, yarn) con descargas desatendidas.
-# - Integración nativa con GNOME Shell (environment.d) y Shells (Bash / Zsh).
+# - Integración nativa con KDE Plasma 6 (environment.d) y Shells (Bash / Zsh).
 # - Generación automática de autocompletados nativos para npm y pnpm.
 # - Comandos CLI: --status / -s, --update / -u, --help / -h.
 # ==============================================================================
@@ -68,7 +68,7 @@ Uso:
 
 Opciones:
   (sin argumentos)    Instala/actualiza Node.js LTS, Corepack (pnpm/yarn), optimizaciones
-                      y genera autocompletados e integración con GNOME Shell.
+                      y genera autocompletados e integración con KDE Plasma 6.
   --status, -s        Muestra el diagnóstico de Node.js, npm, pnpm, yarn, mise y node-gyp.
   --update, -u        Fuerza la actualización de Node.js LTS y refresca Corepack y shims.
   --help, -h          Muestra este mensaje de ayuda.
@@ -111,7 +111,7 @@ show_status() {
     echo "• Entorno nativo node-gyp: $nodegyp_status"
     echo "• Núcleos para compilar:   $NPROC hilos paralelos"
     echo "• Directorio Shims Mise:   $USER_HOME/.local/share/mise/shims"
-    echo "• Entorno GNOME Shell:     $(if [ -f "$USER_HOME/.config/environment.d/10-nodejs.conf" ]; then echo "✅ Configurado"; else echo "ℹ️ No presente"; fi)"
+    echo "• Entorno KDE Plasma 6:     $(if [ -f "$USER_HOME/.config/environment.d/10-nodejs.conf" ]; then echo "✅ Configurado"; else echo "ℹ️ No presente"; fi)"
     echo "• Autocompletado Bash:     $(if [ -f "$USER_HOME/.local/share/bash-completion/completions/npm" ]; then echo "✅ npm & pnpm activos"; else echo "ℹ️ No generado"; fi)"
     echo "================================================================="
 }
@@ -195,9 +195,9 @@ run_as_user mise exec node@lts -- corepack enable 2>/dev/null || true
 run_as_user mise reshim 2>/dev/null || true
 
 # ------------------------------------------------------------------------------
-# 8. INTEGRACIÓN CON GNOME SHELL, SHELLS Y AUTOCOMPLETADOS
+# 8. INTEGRACIÓN CON KDE PLASMA 6, SHELLS Y AUTOCOMPLETADOS
 # ------------------------------------------------------------------------------
-echo "ℹ️ [4/4] Configurando variables de entorno, sesión GNOME y autocompletados..."
+echo "ℹ️ [4/4] Configurando variables de entorno, sesión KDE y autocompletados..."
 
 ENV_DIR="$USER_HOME/.config/environment.d"
 BASHRC_D="$USER_HOME/.bashrc.d"
@@ -205,9 +205,9 @@ BASH_COMPLETIONS_DIR="$USER_HOME/.local/share/bash-completion/completions"
 
 run_as_user mkdir -p "$ENV_DIR" "$BASHRC_D" "$BASH_COMPLETIONS_DIR"
 
-# 8.1. Integración con sesión gráfica GNOME Shell (systemd user)
+# 8.1. Integración con sesión gráfica KDE Plasma 6 (systemd user)
 cat << EOF | run_as_user tee "$ENV_DIR/10-nodejs.conf" > /dev/null
-# Node.js Environment Settings (GNOME Shell + Wayland)
+# Node.js Environment Settings (KDE Plasma 6 + Wayland)
 COREPACK_ENABLE_DOWNLOAD_PROMPT=0
 JOBS=$NPROC
 npm_config_jobs=$NPROC
@@ -260,13 +260,13 @@ PNPM_VER=$(run_as_user mise exec node@lts -- pnpm --version 2>/dev/null || echo 
 YARN_VER=$(run_as_user mise exec node@lts -- yarn --version 2>/dev/null || echo "disponible vía corepack")
 
 echo "================================================================="
-echo "✅ Node.js LTS configurado con éxito para Debian Workstation y GNOME:"
+echo "✅ Node.js LTS configurado con éxito para Debian Workstation y KDE Plasma 6:"
 echo "  • Node.js:      $NODE_VER (LTS)"
 echo "  • npm:          $NPM_VER"
 echo "  • pnpm:         $PNPM_VER (Corepack)"
 echo "  • yarn:         $YARN_VER (Corepack)"
 echo "  • Compilación:  node-gyp optimizado para $NPROC hilos paralelos"
-echo "  • Entorno GNOME:~/.config/environment.d/10-nodejs.conf"
+echo "  • Entorno KDE:~/.config/environment.d/10-nodejs.conf"
 echo "  • Shells:       Bash (predeterminada)$([ -f "$USER_HOME/.zshrc" ] && echo " & Zsh (compatible)") con autocompletados nativos"
 echo "  • Shims Mise:   $USER_HOME/.local/share/mise/shims"
 echo "================================================================="

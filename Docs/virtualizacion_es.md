@@ -2,13 +2,13 @@
 sidebar_position: 7
 ---
 
-# Entorno de Virtualización (KVM/QEMU) en Debian GNU/Linux (GNOME Shell)
+# Entorno de Virtualización (KVM/QEMU) en Debian GNU/Linux (KDE Plasma 6)
 
-Esta guía detalla la instalación, configuración y optimización del entorno de virtualización nativo presente en la carpeta `Virtualizacion/`, diseñado para **Debian GNU/Linux** y **GNOME Shell**.
+Esta guía detalla la instalación, configuración y optimización del entorno de virtualización nativo presente en la carpeta `Virtualizacion/`, diseñado para **Debian GNU/Linux** y **KDE Plasma 6**.
 
 El esquema utiliza el hipervisor **KVM** y el emulador **QEMU**, gestionados a través de **Libvirt**, ofreciendo dos interfaces principales:
 1. **Consola Web Cockpit** (`cockpit-machines` en `https://localhost:9090`).
-2. **Virt-Manager** para control avanzado de hardware y aceleración 3D VirGL en GNOME Shell Wayland.
+2. **Virt-Manager** para control avanzado de hardware y aceleración 3D VirGL en KDE Plasma 6 Wayland.
 
 ---
 

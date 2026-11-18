@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # ==============================================================================
 # firefox.sh - Instalación, Optimización y Diagnóstico de Mozilla Firefox Nativo
-# Sistema: Debian GNU/Linux 13 (Trixie) | Escritorio: GNOME Shell (Wayland)
+# Sistema: Debian GNU/Linux 13 (Trixie) | Escritorio: KDE Plasma 6 (Wayland)
 # Hardware: Genérico AMD / Intel (VA-API Wayland)
 # ==============================================================================
 # Características:
@@ -10,7 +10,7 @@
 #   - Pinning prioritario en APT (/etc/apt/preferences.d/mozilla) para evitar colisiones con ESR.
 #   - Sustitución limpia de Firefox ESR y versiones residuales de Snap.
 #   - Paquete de idioma español oficial (firefox-l10n-es-es).
-#   - Aceleración por hardware VA-API (Mesa radeonsi) y portales nativos GNOME Wayland.
+#   - Aceleración por hardware VA-API (Mesa radeonsi) y portales nativos KDE Plasma Wayland.
 #   - Políticas empresariales de sistema (/etc/firefox/policies/policies.json).
 #   - Opciones CLI: --status / -s, --install / -i, --update / -u, --wayland / -w,
 #                   --uninstall / -r, --help / -h.
@@ -102,15 +102,15 @@ ${BOLD}Opciones:${NC}
   -s, --status        Muestra diagnóstico detallado del repositorio, paquete, Wayland y VA-API.
   -i, --install       Fuerza la configuración del repositorio e instalación del navegador.
   -u, --update        Actualiza Firefox y su localización desde el repositorio oficial de Mozilla.
-  -w, --wayland       Aplica políticas de aceleración por GPU (VA-API Radeon) y portales XDG GNOME.
+  -w, --wayland       Aplica políticas de aceleración por GPU (VA-API Radeon) y portales XDG KDE.
   -r, --uninstall     Desinstala Firefox del sistema respetando los perfiles de usuario.
   -h, --help          Muestra este mensaje de ayuda.
 
-${BOLD}Ajustes incluidos en Debian 13 (Trixie / GNOME Shell Wayland):${NC}
+${BOLD}Ajustes incluidos en Debian 13 (Trixie / KDE Plasma 6 Wayland):${NC}
   • Repositorio APT:  packages.mozilla.org firmado con clave asc oficial de Mozilla.
   • Pinning APT:      Prioridad 1000 para garantizar versiones Rapid Release nativas sobre ESR.
   • Idioma:           Localización oficial en español (España) instalada e integrada.
-  • Wayland nativo:   Integración de portales XDG para selector de archivos nativo de GNOME.
+  • Wayland nativo:   Integración de portales XDG para selector de archivos nativo de KDE Plasma (Dolphin).
   • Aceleración HW:   VA-API habilitado para GPU AMD/Intel (decodificación 4K fluida)."
 }
 
@@ -271,7 +271,7 @@ remove_legacy() {
 }
 
 # ------------------------------------------------------------------------------
-# 6. ACELERACIÓN VA-API Y POLÍTICAS DE INTEGRACIÓN EN GNOME WAYLAND
+# 6. ACELERACIÓN VA-API Y POLÍTICAS DE INTEGRACIÓN EN KDE PLASMA WAYLAND
 # ------------------------------------------------------------------------------
 setup_wayland_vaapi() {
     require_root
@@ -420,7 +420,7 @@ case "${1:-}" in
         ;;
     "")
         echo -e "${CYAN}=================================================================${NC}"
-        echo -e "${BOLD}🚀 INSTALANDO Y OPTIMIZANDO MOZILLA FIREFOX EN DEBIAN 13 (GNOME)${NC}"
+        echo -e "${BOLD}🚀 INSTALANDO Y OPTIMIZANDO MOZILLA FIREFOX EN DEBIAN 13 (KDE PLASMA 6)${NC}"
         echo -e "${CYAN}=================================================================${NC}"
         install_firefox
         echo ""

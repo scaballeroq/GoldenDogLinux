@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # ==============================================================================
 # rust.sh - Instalación y Optimización de Rust (Rustup + Cargo + Toolchain)
-# Debian Workstation (Debian 13 Trixie / GNOME Shell Wayland)
+# Debian Workstation (Debian 13 Trixie / KDE Plasma 6 Wayland)
 # Sistema: Golden Dog Linux (Debian 13) | Entorno: Wayland
 # ==============================================================================
 # Características de Optimización:
@@ -18,7 +18,7 @@
 #   * rustfmt (formateador oficial de código)
 #   * rust-src (código fuente estándar para introspección y tipado en IDEs)
 # - Gestor binario 'cargo-binstall' para instalar herramientas de Cargo sin recompilar.
-# - Integración nativa con GNOME Shell (environment.d) y Shells (Bash / Zsh).
+# - Integración nativa con KDE Plasma 6 (environment.d) y Shells (Bash / Zsh).
 # - Generación automática de autocompletados nativos para rustup y cargo.
 # - Comandos CLI: --status / -s, --update / -u, --help / -h.
 # ==============================================================================
@@ -110,7 +110,7 @@ Características configuradas:
   • Caché OCI/Rust:   sccache para evitar recompilaciones recurrentes en el SSD NVMe.
   • Componentes IDE:  rust-analyzer, clippy, rustfmt y rust-src.
   • Binarios rápidos: cargo-binstall para instalar herramientas sin compilar.
-  • Integración GUI:  ~/.config/environment.d/10-rust.conf (detectado por GNOME e IDEs).
+  • Integración GUI:  ~/.config/environment.d/10-rust.conf (detectado por KDE Plasma e IDEs).
   • Shells:           ~/.bashrc.d/rust.sh y autocompletados para Bash y Zsh.
 EOF
 }
@@ -170,7 +170,7 @@ show_status() {
         config_status="ℹ️ No presente (predeterminado)"
     fi
 
-    # Entorno GNOME
+    # Entorno KDE
     if [ -f "$USER_HOME/.config/environment.d/10-rust.conf" ]; then
         env_status="✅ Configurado (~/.config/environment.d/10-rust.conf)"
     else
@@ -188,7 +188,7 @@ show_status() {
         echo "• Caché sccache:        $sccache_status"
         echo "• Hilos de compilación: ✅ $NPROC hilos paralelos"
         echo "• Configuración Cargo:  $config_status"
-        echo "• Entorno GNOME Shell:  $env_status"
+        echo "• Entorno KDE Plasma 6:  $env_status"
         echo "• Directorio CARGO_HOME: $CARGO_HOME"
         echo "• Directorio RUSTUP:    $RUSTUP_HOME"
         echo "-----------------------------------------------------------------"
@@ -202,7 +202,7 @@ show_status() {
         echo "• Caché sccache:        $sccache_status"
         echo "• Hilos de compilación: ✅ $NPROC hilos disponibles"
         echo "• Configuración Cargo:  $config_status"
-        echo "• Entorno GNOME Shell:  $env_status"
+        echo "• Entorno KDE Plasma 6:  $env_status"
         echo "-----------------------------------------------------------------"
         echo "💡 Para instalar Rust optimizado para Debian y este hardware:"
         echo "   Ejecuta: $0"
@@ -344,10 +344,10 @@ install_cargo_tools() {
 }
 
 # ------------------------------------------------------------------------------
-# 7. INTEGRACIÓN CON GNOME SHELL, SHELLS Y AUTOCOMPLETADOS
+# 7. INTEGRACIÓN CON KDE PLASMA 6, SHELLS Y AUTOCOMPLETADOS
 # ------------------------------------------------------------------------------
 configure_environment() {
-    log_info "Configurando integración con sesión GNOME, Shells y autocompletados..."
+    log_info "Configurando integración con sesión KDE, Shells y autocompletados..."
 
     local env_dir="$USER_HOME/.config/environment.d"
     local bashrc_d="$USER_HOME/.bashrc.d"
@@ -355,9 +355,9 @@ configure_environment() {
 
     run_as_user mkdir -p "$env_dir" "$bashrc_d" "$bash_comp_dir"
 
-    # 7.1. Sesión gráfica Wayland / GNOME Shell (systemd user environment)
+    # 7.1. Sesión gráfica Wayland / KDE Plasma 6 (systemd user environment)
     cat <<EOF | run_as_user tee "$env_dir/10-rust.conf" > /dev/null
-# Rust Environment Settings (GNOME Shell + Wayland)
+# Rust Environment Settings (KDE Plasma 6 + Wayland)
 CARGO_HOME=$CARGO_HOME
 RUSTUP_HOME=$RUSTUP_HOME
 PATH=$CARGO_HOME/bin:\${PATH}
@@ -426,7 +426,7 @@ EOF
         fi
     fi
 
-    log_ok "Integración con GNOME Shell, Bash y autocompletados completada."
+    log_ok "Integración con KDE Plasma 6, Bash y autocompletados completada."
 }
 
 # ------------------------------------------------------------------------------

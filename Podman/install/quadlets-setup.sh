@@ -1,7 +1,7 @@
 #!/bin/bash
 # =============================================================================
 # quadlets-setup.sh - Preparador y Desplegador de Quadlets de Podman
-# Ubuntu Workstation (GNOME Shell + Wayland)
+# Debian Workstation (KDE Plasma 6 + Wayland)
 # =============================================================================
 # Uso:
 #   ./quadlets-setup.sh              -> Prepara los directorios de Quadlets e instala los servicios compartidos
@@ -36,7 +36,7 @@ require_podman() {
 
 show_help() {
     cat <<EOF
-⚙️ Gestor de Quadlets para Podman - Ubuntu Workstation (GNOME Shell)
+⚙️ Gestor de Quadlets para Podman - Debian Workstation (KDE Plasma 6)
 
 Uso:
   $0 [OPCIÓN]

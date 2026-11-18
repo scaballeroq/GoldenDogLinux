@@ -4,13 +4,13 @@ sidebar_position: 7
 
 # Guía de Desarrollo en Python con uv en Debian GNU/Linux
 
-Esta guía describe el flujo de trabajo moderno, rápido y seguro para el desarrollo en **Python** en Debian GNU/Linux (GNOME Shell Wayland), utilizando **`uv`** y entornos virtuales aislados sin interferir con las aplicaciones ni las herramientas del sistema operativo (APT, GDM, GNOME Shell, Firewalld, etc.).
+Esta guía describe el flujo de trabajo moderno, rápido y seguro para el desarrollo en **Python** en Debian GNU/Linux (KDE Plasma 6 Wayland), utilizando **`uv`** y entornos virtuales aislados sin interferir con las aplicaciones ni las herramientas del sistema operativo (APT, SDDM, KDE Plasma 6, Firewalld, etc.).
 
 ---
 
 ## 🧠 Filosofía y Arquitectura del Entorno
 
-En distribuciones como **Debian GNU/Linux**, muchas herramientas críticas del sistema operativo (como *Firewalld*, *GDM*, scripts de GNOME y herramientas administrativas) dependen de **`/usr/bin/python3`** y sus librerías empaquetadas por APT bajo la política de protección PEP 668 (`EXTERNALLY-MANAGED`).
+En distribuciones como **Debian GNU/Linux**, muchas herramientas críticas del sistema operativo (como *Firewalld*, *SDDM*, scripts del sistema y herramientas administrativas) dependen de **`/usr/bin/python3`** y sus librerías empaquetadas por APT bajo la política de protección PEP 668 (`EXTERNALLY-MANAGED`).
 
 > [!CAUTION]
 > **Nunca registres una versión de Python global en gestores como Mise (`mise use --global python@...`)**.

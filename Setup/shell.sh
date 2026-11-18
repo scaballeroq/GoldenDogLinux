@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # ==============================================================================
 # shell.sh - Instalación y Optimización de Herramientas Modernas de Terminal
-# Debian GNU/Linux (GNOME Shell Wayland)
+# Debian GNU/Linux (KDE Plasma 6 Wayland)
 # (eza, bat, fzf, zoxide, ripgrep, fd, duf, dust, procs, btop, jq)
 # ==============================================================================
 

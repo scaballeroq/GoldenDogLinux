@@ -1,12 +1,12 @@
 #!/usr/bin/env bash
 # ==============================================================================
 # mise.sh - Instalador, Optimizador y Diagnóstico de Mise (Runtime Manager)
-# Sistema: Debian GNU/Linux Workstation | Escritorio: GNOME Shell (Wayland)
+# Sistema: Debian GNU/Linux Workstation | Escritorio: KDE Plasma 6 (Wayland)
 # ==============================================================================
 # Características:
 # - Despliegue idempotente y soporte rootless en espacio de usuario (~/.local/bin).
 # - Soporte tanto para instalación Standalone (recomendada) como paquete DEB oficial.
-# - Integración nativa con la sesión gráfica GNOME Shell vía systemd environment.d.
+# - Integración nativa con la sesión gráfica KDE Plasma 6 vía systemd environment.d.
 # - Propagación en caliente de variables PATH a la sesión activa (systemctl / dbus).
 # - Activación modular para terminales Bash (~/.bashrc.d) y Zsh (~/.zshrc.d).
 # - Generación automática de autocompletados nativos.
@@ -133,7 +133,7 @@ ${BOLD}Uso:${NC}
   $0 [OPCIÓN]
 
 ${BOLD}Opciones:${NC}
-  (sin argumentos)    Instala y configura Mise de forma idempotente con integración GNOME y Shells.
+  (sin argumentos)    Instala y configura Mise de forma idempotente con integración KDE Plasma y Shells.
   -i, --install       Fuerza la comprobación e instalación de Mise.
   -s, --status        Muestra diagnóstico completo del entorno de Mise, shims y runtimes activos.
   -u, --update        Actualiza el binario de Mise y todos los runtimes gestionados.
@@ -173,11 +173,11 @@ show_status() {
         echo -e "• ${BOLD}Repositorio APT:${NC}       ${CYAN}ℹ️ No registrado (Modo Standalone preferente)${NC}"
     fi
 
-    # 3. Integración con GNOME Shell (systemd environment.d)
+    # 3. Integración con KDE Plasma 6 (systemd environment.d)
     if [ -f "$ENV_CONF_FILE" ]; then
-        echo -e "• ${BOLD}Sesión GNOME / GUI:${NC}   ${GREEN}✅ Configurada${NC} ($ENV_CONF_FILE)"
+        echo -e "• ${BOLD}Sesión KDE / GUI:${NC}   ${GREEN}✅ Configurada${NC} ($ENV_CONF_FILE)"
     else
-        echo -e "• ${BOLD}Sesión GNOME / GUI:${NC}   ${YELLOW}⚠️ No configurada en environment.d${NC}"
+        echo -e "• ${BOLD}Sesión KDE / GUI:${NC}   ${YELLOW}⚠️ No configurada en environment.d${NC}"
     fi
 
     # 4. Integración en Shells
@@ -270,11 +270,11 @@ install_deb() {
 # 6. CONFIGURACIÓN DEL ENTORNO Y SHELLS
 # ------------------------------------------------------------------------------
 configure_environment() {
-    echo -e "${BLUE}⚙️ Configurando variables de entorno para la sesión gráfica de GNOME...${NC}"
+    echo -e "${BLUE}⚙️ Configurando variables de entorno para la sesión gráfica de KDE Plasma...${NC}"
     run_as_user mkdir -p "$ENV_CONF_DIR"
 
     cat << 'EOF' | run_as_user tee "$ENV_CONF_FILE" > /dev/null
-# Integración de Mise con la sesión gráfica / Wayland (GNOME Shell)
+# Integración de Mise con la sesión gráfica / Wayland (KDE Plasma 6)
 PATH=${HOME}/.local/share/mise/shims:${HOME}/.local/bin:${PATH}
 MISE_SHELL=bash
 COREPACK_ENABLE_DOWNLOAD_PROMPT=0

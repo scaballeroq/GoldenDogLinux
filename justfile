@@ -4,23 +4,23 @@
 # =============================================================================
 
 # Instala todo el entorno por defecto (Auto-detección de CPU AMD/Intel y Portátil/Sobremesa)
-setup-all: post-install multimedia flatpak chrome steam laptop-auto tuning kde-setup shell security fonts fastfetch kitty yt-dlp virtualization cockpit ides git-setup languages podman-setup
+setup-all: post-install multimedia flatpak chrome laptop-auto tuning kde-setup shell security fonts fastfetch kitty ides git-setup languages podman-setup
     @echo "🚀 Entorno completo de Golden Dog Linux (KDE Plasma Wayland) configurado. Por favor, reinicia el sistema."
 
 # Perfil completo para Portátil AMD
-setup-laptop-amd: post-install-amd multimedia flatpak chrome steam laptop tuning kde-setup shell security fonts fastfetch kitty yt-dlp virtualization cockpit ides git-setup languages podman-setup
+setup-laptop-amd: post-install-amd multimedia flatpak chrome laptop tuning kde-setup shell security fonts fastfetch kitty ides git-setup languages podman-setup
     @echo "🚀 Entorno Portátil AMD (Golden Dog Linux KDE) configurado con éxito. Por favor, reinicia el sistema."
 
 # Perfil completo para Portátil Intel
-setup-laptop-intel: post-install-intel multimedia flatpak chrome steam laptop tuning kde-setup shell security fonts fastfetch kitty yt-dlp virtualization cockpit ides git-setup languages podman-setup
+setup-laptop-intel: post-install-intel multimedia flatpak chrome laptop tuning kde-setup shell security fonts fastfetch kitty ides git-setup languages podman-setup
     @echo "🚀 Entorno Portátil Intel (Golden Dog Linux KDE) configurado con éxito. Por favor, reinicia el sistema."
 
 # Perfil completo para Sobremesa AMD (sin optimizaciones de batería/tapa de portátil)
-setup-desktop-amd: post-install-amd multimedia flatpak chrome steam tuning kde-setup shell security fonts fastfetch kitty yt-dlp virtualization cockpit ides git-setup languages podman-setup
+setup-desktop-amd: post-install-amd multimedia flatpak chrome tuning kde-setup shell security fonts fastfetch kitty ides git-setup languages podman-setup
     @echo "🚀 Entorno Sobremesa AMD (Golden Dog Linux KDE) configurado con éxito. Por favor, reinicia el sistema."
 
 # Perfil completo para Sobremesa Intel (sin optimizaciones de batería/tapa de portátil)
-setup-desktop-intel: post-install-intel multimedia flatpak chrome steam tuning kde-setup shell security fonts fastfetch kitty yt-dlp virtualization cockpit ides git-setup languages podman-setup
+setup-desktop-intel: post-install-intel multimedia flatpak chrome tuning kde-setup shell security fonts fastfetch kitty ides git-setup languages podman-setup
     @echo "🚀 Entorno Sobremesa Intel (Golden Dog Linux KDE) configurado con éxito. Por favor, reinicia el sistema."
 
 # Diagnóstico integral del sistema, hardware, energía, red y entorno de desarrollo
@@ -267,10 +267,6 @@ firefox *args:
 # Diagnóstico y estado de Mozilla Firefox nativo y repositorio oficial
 firefox-status:
     ./Setup/firefox.sh --status
-
-# Steam nativo, GameMode, MangoHud y drivers Vulkan 32-bit (i386 multiarch)
-steam:
-    ./Setup/steam.sh
 
 # Centro Multimedia (Kodi + complementos de streaming)
 kodi:

@@ -91,7 +91,7 @@ def read_root():
     return {
         "status": "success",
         "message": "¡Hola desde FastAPI gestionado por uv!",
-        "system": "Debian GNU/Linux (GNOME Shell)"
+        "system": "Debian GNU/Linux (KDE Plasma 6)"
     }
 
 if __name__ == "__main__":

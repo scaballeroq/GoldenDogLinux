@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # ==============================================================================
 # virtualization.sh - Instalación y Optimización Avanzada de Virtualización (KVM/QEMU)
-# Sistema: Debian GNU/Linux (Debian 13 Trixie) | Escritorio: GNOME Shell (Wayland)
+# Sistema: Debian GNU/Linux (Debian 13 Trixie) | Escritorio: KDE Plasma 6 (Wayland)
 # Sistema: Golden Dog Linux (Debian 13) | Virtualización KVM/QEMU
 # Compatible con CPU/GPU AMD o Intel (3D VirGL / VA-API)
 # Almacenamiento: SSD NVMe Kioxia 512 GB (Btrfs NoCoW / Ext4) | Firewall: Firewalld
@@ -30,7 +30,7 @@ Script de aprovisionamiento y optimización de virtualización KVM/QEMU en Debia
 Optimizado para sistemas AMD e Intel (KVM/QEMU + 3D VirGL).
 Proporciona dos vías de gestión completas para desarrollo y producción:
   1. Cockpit Web Console (módulo cockpit-machines en https://localhost:9090)
-  2. Virt-Manager (interfaz gráfica de escritorio nativa para GNOME Shell Wayland)
+  2. Virt-Manager (interfaz gráfica de escritorio nativa para KDE Plasma 6 Wayland)
 
 OPCIONES:
   --status, -s, --check Verifica el estado de KVM, Cockpit, libvirt, módulos del kernel,
@@ -41,7 +41,7 @@ OPCIONES:
   -h, --help            Muestra esta ayuda y recomendaciones para VMs Linux/Windows.
 
 CARACTERÍSTICAS Y OPTIMIZACIONES:
-  - Doble interfaz de gestión: Cockpit Machines (Web) y Virt-Manager (GNOME Wayland).
+  - Doble interfaz de gestión: Cockpit Machines (Web) y Virt-Manager (KDE Plasma Wayland).
   - Aceleración CPU AMD Zen 3: AVIC (Advanced Virtual Interrupt Controller) y Nested KVM.
   - Aceleración Gráfica 3D VirGL: Acceso directo a /dev/dri/renderD128 para usuario y libvirt-qemu.
   - Redirección SPICE USB: Integración completa de spice-client-gtk y gir1.2-spiceclientgtk.
@@ -70,11 +70,11 @@ EOF
 
 check_status() {
     echo "================================================================="
-    echo "🔍 DIAGNÓSTICO DEL ENTORNO DE VIRTUALIZACIÓN (DEBIAN GNOME)"
+    echo "🔍 DIAGNÓSTICO DEL ENTORNO DE VIRTUALIZACIÓN (DEBIAN KDE PLASMA 6)"
     echo "================================================================="
 
     echo -n "• Entorno de Escritorio Host: "
-    local desktop="${XDG_CURRENT_DESKTOP:-GNOME}"
+    local desktop="${XDG_CURRENT_DESKTOP:-KDE}"
     local session_type="${XDG_SESSION_TYPE:-wayland}"
     echo "✅ $desktop ($session_type)"
 
@@ -290,7 +290,7 @@ if [ "$STATUS_ONLY" = true ]; then
 fi
 
 echo "🚀 Iniciando configuración y optimización de virtualización KVM/QEMU en Debian GNU/Linux..."
-echo "🎯 Integrando Cockpit Machines (Web) y Virt-Manager (GNOME Shell Wayland)..."
+echo "🎯 Integrando Cockpit Machines (Web) y Virt-Manager (KDE Plasma 6 Wayland)..."
 
 # ---------------------------------------------------------------------------
 # 1. Instalación de paquetes vía APT
@@ -612,7 +612,7 @@ echo "================================================================="
 echo "✅ Entorno de Virtualización KVM/QEMU Configurado con Éxito"
 echo "================================================================="
 echo "🌐 1. CONSOLA WEB COCKPIT: https://$HOST_IP:9090 (o https://localhost:9090)"
-echo "🖥️ 2. VIRT-MANAGER: Ejecuta 'virt-manager' en terminal o lanzador GNOME."
+echo "🖥️ 2. VIRT-MANAGER: Ejecuta 'virt-manager' en terminal o lanzador de aplicaciones KDE."
 echo "================================================================="
 echo "⚠️ IMPORTANTE: Si es la primera vez que añades los grupos, cierra sesión"
 echo "   y vuelve a iniciarla (o ejecuta 'newgrp libvirt') para aplicarlos."

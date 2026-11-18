@@ -1,10 +1,10 @@
 #!/bin/bash
 # ==============================================================================
 # podman-install.sh - Instalación, Optimización y Configuración de Podman Rootless
-# Debian Workstation (GNOME Shell + Wayland / Systemd User Environment)
+# Debian Workstation (KDE Plasma 6 + Wayland / Systemd User Environment)
 # ==============================================================================
 # Características:
-# - Optimizado para Debian GNU/Linux (Debian 13 Trixie / GNOME Shell).
+# - Optimizado para Debian GNU/Linux (Debian 13 Trixie / KDE Plasma 6).
 # - Soporta tanto la instalación desde cero como la reconfiguración idempotente.
 # - Paquetes modernos de Podman: passt (pasta de alto rendimiento), crun y catatonit.
 # - Almacenamiento overlay nativo del kernel para máxima velocidad I/O en SSD NVMe Kioxia.
@@ -13,7 +13,7 @@
 # - Permite enlace a puertos bajos (80, 443) en modo rootless vía sysctl.
 # - Activa loginctl linger para persistencia de contenedores tras cerrar sesión.
 # - Habilita podman.socket en systemd user para compatibilidad total con Docker API.
-# - Inyecta DOCKER_HOST en GNOME Shell (environment.d), Bash (~/.bashrc.d) y Zsh.
+# - Inyecta DOCKER_HOST en KDE Plasma 6 (environment.d), Bash (~/.bashrc.d) y Zsh.
 # - Despliega podman-utils CLI en ~/.local/bin con autocompletados nativos.
 # - Inicializa la estructura modular de Quadlets de Systemd.
 # - Diagnóstico integral del motor, hardware y servicios (--status).
@@ -71,7 +71,7 @@ Características configuradas:
   • Puertos Rootless:    ip_unprivileged_port_start=80 para Traefik y proxies en puertos 80/443.
   • Persistencia Linger: loginctl linger para ejecutar contenedores en segundo plano.
   • Docker Socket API:   podman.socket en /run/user/\$UID/podman/podman.sock.
-  • Sesión GNOME / GUI:  DOCKER_HOST en ~/.config/environment.d/10-podman.conf.
+  • Sesión KDE / GUI:  DOCKER_HOST en ~/.config/environment.d/10-podman.conf.
   • Shells (Bash / Zsh): DOCKER_HOST modular en ~/.bashrc.d/podman.sh y autocompletados.
   • Registries OCI:      docker.io, quay.io y ghcr.io.
   • CLI podman-utils:    Enlaza podman-utils en ~/.local/bin con autocompletados.
@@ -81,7 +81,7 @@ EOF
 # 1. Mostrar estado de Podman
 show_status() {
     echo "================================================================="
-    echo "🔍 ESTADO DE PODMAN ROOTLESS - UBUNTU WORKSTATION (GNOME SHELL)"
+    echo "🔍 ESTADO DE PODMAN ROOTLESS - DEBIAN WORKSTATION (KDE PLASMA 6)"
     echo "   Golden Dog Linux | Debian Workstation (AMD / Intel)"
     echo "================================================================="
 
@@ -157,7 +157,7 @@ show_status() {
         echo "• Proveedor Compose:   $(command -v docker-compose &>/dev/null && echo "✅ docker-compose" || (command -v podman-compose &>/dev/null && echo "✅ podman-compose" || echo "ℹ️ No instalado"))"
         echo "• DOCKER_HOST:         $docker_host_val"
         echo "• CLI podman-utils:    $utils_status"
-        echo "• Entorno GNOME:       $(if [ -f "$HOME/.config/environment.d/10-podman.conf" ]; then echo "✅ Configurado"; else echo "ℹ️ No presente"; fi)"
+        echo "• Entorno KDE:       $(if [ -f "$HOME/.config/environment.d/10-podman.conf" ]; then echo "✅ Configurado"; else echo "ℹ️ No presente"; fi)"
         echo "• Generador Quadlets:  $(if [ -f /usr/lib/systemd/user-generators/podman-user-generator ]; then echo "✅ Integrado en systemd"; else echo "ℹ️ No detectado"; fi)"
         echo "-----------------------------------------------------------------"
         echo "📦 Contenedores en ejecución:"
@@ -377,13 +377,13 @@ enable_podman_socket() {
     log_ok "Socket de Podman activo en /run/user/$(id -u)/podman/podman.sock."
 }
 
-# 10. Exportar DOCKER_HOST en sesión GNOME y Shells (Bash predeterminado / Zsh condicional)
+# 10. Exportar DOCKER_HOST en sesión KDE y Shells (Bash predeterminado / Zsh condicional)
 configure_docker_host() {
-    log_info "Configurando DOCKER_HOST para GNOME Shell y Shells (Bash / Zsh)..."
+    log_info "Configurando DOCKER_HOST para KDE Plasma 6 y Shells (Bash / Zsh)..."
     local socket_path="/run/user/$(id -u)/podman/podman.sock"
     local export_line="export DOCKER_HOST=\"unix://$socket_path\""
 
-    # 10.1. Sesión gráfica Wayland / GNOME (environment.d)
+    # 10.1. Sesión gráfica Wayland / KDE Plasma (environment.d)
     mkdir -p "$HOME/.config/environment.d"
     cat <<EOF > "$HOME/.config/environment.d/10-podman.conf"
 DOCKER_HOST=unix://$socket_path
@@ -433,7 +433,7 @@ EOF
         fi
     fi
 
-    log_ok "DOCKER_HOST integrado en GNOME Shell, Bash (~/.bashrc.d/podman.sh) y Zsh (si existe ~/.zshrc)."
+    log_ok "DOCKER_HOST integrado en KDE Plasma 6, Bash (~/.bashrc.d/podman.sh) y Zsh (si existe ~/.zshrc)."
 }
 
 # 11. Enlazar podman-utils al PATH del usuario
@@ -504,7 +504,7 @@ case "${1:-}" in
         ;;
     "")
         echo "================================================================="
-        echo "🐳 OPTIMIZADOR DE PODMAN ROOTLESS - UBUNTU WORKSTATION (GNOME)"
+        echo "🐳 OPTIMIZADOR DE PODMAN ROOTLESS - DEBIAN WORKSTATION (KDE PLASMA 6)"
         echo "   Golden Dog Linux | Debian Workstation"
         echo "================================================================="
         require_non_root

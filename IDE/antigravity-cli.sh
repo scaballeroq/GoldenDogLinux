@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # ==============================================================================
 # antigravity-cli.sh - Gestor e Instalador de Google Antigravity CLI (agy)
-# Optimizado para Debian Workstation (GNOME Shell Wayland)
+# Optimizado para Debian Workstation (KDE Plasma 6 Wayland)
 # ==============================================================================
 # Características:
 #  - Instalación y gestión 100% rootless en ~/.local/bin/agy.
