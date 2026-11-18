@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # ==============================================================================
-# kitty.sh - Instalación y Configuración Estética de Kitty Terminal para Debian Testing
+# kitty.sh - Instalación y Configuración Estética de Kitty Terminal para Debian 13
 # Entorno: KDE Plasma 6 (Wayland) + Modo Oscuro Catppuccin Mocha
 # ==============================================================================
 # Características configuradas:
@@ -51,16 +51,17 @@ run_as_user() {
 
 show_help() {
     cat <<EOF
-🐱 Configuración de Kitty Terminal - Debian Testing (KDE Plasma 6)
+🐱 Configuración de Kitty Terminal - Debian 13 (KDE Plasma 6 Wayland)
 
 Uso:
   $0 [OPCIÓN]
 
 Opciones:
-  (sin argumentos)    Instala Kitty vía APT, genera configuración estética Catppuccin Mocha
-                      y configura la integración con KDE Plasma 6 (atajo Ctrl+Alt+T y Dolphin).
-  --status, -s        Muestra el estado de instalación de Kitty, fuentes e integración en KDE.
-  --help, -h          Muestra este mensaje de ayuda.
+  (sin argumentos)      Instala Kitty vía APT, genera configuración estética Catppuccin Mocha
+                        y configura la integración con KDE Plasma 6 (atajo Ctrl+Alt+T y Dolphin).
+  --config-only         Aplica la configuración de Kitty e integración KDE sin ejecutar APT.
+  --status, -s          Muestra el estado de instalación de Kitty, fuentes e integración en KDE.
+  --help, -h            Muestra este mensaje de ayuda.
 
 Características aplicadas:
   • Tema:             Catppuccin Mocha con fondo oscuro (#181825).
@@ -72,17 +73,24 @@ EOF
 }
 
 show_status() {
+    local kde_term=""
+    if command -v kreadconfig6 &>/dev/null; then
+        kde_term=$(run_as_user kreadconfig6 --file kdeglobals --group General --key TerminalApplication 2>/dev/null || true)
+    fi
+
     echo "================================================================="
-    echo "🔍 ESTADO DE KITTY TERMINAL - DEBIAN TESTING (KDE 6)"
+    echo "🔍 ESTADO DE KITTY TERMINAL - DEBIAN 13 (KDE PLASMA 6)"
     echo "================================================================="
     echo "• Kitty instalado:          $(if command -v kitty &>/dev/null; then echo "✅ Kitty ($(kitty --version 2>/dev/null | awk '{print $2}'))"; else echo "❌ No instalado"; fi)"
-    echo "• JetBrainsMono Nerd Font:  $(if fc-list "JetBrainsMono Nerd Font" 2>/dev/null | grep -i "JetBrainsMono" >/dev/null; then echo "✅ Disponible"; else echo "⚠️ No detectada (se usará fallback)"; fi)"
+    echo "• JetBrainsMono Nerd Font:  $(if fc-list "JetBrainsMono Nerd Font" 2>/dev/null | grep -qi "JetBrainsMono"; then echo "✅ Disponible"; else echo "⚠️ No detectada (se usará fallback)"; fi)"
     echo "• Configuración kitty.conf: $(if [ -f "$USER_HOME/.config/kitty/kitty.conf" ]; then echo "✅ Presente ($USER_HOME/.config/kitty/kitty.conf)"; else echo "❌ No presente"; fi)"
-    echo "• Terminal KDE Plasma 6:    $(if [ "$(run_as_user kreadconfig6 --file kdeglobals --group General --key TerminalApplication 2>/dev/null)" = "kitty" ]; then echo "✅ Kitty (predeterminada)"; else echo "ℹ️ Otra o por defecto"; fi)"
+    echo "• Terminal KDE Plasma 6:    $(if [ "$kde_term" = "kitty" ]; then echo "✅ Kitty (predeterminada)"; else echo "ℹ️ ${kde_term:-Otra o por defecto}"; fi)"
     echo "• Atajo KDE (Ctrl+Alt+T):   $(if grep -qi "Ctrl+Alt+T" "$USER_HOME/.config/kglobalshortcutsrc" 2>/dev/null; then echo "✅ Configurado"; else echo "❌ No configurado"; fi)"
     echo "• KIO Servicemenu Dolphin:  $(if [ -f "$USER_HOME/.local/share/kio/servicemenus/open-in-kitty.desktop" ]; then echo "✅ Instalado (Abrir en Kitty)"; else echo "❌ No instalado"; fi)"
     echo "================================================================="
 }
+
+NO_INSTALL=false
 
 case "${1:-}" in
     --status|-s|status)
@@ -93,6 +101,16 @@ case "${1:-}" in
         show_help
         exit 0
         ;;
+    --config-only|--no-install)
+        NO_INSTALL=true
+        ;;
+    "")
+        ;;
+    *)
+        echo "❌ Opción no reconocida: $1"
+        show_help
+        exit 1
+        ;;
 esac
 
 echo "==========================================================="
@@ -100,13 +118,17 @@ echo "🐱 INICIANDO CONFIGURACIÓN DE KITTY TERMINAL EN KDE PLASMA 6"
 echo "==========================================================="
 
 # 1. Instalar Kitty y dependencias
-echo "📦 [1/4] Instalando Kitty Terminal vía APT..."
-if ! command -v kitty &>/dev/null; then
-    export DEBIAN_FRONTEND=noninteractive
-    $SUDO apt-get update -qq
-    $SUDO apt-get install -y kitty 2>/dev/null || true
+if [ "$NO_INSTALL" = false ]; then
+    echo "📦 [1/4] Instalando Kitty Terminal vía APT..."
+    if ! command -v kitty &>/dev/null; then
+        export DEBIAN_FRONTEND=noninteractive
+        $SUDO apt-get update -qq
+        $SUDO apt-get install -y kitty
+    else
+        echo "   ✅ Kitty ya está instalado en el sistema ($(kitty --version 2>/dev/null | awk '{print $2}'))."
+    fi
 else
-    echo "   ✅ Kitty ya está instalado en el sistema ($(kitty --version 2>/dev/null | awk '{print $2}'))."
+    echo "⏭️ [1/4] Omitiendo instalación APT (--config-only)."
 fi
 
 # 2. Crear directorios y respaldar configuración previa si existe
@@ -121,7 +143,7 @@ fi
 echo "🎨 [3/4] Generando configuración optimizada para KDE Plasma 6 (Wayland)..."
 cat <<'EOF' | run_as_user tee "$USER_HOME/.config/kitty/kitty.conf" > /dev/null
 # =============================================================================
-# KITTY CONFIGURATION - DEBIAN TESTING (KDE PLASMA 6 WAYLAND)
+# KITTY CONFIGURATION - DEBIAN 13 TRIXIE (KDE PLASMA 6 WAYLAND)
 # =============================================================================
 
 # --- Fuentes & Tipografía ---
@@ -279,15 +301,20 @@ map ctrl+0           change_font_size all 0
 map ctrl+shift+f5    load_config_file
 EOF
 
+# Recargar configuración en vivo en instancias abiertas de Kitty
+pkill -USR1 -u "$REAL_USER" kitty 2>/dev/null || true
+
 # 4. Integración con KDE Plasma 6 y Dolphin
 echo "📁 [4/4] Configurando integración con KDE Plasma 6 y Dolphin..."
 
 # Terminal predeterminada en KDE
-run_as_user kwriteconfig6 --file kdeglobals --group General --key TerminalApplication "kitty" 2>/dev/null || true
-run_as_user kwriteconfig6 --file kdeglobals --group General --key TerminalService "kitty.desktop" 2>/dev/null || true
+if command -v kwriteconfig6 &>/dev/null; then
+    run_as_user kwriteconfig6 --file kdeglobals --group General --key TerminalApplication "kitty" 2>/dev/null || true
+    run_as_user kwriteconfig6 --file kdeglobals --group General --key TerminalService "kitty.desktop" 2>/dev/null || true
 
-# Atajo global Ctrl+Alt+T en KDE
-run_as_user kwriteconfig6 --file kglobalshortcutsrc --group "services" --group "kitty.desktop" --key "_launch" "Ctrl+Alt+T,none,Kitty Terminal" 2>/dev/null || true
+    # Atajo global Ctrl+Alt+T en KDE
+    run_as_user kwriteconfig6 --file kglobalshortcutsrc --group "services" --group "kitty.desktop" --key "_launch" "Ctrl+Alt+T,none,Kitty Terminal" 2>/dev/null || true
+fi
 
 # Acción de menú contextual en Dolphin (KIO Servicemenus)
 SERVICEMENUS_DIR="$USER_HOME/.local/share/kio/servicemenus"
