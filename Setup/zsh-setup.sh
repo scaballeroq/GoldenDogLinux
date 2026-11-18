@@ -1,19 +1,19 @@
 #!/usr/bin/env bash
 # ==============================================================================
-# zsh-setup.sh - Instalación y Replicación del Entorno Zsh en Debian
+# zsh-setup.sh - Instalación y Configuración del Entorno Zsh en Golden Dog Linux
 # Sistema: Golden Dog Linux (Debian 13 Trixie) | Escritorio: KDE Plasma (Wayland)
 # ==============================================================================
 # Características:
 #   - Instalación de Zsh, zsh-autosuggestions y zsh-syntax-highlighting vía APT.
-#   - Recreación fiel de la configuración de ~/.zshrc de Soplos Linux Boro:
+#   - Configuración optimizada para Debian 13 (Trixie) y terminales KDE/Wayland:
 #       * Prompt estético Powerline con glifos (, ), colores 256 y bloque Git interactivo.
-#       * Esquema de colores para resaltado de sintaxis (comandos naranja, strings amarillo).
-#       * Sugerencias automáticas en gris tenue (#555555).
-#       * Historial deduplicado y sincronizado (10.000 comandos).
+#       * Esquema de colores para resaltado de sintaxis (cargado al final de ~/.zshrc).
+#       * Sugerencias automáticas asíncronas (history + completion).
+#       * Caché de compinit en ~/.cache/zsh/ y fpath previo a compinit.
+#       * Teclas Home/End/Delete/Ctrl+Flechas configuradas para Konsole, Kitty y Ghostty.
 #       * Integración de FZF (Ctrl+R, Ctrl+T, Alt+C) y Zoxide (smart cd).
-#       * Integración con socket de Podman Rootless y shims de Mise.
 #   - Estructura modular en ~/.zshrc.d/:
-#       * Enlaces simbólicos a los módulos de Debian/Bash.Setup/*.sh.
+#       * Enlaces simbólicos a los módulos de Bash.Setup/*.sh.
 #       * Módulos dedicados: java.zsh, mise.zsh, nodejs.zsh, podman.zsh, python.zsh, virtualization.zsh.
 #   - Opciones CLI: --status / -s, --default-shell / -d, --help / -h.
 # ==============================================================================
@@ -63,8 +63,7 @@ ZSHRC_D="$USER_HOME/.zshrc.d"
 # ------------------------------------------------------------------------------
 show_help() {
     cat <<EOF
-🐚 Replicador y Configurador del Entorno Zsh - Debian Workstation
-(Recrea la experiencia de terminal moderna de Soplos Linux Boro)
+🐚 Configurador del Entorno Zsh - Golden Dog Linux (Debian 13 KDE Plasma)
 
 Uso:
   $0 [OPCIÓN]
@@ -88,7 +87,7 @@ EOF
 
 show_status() {
     echo "================================================================="
-    echo "🔍 ESTADO DEL ENTORNO ZSH - DEBIAN WORKSTATION"
+    echo "🔍 ESTADO DEL ENTORNO ZSH - GOLDEN DOG LINUX (DEBIAN 13)"
     echo "================================================================="
     local cur_shell
     cur_shell=$(getent passwd "$REAL_USER" | cut -d: -f7 2>/dev/null || echo "$SHELL")
@@ -109,11 +108,13 @@ show_status() {
     echo "📄 Archivos de configuración:"
     echo "  • ~/.zshrc:                   $([ -f "$ZSHRC" ] && echo "✅ Presente ($(wc -l < "$ZSHRC") líneas)" || echo "❌ Ausente")"
     echo "  • Directorio ~/.zshrc.d/:     $([ -d "$ZSHRC_D" ] && echo "✅ Presente" || echo "❌ Ausente")"
+    echo "  • Ruta Bash.Setup/:           $([ -d "$BASH_SETUP_DIR" ] && echo "✅ $BASH_SETUP_DIR" || echo "❌ No encontrada ($BASH_SETUP_DIR)")"
     if [ -d "$ZSHRC_D" ]; then
-        local count_links count_zsh
+        local count_links count_broken count_zsh
         count_links=$(find "$ZSHRC_D" -maxdepth 1 -type l 2>/dev/null | wc -l)
+        count_broken=$(find -L "$ZSHRC_D" -maxdepth 1 -type l 2>/dev/null | wc -l)
         count_zsh=$(find "$ZSHRC_D" -maxdepth 1 -type f -name "*.zsh" 2>/dev/null | wc -l)
-        echo "    - Enlaces simbólicos (Bash.Setup): $count_links archivos"
+        echo "    - Enlaces simbólicos (Bash.Setup): $count_links activos ($count_broken rotos)"
         echo "    - Módulos específicos (.zsh):      $count_zsh archivos"
     fi
     echo "-----------------------------------------------------------------"
@@ -157,7 +158,7 @@ set_default_shell() {
 # ------------------------------------------------------------------------------
 deploy_zsh() {
     echo "================================================================="
-    echo "🐚 CONFIGURANDO ENTORNO ZSH ESTILO SOPLOS LINUX EN DEBIAN"
+    echo "🐚 CONFIGURANDO ENTORNO ZSH - GOLDEN DOG LINUX (DEBIAN 13)"
     echo "================================================================="
 
     # 1. Instalar paquetes de Zsh y utilidades modernas
@@ -213,11 +214,11 @@ deploy_zsh() {
         echo "ℹ️ [3/5] Generando configuración de ~/.zshrc..."
     fi
 
-    # Escribir el ~/.zshrc idéntico al de Soplos Linux Boro (con resolución dinámica de UID)
+    # Escribir ~/.zshrc optimizado para Golden Dog Linux (Debian 13 KDE Plasma Wayland)
+    run_as_user mkdir -p "$USER_HOME/.cache/zsh"
     cat << 'EOF' | run_as_user tee "$ZSHRC" > /dev/null
 # =============================================================================
-# ZSH CONFIGURATION (.zshrc) - Debian Workstation (GNOME Shell Wayland)
-# Replicado del perfil estético de Soplos Linux Boro
+# ZSH CONFIGURATION (.zshrc) - Golden Dog Linux (Debian 13 KDE Plasma Wayland)
 # =============================================================================
 
 # Desactivar pitidos auditivos
@@ -226,33 +227,30 @@ unsetopt BEEP
 # Aliases base
 alias ls='ls --color=auto'
 
-# Historial optimizado
+# Atajos de teclado estándar para Konsole, Kitty y Ghostty en Debian 13
+bindkey -e
+bindkey '^[[H'  beginning-of-line
+bindkey '^[[F'  end-of-line
+bindkey '^[[1~' beginning-of-line
+bindkey '^[[4~' end-of-line
+bindkey '^[[3~' delete-char
+bindkey '^[[2~' overwrite-mode
+bindkey '^[[1;5C' forward-word
+bindkey '^[[1;5D' backward-word
+
+# Historial base (ampliado y sincronizado en ~/.zshrc.d/history.sh)
 HISTSIZE=10000
-SAVEHIST=10000
-HISTFILE=~/.zsh_history
+SAVEHIST=20000
+HISTFILE="${HOME}/.zsh_history"
 setopt HIST_IGNORE_DUPS SHARE_HISTORY
 
-# Autocompletado nativo
-autoload -Uz compinit && compinit
+# Rutas de autocompletado fpath (siempre antes de compinit)
+fpath=("$HOME/.local/share/zsh/site-functions" "$HOME/.zfunc" $fpath)
 
-# Resaltado de sintaxis (zsh-syntax-highlighting)
-if [ -f /usr/share/zsh-syntax-highlighting/zsh-syntax-highlighting.zsh ]; then
-    source /usr/share/zsh-syntax-highlighting/zsh-syntax-highlighting.zsh
-    ZSH_HIGHLIGHT_STYLES[command]='fg=#ff7d2e'
-    ZSH_HIGHLIGHT_STYLES[builtin]='fg=#ff7d2e'
-    ZSH_HIGHLIGHT_STYLES[function]='fg=#ff7d2e'
-    ZSH_HIGHLIGHT_STYLES[keyword]='fg=#ef5a33'
-    ZSH_HIGHLIGHT_STYLES[single-quoted-argument]='fg=#fec431'
-    ZSH_HIGHLIGHT_STYLES[double-quoted-argument]='fg=#fec431'
-    ZSH_HIGHLIGHT_STYLES[comment]='fg=#555555'
-    ZSH_HIGHLIGHT_STYLES[unknown-token]='fg=#ee5a6f'
-fi
-
-# Sugerencias automáticas en segundo plano (zsh-autosuggestions)
-if [ -f /usr/share/zsh-autosuggestions/zsh-autosuggestions.zsh ]; then
-    ZSH_AUTOSUGGEST_HIGHLIGHT_STYLE='fg=#555555'
-    source /usr/share/zsh-autosuggestions/zsh-autosuggestions.zsh
-fi
+# Autocompletado nativo con caché en ~/.cache/zsh
+mkdir -p "${XDG_CACHE_HOME:-$HOME/.cache}/zsh"
+autoload -Uz compinit
+compinit -d "${XDG_CACHE_HOME:-$HOME/.cache}/zsh/zcompdump-${ZSH_VERSION}"
 
 # Prompt interactivo Powerline con Git Status
 autoload -U colors && colors
@@ -278,12 +276,15 @@ if command -v zoxide &>/dev/null; then
     eval "$(zoxide init zsh)"
 fi
 
-# FZF (Fuzzy Finder: Ctrl+R, Ctrl+T, Alt+C y completion)
+# FZF (Fuzzy Finder: Ctrl+R, Ctrl+T, Alt+C y completion en Debian 13)
 if command -v fzf &>/dev/null; then
-    eval "$(fzf --zsh 2>/dev/null || true)"
+    if ! eval "$(fzf --zsh 2>/dev/null)"; then
+        [ -f /usr/share/doc/fzf/examples/key-bindings.zsh ] && source /usr/share/doc/fzf/examples/key-bindings.zsh
+        [ -f /usr/share/doc/fzf/examples/completion.zsh ] && source /usr/share/doc/fzf/examples/completion.zsh
+    fi
 fi
 
-# Carga modular de configuraciones y aliases (~/.zshrc.d)
+# Carga modular de configuraciones y aliases (~/.zshrc.d -> Bash.Setup/*.sh + *.zsh)
 if [ -d "$HOME/.zshrc.d" ]; then
     for script in "$HOME/.zshrc.d"/*.{sh,zsh}(N); do
         [ -r "$script" ] && source "$script"
@@ -291,11 +292,26 @@ if [ -d "$HOME/.zshrc.d" ]; then
     unset script
 fi
 
-# Podman Docker API Integration (Socket rootless dinámico)
-export DOCKER_HOST="unix:///run/user/${UID:-$(id -u)}/podman/podman.sock"
+# Sugerencias automáticas asíncronas (zsh-autosuggestions)
+if [ -f /usr/share/zsh-autosuggestions/zsh-autosuggestions.zsh ]; then
+    ZSH_AUTOSUGGEST_HIGHLIGHT_STYLE='fg=#555555'
+    ZSH_AUTOSUGGEST_STRATEGY=(history completion)
+    ZSH_AUTOSUGGEST_USE_ASYNC=1
+    source /usr/share/zsh-autosuggestions/zsh-autosuggestions.zsh
+fi
 
-# Rutas de autocompletado fpath
-fpath=($HOME/.local/share/zsh/site-functions $HOME/.zfunc $fpath)
+# Resaltado de sintaxis (zsh-syntax-highlighting: debe cargarse al final de ~/.zshrc)
+if [ -f /usr/share/zsh-syntax-highlighting/zsh-syntax-highlighting.zsh ]; then
+    source /usr/share/zsh-syntax-highlighting/zsh-syntax-highlighting.zsh
+    ZSH_HIGHLIGHT_STYLES[command]='fg=#ff7d2e'
+    ZSH_HIGHLIGHT_STYLES[builtin]='fg=#ff7d2e'
+    ZSH_HIGHLIGHT_STYLES[function]='fg=#ff7d2e'
+    ZSH_HIGHLIGHT_STYLES[keyword]='fg=#ef5a33'
+    ZSH_HIGHLIGHT_STYLES[single-quoted-argument]='fg=#fec431'
+    ZSH_HIGHLIGHT_STYLES[double-quoted-argument]='fg=#fec431'
+    ZSH_HIGHLIGHT_STYLES[comment]='fg=#555555'
+    ZSH_HIGHLIGHT_STYLES[unknown-token]='fg=#ee5a6f'
+fi
 EOF
     echo "  ✅ ~/.zshrc generado con éxito."
 
@@ -353,8 +369,10 @@ EOF
     cat << 'EOF' | run_as_user tee "$ZSHRC_D/nodejs.zsh" > /dev/null
 # Node.js & Corepack Environment Settings
 export COREPACK_ENABLE_DOWNLOAD_PROMPT=0
-export JOBS=16
-export npm_config_jobs=16
+_CPU_JOBS=$(nproc 2>/dev/null || echo 4)
+export JOBS="$_CPU_JOBS"
+export npm_config_jobs="$_CPU_JOBS"
+unset _CPU_JOBS
 EOF
 
     # 5.4. Podman
@@ -386,7 +404,7 @@ EOF
     echo ""
     show_status
     echo "================================================================="
-    echo "✅ Entorno Zsh replicado con éxito en Debian."
+    echo "✅ Entorno Zsh configurado con éxito en Golden Dog Linux (Debian 13)."
     echo "💡 Para probarlo de inmediato, ejecuta:  zsh"
     echo "💡 Para fijarlo como shell por defecto:  $0 --default-shell"
     echo "================================================================="
