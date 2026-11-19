@@ -18,7 +18,9 @@ set -euo pipefail
 # ------------------------------------------------------------------------------
 GPG_KEY_URL="https://dl.google.com/linux/linux_signing_key.pub"
 KEYRING_FILE="/etc/apt/keyrings/google-chrome.gpg"
+SYSTEM_KEYRING_FILE="/usr/share/keyrings/google-chrome.gpg"
 SOURCES_FILE="/etc/apt/sources.list.d/google-chrome.list"
+DEB822_SOURCES_FILE="/etc/apt/sources.list.d/google-chrome.sources"
 PACKAGE_NAME="google-chrome-stable"
 SYSTEM_DESKTOP="/usr/share/applications/google-chrome.desktop"
 
@@ -109,19 +111,41 @@ is_wayland_optimized() {
     fi
 }
 
+find_repo_file() {
+    if [ -f "$DEB822_SOURCES_FILE" ]; then
+        echo "$DEB822_SOURCES_FILE"
+    elif [ -f "$SOURCES_FILE" ]; then
+        echo "$SOURCES_FILE"
+    else
+        return 1
+    fi
+}
+
+find_keyring_file() {
+    if [ -f "$KEYRING_FILE" ]; then
+        echo "$KEYRING_FILE"
+    elif [ -f "$SYSTEM_KEYRING_FILE" ]; then
+        echo "$SYSTEM_KEYRING_FILE"
+    else
+        return 1
+    fi
+}
+
 show_status() {
     echo -e "${CYAN}=================================================================${NC}"
     echo -e "${BOLD}🔍 DIAGNÓSTICO DE GOOGLE CHROME - DEBIAN LINUX (KDE PLASMA 6 WAYLAND)${NC}"
     echo -e "${CYAN}=================================================================${NC}"
 
-    if [ -f "$SOURCES_FILE" ]; then
-        echo -e "• ${BOLD}Repositorio APT:${NC}        ${GREEN}✅ Configurado ($SOURCES_FILE)${NC}"
+    local repo_file
+    if repo_file=$(find_repo_file); then
+        echo -e "• ${BOLD}Repositorio APT:${NC}        ${GREEN}✅ Configurado ($repo_file)${NC}"
     else
         echo -e "• ${BOLD}Repositorio APT:${NC}        ${RED}❌ No configurado${NC}"
     fi
 
-    if [ -f "$KEYRING_FILE" ]; then
-        echo -e "• ${BOLD}Clave GPG de Google:${NC}   ${GREEN}✅ Presente en $KEYRING_FILE${NC}"
+    local keyring_file
+    if keyring_file=$(find_keyring_file); then
+        echo -e "• ${BOLD}Clave GPG de Google:${NC}   ${GREEN}✅ Presente en $keyring_file${NC}"
     else
         echo -e "• ${BOLD}Clave GPG de Google:${NC}   ${YELLOW}⚠️ No encontrada${NC}"
     fi
@@ -144,16 +168,24 @@ show_status() {
 }
 
 setup_repo() {
+    if find_repo_file &>/dev/null && find_keyring_file &>/dev/null; then
+        return 0
+    fi
+
     require_root
     echo -e "${BLUE}ℹ️ Configurando repositorio oficial y clave de Google Chrome...${NC}"
     $SUDO mkdir -p /etc/apt/keyrings
-    if [ ! -f "$KEYRING_FILE" ]; then
+    if ! find_keyring_file &>/dev/null; then
         curl -fsSL "$GPG_KEY_URL" | gpg --dearmor | $SUDO tee "$KEYRING_FILE" > /dev/null
         $SUDO chmod 644 "$KEYRING_FILE"
     fi
 
-    echo "deb [arch=amd64 signed-by=$KEYRING_FILE] http://dl.google.com/linux/chrome/deb/ stable main" | $SUDO tee "$SOURCES_FILE" > /dev/null
-    $SUDO chmod 644 "$SOURCES_FILE"
+    if ! find_repo_file &>/dev/null; then
+        local active_keyring
+        active_keyring=$(find_keyring_file || echo "$KEYRING_FILE")
+        echo "deb [arch=amd64 signed-by=$active_keyring] http://dl.google.com/linux/chrome/deb/ stable main" | $SUDO tee "$SOURCES_FILE" > /dev/null
+        $SUDO chmod 644 "$SOURCES_FILE"
+    fi
     echo -e "${GREEN}✅ Repositorio oficial configurado correctamente.${NC}"
 }
 
