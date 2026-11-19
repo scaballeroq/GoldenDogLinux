@@ -219,8 +219,8 @@ fi
 # 6. INSTALAR / VERIFICAR GESTOR 'uv' VÍA MISE (PARA PROYECTOS AISLADOS)
 # ------------------------------------------------------------------------------
 echo "ℹ️ [3/4] Verificando gestor 'uv' para gestión aislada per-project..."
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 if ! command -v mise &> /dev/null && [ ! -x "$USER_HOME/.local/bin/mise" ]; then
-    SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
     if [ -f "$SCRIPT_DIR/mise.sh" ]; then
         echo "  ℹ️ Mise no encontrado. Ejecutando $SCRIPT_DIR/mise.sh..."
         bash "$SCRIPT_DIR/mise.sh"
@@ -232,6 +232,13 @@ fi
 
 run_as_user mise use --global uv@latest
 run_as_user mise reshim 2>/dev/null || true
+
+# Enlazar asistente py-project en ~/.local/bin
+if [ -f "$SCRIPT_DIR/python-uv-init.sh" ]; then
+    run_as_user mkdir -p "$USER_HOME/.local/bin"
+    chmod +x "$SCRIPT_DIR/python-uv-init.sh" 2>/dev/null || true
+    run_as_user ln -sf "$SCRIPT_DIR/python-uv-init.sh" "$USER_HOME/.local/bin/py-project"
+fi
 
 # ------------------------------------------------------------------------------
 # 7. INTEGRACIÓN CON KDE PLASMA 6, SHELLS Y AUTOCOMPLETADOS

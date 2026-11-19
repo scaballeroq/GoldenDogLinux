@@ -99,9 +99,9 @@ Includes helper shell functions to simplify recurring tasks:
 Automates remote storage synchronization and media downloads.
 
 ### Rclone Synchronization
-Facilita cloud syncing (bidirectional or copy) with services like Google Drive using controlled transaction limits to avoid API throttling:
-- `rclone-documentos`: Synchronizes local -> cloud.
-- `rclone-videos-down`: Downloads media files from the cloud to the local machine.
+Facilitates cloud syncing (mirror or copy) with services like Google Drive and OneDrive using controlled transaction limits (`--tpslimit 10 --fast-list`) to avoid API throttling:
+- `gdrive-documentos` / `gdrive-imagenes`: Synchronizes local -> cloud (with `-copy` and `-dry` variants).
+- `gdrive-videos-down` / `gdrive-documentos-down`: Downloads files from the cloud to the local machine.
 
 ### yt-dlp Downloads
 Utilities to automate media extraction:
@@ -111,18 +111,19 @@ Utilities to automate media extraction:
 
 ---
 
-## 7. KDE Plasma 6 Environment (`kde_settings.sh`)
+## 7. Functional KDE Plasma 6 Helpers (`kde_settings.sh`)
 
-Applies automatic configurations for the KDE Plasma 6 desktop environment:
-- Enables Night Light (blue-light filter).
-- Configures 24-hour time format and date on the panel.
-- Optimizes KWin animation speeds.
+Provides quick CLI shortcuts for KDE Plasma 6 while preserving 100% of Golden Dog Linux's native visual appearance:
+- Quick reload for Plasma (`plasma-restart`) and KWin (`kwin-reload`).
+- Direct launchers for System Settings modules (`kde-settings`, `kde-conf-display`, `kde-conf-audio`, `kde-conf-network`, `kde-conf-power`, etc.).
+- Shortcuts for `files` (Dolphin), `editor` (Kate), `sysmon` (Plasma System Monitor), and Wayland clipboard (`clipcopy` / `clippaste`).
 
 ---
 
 ## 8. Container Functions (`podman-functions.sh`)
 
-Aliases and helper functions that simplify container and Podman Pod operations:
-- `psh <container>`: Opens an interactive shell inside the specified container.
+Aliases and helper functions that simplify Podman container and systemd Quadlet operations:
+- `pexec <container>` (or `psh <container>`): Opens an interactive shell inside the specified container.
 - `plogs <container>`: Follows container logs in real time.
-- `pclean`: Performs a complete system purge of unused containers and images.
+- `quadlet-status` / `quadlet-reload`: Inspects and reloads systemd user Quadlet units.
+- `pclean` / `pclean-all`: Performs a complete system purge of unused containers and images.

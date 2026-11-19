@@ -56,37 +56,43 @@ Muestra información estética del hardware y sistema. Soporta temas oficiales d
 
 ---
 
-## 3. Escritorio KDE Plasma 6 y KDE Connect (`kde-settings.sh` y `kdeconnect.sh`)
+## 3. Escritorio KDE Plasma 6 Funcional (`kde-settings.sh`)
 
-- **Tema y Modo Oscuro**: Configuración de tema oscuro y apariencia de Plasma 6.
-- **Luz Nocturna**: Temperatura cálida para descanso visual.
-- **Ventanas**: Controles de ventana y comportamiento de KWin Wayland.
-- **Dolphin ServiceMenus**: Menú contextual con accesos a Kitty, Ghostty, Google Antigravity y VS Code.
-- **KDE Connect**: Integración nativa con el teléfono en KDE Plasma 6, con reglas en Firewalld (puertos 1714-1764 TCP/UDP).
+> [!IMPORTANT]
+> **Apariencia de Golden Dog Linux intacta:** `kde-settings.sh` no altera temas globales, colores, iconos, cursores, paneles ni decoraciones de ventana de KDE Plasma.
+
+- **Paquetes KDE Gear**: Instala utilidades oficiales (`dolphin`, `kate`, `spectacle`, `okular`, `gwenview`, `ark`, `kio-extras`, `dolphin-plugins`, `ffmpegthumbs`, `wl-clipboard`).
+- **Dolphin Optimizado**: Vista detallada por defecto con previsualización de miniaturas multimedia (vídeo, audio, imágenes, fuentes).
+- **Atajo Global `Ctrl+Alt+T`**: Lanza directamente tu terminal preferida (`kitty` o `konsole`).
+- **Dolphin ServiceMenus**: Menú contextual con accesos directos para abrir carpetas en **Kitty**, **Google Antigravity** y **Antigravity IDE**.
 
 ---
 
 ## 4. Navegadores y Software Desacoplado
 
-- **Google Chrome**: Repositorio oficial de Google con optimización Wayland (`--ozone-platform-hint=auto` y aceleración VA-API).
-- **Mozilla Firefox**: Paquete nativo `.deb` oficial de Mozilla con APT Pin-Priority 1000, eliminando el wrapper Snap.
-- **Flatpak**: Catálogo completo (Flatseal, Podman Desktop, Warehouse, VLC, Celluloid, OBS Studio, Shotcut, Spotify, Vesktop).
-- **Steam**: Cliente nativo con arquitectura 32 bits (`i386`), drivers Mesa RADV de 32 bits, GameMode y MangoHud.
+- **Google Chrome** (`chrome.sh`): Repositorio oficial de Google con optimización Wayland (`--ozone-platform-hint=auto` y aceleración VA-API).
+- **Mozilla Firefox** (`firefox.sh`): Paquete nativo `.deb` oficial de Mozilla con APT Pin-Priority 1000, eliminando Firefox ESR.
+- **Flatpak** (`flatpak.sh`): Catálogo modular con integración en KDE Discover (Flatseal, Podman Desktop, Warehouse, VLC, Celluloid, OBS Studio, Kdenlive, Shotcut, Kodi, Stremio, Audacity, Spotify, Vesktop, Telegram, Bruno, DBeaver, LibreOffice, Obsidian, LocalSend, Pika Backup, GIMP, Inkscape).
+- **Cockpit Web Console** (`cockpit.sh`): Activación bajo demanda por `cockpit.socket` en el puerto `9090` con módulos para Podman, KVM Machines, Storage y NetworkManager.
 
 ---
 
 ## 5. Resumen de Comandos con Just
 
 ```bash
-just post-install        # Despachador de post-instalación
-just kde-setup           # Configura entorno KDE Plasma 6
-just kde-status          # Muestra el estado de la configuración KDE Plasma 6
-just shell               # Instala herramientas CLI modernas
-just kitty               # Configura terminal Kitty
+just post-install        # Despachador de post-instalación (AMD / Intel)
+just kde-setup           # Optimización funcional de KDE Plasma 6 (sin tocar temas)
+just kde-status          # Muestra el estado funcional de KDE Plasma 6
+just tuning              # Optimizaciones de Kernel sysctl, límites, Baloo y ZRAM
+just shell               # Instala herramientas CLI modernas y enlaza Bash.Setup
+just zsh                 # Configura entorno Zsh modular
+just starship            # Instala y activa Starship prompt
+just kitty               # Configura terminal Kitty acelerada por GPU
 just fonts               # Instala fuentes Nerd Fonts
 just fastfetch           # Configura banner estético Fastfetch
+just multimedia          # Instala códecs GStreamer/FFmpeg y aceleración VA-API
 just flatpak             # Instala catálogo Flatpak
 just chrome              # Instala Google Chrome oficial
 just firefox             # Instala Firefox nativo (.deb)
-just steam               # Instala Steam y librerías 32-bit
+just cockpit             # Configura Cockpit Web Console
 ```

@@ -1,10 +1,9 @@
 #!/usr/bin/env bash
 # ==============================================================================
 # virtualization.sh - Instalación y Optimización Avanzada de Virtualización (KVM/QEMU)
-# Sistema: Debian GNU/Linux (Debian 13 Trixie) | Escritorio: KDE Plasma 6 (Wayland)
-# Sistema: Golden Dog Linux (Debian 13) | Virtualización KVM/QEMU
+# Sistema: Golden Dog Linux (Debian 13 Trixie) | Escritorio: KDE Plasma 6 (Wayland)
 # Compatible con CPU/GPU AMD o Intel (3D VirGL / VA-API)
-# Almacenamiento: SSD NVMe Kioxia 512 GB (Btrfs NoCoW / Ext4) | Firewall: Firewalld
+# Almacenamiento: SSD NVMe (Btrfs NoCoW / Ext4) | Firewall: UFW (Nativo)
 # ==============================================================================
 
 set -euo pipefail
@@ -34,7 +33,7 @@ Proporciona dos vías de gestión completas para desarrollo y producción:
 
 OPCIONES:
   --status, -s, --check Verifica el estado de KVM, Cockpit, libvirt, módulos del kernel,
-                        AMD AVIC, VirGL, Polkit, Btrfs NoCoW, Firewalld, KSM y red.
+                        AMD AVIC / Intel EPT, VirGL, Polkit, Btrfs NoCoW, UFW, KSM y red.
   --with-windows        Descarga los controladores VirtIO para Windows (virtio-win.iso).
   --setup-bridge        Crea un puente de red br0 enlazado a la interfaz Ethernet activa
                         (Opcional; por defecto se mantiene la red NAT virbr0 segura para portátiles).
@@ -42,11 +41,11 @@ OPCIONES:
 
 CARACTERÍSTICAS Y OPTIMIZACIONES:
   - Doble interfaz de gestión: Cockpit Machines (Web) y Virt-Manager (KDE Plasma Wayland).
-  - Aceleración CPU AMD Zen 3: AVIC (Advanced Virtual Interrupt Controller) y Nested KVM.
+  - Aceleración CPU AMD / Intel: AVIC/NPT (AMD) o EPT/VPID/PML (Intel) y Nested KVM.
   - Aceleración Gráfica 3D VirGL: Acceso directo a /dev/dri/renderD128 para usuario y libvirt-qemu.
   - Redirección SPICE USB: Integración completa de spice-client-gtk y gir1.2-spiceclientgtk.
   - Red Virtual NAT limpia: dnsmasq-base integrado en libvirt sin conflicto con systemd-resolved.
-  - Firewalld nativo: virbr0/virbr+ en zona 'trusted', Cockpit en zona activa con masquerade.
+  - UFW nativo: Reglas de paso y enrutamiento para virbr0 y puerto 9090/tcp de Cockpit.
   - Almacenamiento NVMe Btrfs NoCoW (+C): Elimina fragmentación de imágenes en /var/lib/libvirt/images.
   - VirtioFS ultrarrápido: Compartición de carpetas host-guest mediante demonio virtiofsd.
   - Deduplicación KSM calibrada: sleep_millisecs=2000 para balancear ahorro de RAM y batería.
@@ -55,7 +54,7 @@ CARACTERÍSTICAS Y OPTIMIZACIONES:
 
 EJEMPLO DE CREACIÓN DE VM LINUX CON ACELERACIÓN 3D (virt-install):
   virt-install \\
-    --name ubuntu-test \\
+    --name debian-test \\
     --memory 4096 \\
     --vcpus 4 \\
     --cpu host-passthrough \\

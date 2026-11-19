@@ -55,37 +55,43 @@ Aesthetic hardware and system banner supporting official Debian theme (`debian`)
 
 ---
 
-## 3. KDE Plasma 6 Desktop & KDE Connect (`kde-settings.sh` & `kdeconnect.sh`)
+## 3. Functional KDE Plasma 6 Desktop (`kde-settings.sh`)
 
-- **Dark Mode**: Enforces dark theme and Plasma 6 appearance settings.
-- **Night Light**: Warm color temperature for eye comfort.
-- **Window Controls**: KWin Wayland window behavior and controls.
-- **Dolphin ServiceMenus**: Right-click context actions for Kitty, Ghostty, Google Antigravity, and VS Code.
-- **KDE Connect**: Native KDE Connect integration in Plasma 6, integrated into Firewalld (ports 1714-1764 TCP/UDP).
+> [!IMPORTANT]
+> **Golden Dog Linux appearance preserved:** `kde-settings.sh` never alters global themes, color schemes, icons, cursors, panels, or window decorations.
+
+- **KDE Gear Packages**: Installs official utilities (`dolphin`, `kate`, `spectacle`, `okular`, `gwenview`, `ark`, `kio-extras`, `dolphin-plugins`, `ffmpegthumbs`, `wl-clipboard`).
+- **Optimized Dolphin**: Detailed view mode enabled by default with multimedia thumbnail previews.
+- **Global `Ctrl+Alt+T` Shortcut**: Launches your preferred terminal (`kitty` or `konsole`).
+- **Dolphin ServiceMenus**: Right-click context actions for **Kitty**, **Google Antigravity**, and **Antigravity IDE**.
 
 ---
 
 ## 4. Browsers & Decoupled Software
 
-- **Google Chrome**: Official Google repository with Ozone Wayland flags (`--ozone-platform-hint=auto` and VA-API hardware acceleration).
-- **Mozilla Firefox**: Native `.deb` package from Mozilla with APT Pin-Priority 1000, eliminating the Snap wrapper.
-- **Flatpak**: Complete catalog (Flatseal, Podman Desktop, Warehouse, VLC, Celluloid, OBS Studio, Shotcut, Spotify, Vesktop).
-- **Steam**: Native client with 32-bit architecture (`i386`), Mesa RADV 32-bit drivers, GameMode, and MangoHud.
+- **Google Chrome** (`chrome.sh`): Official Google repository with Ozone Wayland flags (`--ozone-platform-hint=auto` and VA-API hardware acceleration).
+- **Mozilla Firefox** (`firefox.sh`): Native `.deb` package from Mozilla with APT Pin-Priority 1000, replacing Firefox ESR.
+- **Flatpak** (`flatpak.sh`): Modular catalog integrated with KDE Discover (Flatseal, Podman Desktop, Warehouse, VLC, Celluloid, OBS Studio, Kdenlive, Shotcut, Kodi, Stremio, Audacity, Spotify, Vesktop, Telegram, Bruno, DBeaver, LibreOffice, Obsidian, LocalSend, Pika Backup, GIMP, Inkscape).
+- **Cockpit Web Console** (`cockpit.sh`): On-demand activation via `cockpit.socket` on port `9090` with Podman, KVM Machines, Storage, and NetworkManager modules.
 
 ---
 
 ## 5. Summary of Commands with Just
 
 ```bash
-just post-install        # Smart post-install dispatcher
-just kde-setup           # Configure KDE Plasma 6 desktop
-just kde-status          # Show KDE Plasma 6 configuration status
-just shell               # Install modern CLI tools
-just kitty               # Configure Kitty terminal
+just post-install        # Smart post-install dispatcher (AMD / Intel)
+just kde-setup           # Functional KDE Plasma 6 setup (preserves visual theme)
+just kde-status          # Show KDE Plasma 6 functional status
+just tuning              # Kernel sysctl, limits, Baloo exclusions, and ZRAM
+just shell               # Install modern CLI tools and link Bash.Setup
+just zsh                 # Configure modular Zsh environment
+just starship            # Install and enable Starship prompt
+just kitty               # Configure GPU-accelerated Kitty terminal
 just fonts               # Install Nerd Fonts
 just fastfetch           # Configure Fastfetch banner
+just multimedia          # Install GStreamer/FFmpeg codecs and VA-API acceleration
 just flatpak             # Install Flatpak applications
 just chrome              # Install official Google Chrome
 just firefox             # Install native Firefox (.deb)
-just steam               # Install Steam and 32-bit drivers
+just cockpit             # Configure Cockpit Web Console
 ```

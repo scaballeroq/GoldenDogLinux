@@ -18,6 +18,7 @@ pexec() {
     local cmd="${2:-bash}"
     podman exec -it "$1" "$cmd"
 }
+alias psh='pexec'
 
 # -----------------------------------------------------------------------------
 # plogs: Ver logs de un contenedor

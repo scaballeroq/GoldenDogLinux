@@ -13,7 +13,7 @@ $package\
 $nodejs\
 $rust\
 $python\
-$dotnet\
+$java\
 $docker_context\
 $line_break\
 $character"""
@@ -95,9 +95,9 @@ symbol = " "
 style = "bold yellow"
 format = "via [$symbol($version) ($virtualenv)]($style) "
 
-[dotnet]
-symbol = "󰪮 "
-style = "bold blue"
+[java]
+symbol = " "
+style = "bold red"
 format = "via [$symbol($version)]($style) "
 
 # Docker

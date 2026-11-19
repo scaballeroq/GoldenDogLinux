@@ -3,25 +3,23 @@
 # (Debian 13 Trixie + KDE Plasma 6 Wayland + Cockpit + UFW)
 # =============================================================================
 
-# Instala todo el entorno por defecto (Auto-detección de CPU AMD/Intel y Portátil/Sobremesa)
+# Instala todo el entorno por defecto (Auto-detección de CPU AMD/Intel)
 setup-all: post-install multimedia flatpak chrome tuning kde-setup shell security fonts fastfetch kitty ides git-setup languages podman-setup
     @echo "🚀 Entorno completo de Golden Dog Linux (KDE Plasma Wayland) configurado. Por favor, reinicia el sistema."
 
-# Perfil completo para Portátil AMD
-setup-laptop-amd: post-install-amd multimedia flatpak chrome tuning kde-setup shell security fonts fastfetch kitty ides git-setup languages podman-setup
-    @echo "🚀 Entorno Portátil AMD (Golden Dog Linux KDE) configurado con éxito. Por favor, reinicia el sistema."
+# Perfil completo para equipos AMD (Sobremesa o Portátil)
+setup-amd: post-install-amd multimedia flatpak chrome tuning kde-setup shell security fonts fastfetch kitty ides git-setup languages podman-setup
+    @echo "🚀 Entorno AMD (Golden Dog Linux KDE) configurado con éxito. Por favor, reinicia el sistema."
 
-# Perfil completo para Portátil Intel
-setup-laptop-intel: post-install-intel multimedia flatpak chrome tuning kde-setup shell security fonts fastfetch kitty ides git-setup languages podman-setup
-    @echo "🚀 Entorno Portátil Intel (Golden Dog Linux KDE) configurado con éxito. Por favor, reinicia el sistema."
+# Perfil completo para equipos Intel (Sobremesa o Portátil)
+setup-intel: post-install-intel multimedia flatpak chrome tuning kde-setup shell security fonts fastfetch kitty ides git-setup languages podman-setup
+    @echo "🚀 Entorno Intel (Golden Dog Linux KDE) configurado con éxito. Por favor, reinicia el sistema."
 
-# Perfil completo para Sobremesa AMD (sin optimizaciones de batería/tapa de portátil)
-setup-desktop-amd: post-install-amd multimedia flatpak chrome tuning kde-setup shell security fonts fastfetch kitty ides git-setup languages podman-setup
-    @echo "🚀 Entorno Sobremesa AMD (Golden Dog Linux KDE) configurado con éxito. Por favor, reinicia el sistema."
-
-# Perfil completo para Sobremesa Intel (sin optimizaciones de batería/tapa de portátil)
-setup-desktop-intel: post-install-intel multimedia flatpak chrome tuning kde-setup shell security fonts fastfetch kitty ides git-setup languages podman-setup
-    @echo "🚀 Entorno Sobremesa Intel (Golden Dog Linux KDE) configurado con éxito. Por favor, reinicia el sistema."
+# Alias de compatibilidad para Portátil/Sobremesa AMD e Intel
+setup-laptop-amd: setup-amd
+setup-desktop-amd: setup-amd
+setup-laptop-intel: setup-intel
+setup-desktop-intel: setup-intel
 
 # Diagnóstico integral del sistema, hardware, energía, red y entorno de desarrollo
 status:
@@ -33,6 +31,8 @@ status:
     @./Setup/seguridad.sh --status
     @echo ""
     @./Setup/kde-settings.sh --status
+    @echo ""
+    @./Setup/cockpit.sh --status
 
 # =============================================================================
 # CONFIGURACIÓN BASE DEL SISTEMA
@@ -65,22 +65,6 @@ intel-setup *args:
 # Estado del hardware y drivers Intel
 intel-status:
     ./Setup/intel-setup.sh --status
-
-# Autenticación y desbloqueo por huella dactilar (fprintd, PAM)
-fingerprint *args:
-    ./Setup/fingerprint-setup.sh {{args}}
-
-# Estado y diagnóstico de la autenticación por huella dactilar
-fingerprint-status:
-    ./Setup/fingerprint-setup.sh --status
-
-# Registrar huella dactilar en la terminal (sensor táctil)
-fingerprint-enroll *finger:
-    ./Setup/fingerprint-setup.sh --enroll {{finger}}
-
-# Probar verificación biométrica en el lector
-fingerprint-verify *finger:
-    ./Setup/fingerprint-setup.sh --verify {{finger}}
 
 # Optimización funcional de KDE Plasma 6 (Dolphin, miniaturas, Ctrl+Alt+T, servicemenus KIO) SIN alterar la apariencia de Golden Dog Linux
 kde-setup *args:
@@ -267,8 +251,12 @@ cockpit-open:
 # =============================================================================
 
 # Git, Delta, Lazygit, GH CLI
-git-setup:
-    ./IDE/git.sh
+git-setup *args:
+    ./IDE/git.sh {{args}}
+
+# Diagnóstico y estado de Git, Delta, Lazygit y GitHub CLI
+git-status:
+    ./IDE/git.sh --status
 
 # =============================================================================
 # GESTORES DE RUNTIMES
@@ -289,6 +277,14 @@ mise-status:
 # Todos los lenguajes
 languages: mise node python rust java
     @echo "✅ Lenguajes instalados."
+
+# Diagnóstico de todos los lenguajes y runtimes
+languages-status:
+    ./ProgrammingLanguages/mise.sh --status
+    ./ProgrammingLanguages/nodejs.sh --status
+    ./ProgrammingLanguages/python.sh --status
+    ./ProgrammingLanguages/rust.sh --status
+    ./ProgrammingLanguages/java.sh --status
 
 # Node.js LTS
 node *args:
@@ -318,21 +314,28 @@ java *args:
 ides: antigravity antigravity-cli antigravity-ide opencode
     @echo "✅ IDEs instalados."
 
+# Diagnóstico de todos los IDEs y herramientas de IA
+ides-status:
+    ./IDE/antigravity.sh --status
+    ./IDE/antigravity-cli.sh --status
+    ./IDE/antigravity-ide.sh --status
+    ./IDE/opencode.sh --status
+
 # Google Antigravity Desktop 2.0 (Completo)
-antigravity:
-    ./IDE/antigravity.sh
+antigravity *args:
+    ./IDE/antigravity.sh {{args}}
 
 # Google Antigravity CLI
-antigravity-cli:
-    ./IDE/antigravity-cli.sh
+antigravity-cli *args:
+    ./IDE/antigravity-cli.sh {{args}}
 
 # Google Antigravity IDE Engine
-antigravity-ide:
-    ./IDE/antigravity-ide.sh
+antigravity-ide *args:
+    ./IDE/antigravity-ide.sh {{args}}
 
 # OpenCode AI CLI/Editor
-opencode:
-    ./IDE/opencode.sh
+opencode *args:
+    ./IDE/opencode.sh {{args}}
 
 # =============================================================================
 # PODMAN Y CONTENEDORES QUADLETS

@@ -21,17 +21,17 @@ fi
 echo "Debian detectado: $CODENAME"
 
 # 1. Actualización Base y Herramientas de Gestión de Repositorios
-echo "ℹ️ [1/9] Actualizando repositorios y herramientas base..."
-sudo apt update
-sudo apt upgrade -y
-sudo apt install -y curl wget ca-certificates gnupg lsb-release pciutils
+echo "ℹ️ [1/8] Actualizando repositorios y herramientas base..."
+sudo apt-get update -qq
+sudo apt-get upgrade -y
+sudo apt-get install -y curl wget ca-certificates gnupg lsb-release pciutils
 
-# 3. Pre-aceptar licencias de tipografías si aplica (ttf-mscorefonts-installer)
+# 2. Pre-aceptar licencias de tipografías si aplica (ttf-mscorefonts-installer)
 echo "ttf-mscorefonts-installer msttcorefonts/accepted-mscorefonts-eula select true" | sudo debconf-set-selections 2>/dev/null || true
 
-# 4. Software Esencial y Utilidades de Sistema (KDE Plasma)
-echo "ℹ️ [3/9] Instalando utilidades esenciales del sistema..."
-sudo apt install -y \
+# 3. Software Esencial y Utilidades de Sistema (KDE Plasma)
+echo "ℹ️ [2/8] Instalando utilidades esenciales del sistema..."
+sudo apt-get install -y \
     build-essential \
     linux-headers-amd64 \
     cmake \
@@ -53,22 +53,25 @@ sudo apt install -y \
     dolphin-plugins \
     power-profiles-daemon \
     switcheroo-control \
-    wl-clipboard 2>/dev/null || true
+    wl-clipboard \
+    flatpak \
+    plasma-discover-backend-flatpak \
+    xdg-desktop-portal-kde 2>/dev/null || true
 
 # Compatibilidad FUSE para AppImages en Debian (transición time64 libfuse2t64 vs libfuse2)
-sudo apt install -y libfuse2t64 2>/dev/null || sudo apt install -y libfuse2 2>/dev/null || true
+sudo apt-get install -y libfuse2t64 2>/dev/null || sudo apt-get install -y libfuse2 2>/dev/null || true
 
-# 5. Hardware, Microcódigo, Firmware y Stack Gráfico AMD independiente
-echo "ℹ️ [4/9] Ejecutando configuración independiente de hardware AMD (amd-setup.sh)..."
+# 4. Hardware, Microcódigo, Firmware y Stack Gráfico AMD independiente
+echo "ℹ️ [3/8] Ejecutando configuración independiente de hardware AMD (amd-setup.sh)..."
 if [ -x "$SCRIPT_DIR/amd-setup.sh" ]; then
     bash "$SCRIPT_DIR/amd-setup.sh"
 else
     echo "⚠️ No se encontró $SCRIPT_DIR/amd-setup.sh"
 fi
 
-# 6. Códecs Multimedia y FFmpeg para Debian
-echo "ℹ️ [5/9] Instalando códecs multimedia y plugins GStreamer..."
-sudo DEBIAN_FRONTEND=noninteractive apt install -y \
+# 5. Códecs Multimedia y FFmpeg para Debian
+echo "ℹ️ [4/8] Instalando códecs multimedia y plugins GStreamer..."
+sudo DEBIAN_FRONTEND=noninteractive apt-get install -y \
     ffmpeg \
     libavcodec-extra \
     gstreamer1.0-plugins-base \
@@ -79,17 +82,17 @@ sudo DEBIAN_FRONTEND=noninteractive apt install -y \
     gstreamer1.0-gl \
     gstreamer1.0-pipewire 2>/dev/null || true
 
-# Servidor de audio PipeWire & WirePlumber nativo
-echo "ℹ️ [6/9] Verificando PipeWire & WirePlumber..."
-sudo apt install -y pipewire pipewire-alsa pipewire-pulse wireplumber 2>/dev/null || true
+# 6. Servidor de audio PipeWire & WirePlumber nativo
+echo "ℹ️ [5/8] Verificando PipeWire & WirePlumber..."
+sudo apt-get install -y pipewire pipewire-alsa pipewire-pulse wireplumber 2>/dev/null || true
 systemctl --user enable --now pipewire pipewire-pulse wireplumber 2>/dev/null || true
 
 # 7. Memoria ZRAM
-echo "ℹ️ [7/9] Configurando swap comprimida en RAM (ZRAM con ZSTD)..."
+echo "ℹ️ [6/8] Configurando swap comprimida en RAM (ZRAM con ZSTD)..."
 if [ -f "$SCRIPT_DIR/zram-setup.sh" ]; then
     bash "$SCRIPT_DIR/zram-setup.sh"
 else
-    sudo apt install -y zram-tools 2>/dev/null || true
+    sudo apt-get install -y zram-tools 2>/dev/null || true
     if [ -f /etc/default/zramswap ]; then
         sudo sed -i 's/^#*ALGORITHM=.*/ALGORITHM=zstd/' /etc/default/zramswap
         sudo sed -i 's/^#*PERCENT=.*/PERCENT=50/' /etc/default/zramswap
@@ -98,13 +101,13 @@ else
     fi
 fi
 
-# Limpieza de paquetes residuales
-echo "ℹ️ Limpiando dependencias huérfanas..."
-sudo apt autoremove -y
-sudo apt clean
+# 8. Limpieza de paquetes residuales
+echo "ℹ️ [7/8] Limpiando dependencias huérfanas..."
+sudo apt-get autoremove -y
+sudo apt-get clean
 
 # 9. Verificación
-echo "ℹ️ [9/9] Verificando aceleración VA-API de AMD..."
+echo "ℹ️ [8/8] Verificando aceleración VA-API de AMD..."
 vainfo 2>/dev/null || echo "⚠️ vainfo reportó detalles, verifica permisos o reinicia para cargar el nuevo kernel y firmware."
 
 echo "================================================================="

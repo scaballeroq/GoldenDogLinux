@@ -22,6 +22,8 @@ export PATH="/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:$PATH"
 # ------------------------------------------------------------------------------
 # 1. DETECCIÓN DE USUARIO, ENTORNO Y PRIVILEGIOS SUDO
 # ------------------------------------------------------------------------------
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+
 if [ "$EUID" -ne 0 ]; then
     if ! command -v sudo &> /dev/null; then
         echo "❌ Error: 'sudo' no está disponible. Ejecuta este script con privilegios de superusuario."
@@ -296,8 +298,8 @@ apply_baloo() {
 # ------------------------------------------------------------------------------
 apply_zram() {
     echo "⚙️ [4/6] Verificando swap comprimida en RAM (ZRAM con ZSTD al 50% de RAM)..."
-    if [ -x "./Setup/zram-setup.sh" ]; then
-        ./Setup/zram-setup.sh
+    if [ -x "$SCRIPT_DIR/zram-setup.sh" ]; then
+        "$SCRIPT_DIR/zram-setup.sh"
     else
         if ! command -v zramctl &>/dev/null || ! dpkg -s zram-tools &>/dev/null; then
             $SUDO apt-get update -qq 2>/dev/null || true

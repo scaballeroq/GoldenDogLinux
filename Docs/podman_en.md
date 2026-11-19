@@ -10,9 +10,9 @@ Unlike Docker, Podman runs by default in a secure, **daemonless**, and **rootles
 
 ---
 
-## 1. Configuring Podman Core (`podman.sh`)
+## 1. Configuring Rootless Podman & Quadlets (`Podman/install/podman-install.sh`)
 
-Installs Podman, its `compose` orchestration helper, and modern network stacks native to Debian 13:
+Installs Podman, the `crun` OCI runtime, the `passt`/`pasta` rootless network stack, `compose` orchestration helper, and links the `podman-utils` CLI:
 
 1. **Component Installation**:
    ```bash
@@ -45,10 +45,10 @@ Installs Podman, its `compose` orchestration helper, and modern network stacks n
 
 ## 2. Integrated Development Network
 
-All auxiliary containers and infrastructure are deployed on a common Podman bridge network named `devfed-net`. The scripts create it automatically if it's not present:
+All standalone auxiliary containers (`Podman/scripts-standalone/`) are deployed on a common Podman bridge network named `dev-net` (while shared Quadlet services in `Podman/services-shared/` use `proxy-net`). The scripts create it automatically if it's not present:
 ```bash
-if ! podman network exists devfed-net; then
-    podman network create devfed-net
+if ! podman network exists dev-net; then
+    podman network create dev-net
 fi
 ```
 

@@ -2,46 +2,47 @@
 sidebar_position: 9
 ---
 
-# Applications and Games on Debian 13
+# Decoupled Applications (Flatpak) on Golden Dog Linux (Debian 13)
 
-This guide details the installation of desktop applications, utility tools, and digital gaming platforms managed in the `Apps` and `Juegos` folders.
-
-The Debian 13 (Trixie) ecosystem allows installing system utilities through traditional package managers (APT) and application environments like gaming platforms in sandbox environments using universal formats (Flatpak).
+This guide details the installation and management of sandboxed desktop applications via [`Setup/flatpak.sh`](../Setup/flatpak.sh), keeping the base **Golden Dog Linux (Debian 13 Trixie)** system 100% clean and pure.
 
 ---
 
-## 1. Meld: Visual Diff and Merge Tool (`meld.sh`)
+## 1. Decoupled Architecture with Flatpak & KDE Discover
 
-Meld is a graphical tool for comparing and merging files, directories, and version control repositories. It is highly recommended for visual resolution of Git merge conflicts.
-
-* **Installation**:
-  ```bash
-  sudo apt update
-  sudo apt install -y meld
-  ```
+The [`Setup/flatpak.sh`](../Setup/flatpak.sh) script configures **Flatpak**, **`plasma-discover-backend-flatpak`** for **KDE Discover**, **`xdg-desktop-portal-kde`**, and the official **Flathub** remote, while applying GPU acceleration (`--device=dri`) and user GTK theme overrides.
 
 ---
 
-## 2. Steam: Gaming Platform and Compatibility (`steam.sh`)
+## 2. Application Catalog by Category
 
-To ensure the host operating system remains stable and avoid adding 32-bit (i386) multi-arch libraries at the system APT level, Steam is installed as a sandboxed application using Flatpak/Flathub.
-
-1. **Steam Installation**:
-   ```bash
-   flatpak install flathub com.valvesoftware.Steam
-   ```
-
-2. **Compatibility Layer (Proton-GE)**:
-   Installs **Proton GloriousEggroll (Proton-GE)** to improve game performance, compatibility, and stability for running Windows games on Linux:
-   ```bash
-   flatpak install flathub com.valvesoftware.Steam.CompatibilityTool.Proton-GE
-   ```
+* **Core / System (`--core`)**:
+  - **Flatseal** (`com.github.tchx84.Flatseal`): Graphical permissions and sandbox manager.
+  - **Warehouse** (`io.github.flattool.Warehouse`): Versatile Flatpak and runtime manager.
+  - **Podman Desktop** (`io.podman_desktop.PodmanDesktop`): Graphical dashboard for Podman containers.
+* **Multimedia (`--multimedia`)**:
+  - **VLC**, **Celluloid**, **OBS Studio**, **Kdenlive**, **Shotcut**, **Kodi**, **Stremio**, **Audacity**, **Spotify**.
+* **Communication (`--comms`)**:
+  - **Vesktop (Wayland Discord)**, **Telegram Desktop**.
+* **Development (`--dev`)**:
+  - **Bruno (API Client)**, **DBeaver Community**.
+* **Productivity (`--productivity`)**:
+  - **LibreOffice**, **Obsidian**, **LocalSend**, **Pika Backup**.
+* **Graphics (`--graphics`)**:
+  - **GIMP**, **Inkscape**.
 
 ---
 
-## Verification
+## 3. Commands with Just & CLI
 
-To verify that the applications are correctly installed:
+```bash
+just flatpak                       # Install default essential applications
+just flatpak-status                # Display catalog and installation status
+just flatpak-update                # Update all Flatpak applications and runtimes
+just flatpak-clean                 # Remove unused orphan runtimes
 
-- **Meld**: Run `meld` in the terminal or launch it from your desktop application menu.
-- **Steam**: Open Steam from your desktop environment launcher (e.g. KDE Application Launcher). Once logged in, you can activate Proton-GE in Steam's compatibility settings (Steam > Settings > Compatibility > Enable Steam Play).
+# Category or single-app installation
+./Setup/flatpak.sh --multimedia    # Install the multimedia suite
+./Setup/flatpak.sh --dev           # Install Bruno and DBeaver
+./Setup/flatpak.sh install vlc     # Install a single app by alias or Flatpak ID
+```

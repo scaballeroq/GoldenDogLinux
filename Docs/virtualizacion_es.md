@@ -40,7 +40,7 @@ El script detecta la CPU del equipo y aplica flags de rendimiento en `/etc/modpr
 
 ## 4. Redes y Protección Inalámbrica (Wi-Fi)
 
-- **Red NAT `default` (virbr0)**: Red virtual estándar protegida con Firewalld (zona `trusted` y mascarada activa).
+- **Red NAT `default` (virbr0)**: Red virtual estándar protegida con **UFW** (`ufw allow in on virbr0`, `ufw route allow in/out on virbr0`).
 - **Detección Segura de Wi-Fi**: En portátiles con conexión inalámbrica, se previene la creación de puentes `br0` para evitar la rotura de la conexión a internet (limitación del estándar 802.11). Si la interfaz activa es Ethernet cableada, se aprovisiona `br0` automáticamente.
 
 ---

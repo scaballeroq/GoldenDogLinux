@@ -2,46 +2,47 @@
 sidebar_position: 9
 ---
 
-# Aplicaciones y Juegos en Debian 13
+# Aplicaciones Desacopladas (Flatpak) en Golden Dog Linux (Debian 13)
 
-Esta guía detalla la instalación de software y herramientas de escritorio, así como plataformas de ocio digital descritas en las carpetas `Apps` y `Juegos`.
-
-El ecosistema de Debian 13 (Trixie) permite instalar tanto herramientas visuales del sistema mediante gestores de paquetes tradicionales (APT) como software de ocio de forma aislada a través de formatos universales (Flatpak).
+Esta guía detalla la instalación y gestión de aplicaciones de escritorio aisladas mediante [`Setup/flatpak.sh`](../Setup/flatpak.sh), manteniendo el sistema base **Golden Dog Linux (Debian 13 Trixie)** 100% limpio y estable.
 
 ---
 
-## 1. Meld: Comparación Visual de Archivos (`meld.sh`)
+## 1. Arquitectura Desacoplada con Flatpak y KDE Discover
 
-Meld es una herramienta gráfica para comparar y fusionar diferencias entre archivos, directorios y repositorios de control de versiones. Es ideal para resolver conflictos de mezcla en Git.
-
-* **Instalación**:
-  ```bash
-  sudo apt update
-  sudo apt install -y meld
-  ```
+El script [`Setup/flatpak.sh`](../Setup/flatpak.sh) configura **Flatpak**, el backend **`plasma-discover-backend-flatpak`** para **KDE Discover**, los portales **`xdg-desktop-portal-kde`** y el repositorio oficial **Flathub**, además de sincronizar la aceleración gráfica por hardware (`--device=dri`) y el tema GTK del usuario.
 
 ---
 
-## 2. Steam: Plataforma de Juegos y Compatibilidad (`steam.sh`)
+## 2. Catálogo de Aplicaciones por Categorías
 
-Para garantizar que el sistema mantenga su estabilidad sin mezclar librerías de 32 bits (i386) a nivel de sistema APT, la instalación de Steam se realiza en formato aislado mediante Flatpak/Flathub.
-
-1. **Instalación de Steam**:
-   ```bash
-   flatpak install flathub com.valvesoftware.Steam
-   ```
-
-2. **Capa de Compatibilidad (Proton-GE)**:
-   Se instala **Proton GloriousEggroll (Proton-GE)** para mejorar la compatibilidad, velocidad y estabilidad de videojuegos de Windows sobre sistemas Linux:
-   ```bash
-   flatpak install flathub com.valvesoftware.Steam.CompatibilityTool.Proton-GE
-   ```
+* **Core / Gestión (`--core`)**:
+  - **Flatseal** (`com.github.tchx84.Flatseal`): Gestor gráfico de permisos y sandbox.
+  - **Warehouse** (`io.github.flattool.Warehouse`): Gestión avanzada de Flatpaks y runtimes.
+  - **Podman Desktop** (`io.podman_desktop.PodmanDesktop`): Panel gráfico para contenedores Podman.
+* **Multimedia (`--multimedia`)**:
+  - **VLC**, **Celluloid**, **OBS Studio**, **Kdenlive**, **Shotcut**, **Kodi**, **Stremio**, **Audacity**, **Spotify**.
+* **Comunicación (`--comms`)**:
+  - **Vesktop (Discord Wayland)**, **Telegram Desktop**.
+* **Desarrollo (`--dev`)**:
+  - **Bruno (API Client)**, **DBeaver Community**.
+* **Productividad (`--productivity`)**:
+  - **LibreOffice**, **Obsidian**, **LocalSend**, **Pika Backup**.
+* **Diseño Gráfico (`--graphics`)**:
+  - **GIMP**, **Inkscape**.
 
 ---
 
-## Verificación
+## 3. Comandos con Just y CLI
 
-Para comprobar que las herramientas se han instalado correctamente:
+```bash
+just flatpak                       # Instala las aplicaciones esenciales por defecto
+just flatpak-status                # Muestra el catálogo y estado de aplicaciones instaladas
+just flatpak-update                # Actualiza todas las aplicaciones y runtimes Flatpak
+just flatpak-clean                 # Elimina runtimes huérfanos no utilizados
 
-- **Meld**: Ejecuta `meld` en consola o ábrelo desde tu lanzador de aplicaciones del escritorio.
-- **Steam**: Lanza Steam desde el menú de aplicaciones de tu escritorio KDE Plasma 6. Al iniciar sesión, puedes habilitar Proton-GE en los ajustes de compatibilidad de Steam (Steam > Parámetros > Compatibilidad > Habilitar Steam Play).
+# Instalación por categoría o individual
+./Setup/flatpak.sh --multimedia    # Instala la suite multimedia
+./Setup/flatpak.sh --dev           # Instala Bruno y DBeaver
+./Setup/flatpak.sh install vlc     # Instala una aplicación individual por alias o ID
+```

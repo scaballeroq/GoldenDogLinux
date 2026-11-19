@@ -1,14 +1,71 @@
 #!/usr/bin/env bash
-# antigravity-ide.sh - Google Antigravity IDE Installer for Kubuntu
+# ==============================================================================
+# antigravity-ide.sh - Gestor e Instalador de Google Antigravity IDE
+# Sistema: Golden Dog Linux (Debian 13 Trixie) | Escritorio: KDE Plasma 6 Wayland
+# ==============================================================================
 
 set -euo pipefail
 
-echo "=== Google Antigravity IDE Installer ==="
+show_help() {
+    cat <<EOF
+🪐 Gestor e Instalador de Google Antigravity IDE - Golden Dog Linux (Debian 13)
+
+Uso:
+  $0 [OPCIÓN]
+
+Opciones:
+  (sin argumentos)    Instala o actualiza Google Antigravity IDE de forma idempotente.
+  --status, -s        Muestra el estado de la instalación, versión y lanzador Wayland.
+  --help, -h          Muestra este mensaje de ayuda.
+EOF
+}
+
+show_status() {
+    local install_root="/opt/antigravity-ide"
+    local command_link="/usr/local/bin/antigravity-ide"
+    local desktop_file="/usr/share/applications/antigravity-ide.desktop"
+    local installed_v
+    installed_v=$(cat "$install_root/.linuxcapable-version" 2>/dev/null || echo "")
+
+    echo "================================================================="
+    echo "🔍 ESTADO DE GOOGLE ANTIGRAVITY IDE - GOLDEN DOG LINUX (DEBIAN 13)"
+    echo "================================================================="
+    if [ -n "$installed_v" ] && [ -x "$install_root/Antigravity-IDE/antigravity-ide" ]; then
+        echo "• Estado App:         ✅ Instalado (v$installed_v)"
+        echo "• Binario nativo:     $install_root/Antigravity-IDE/antigravity-ide"
+    else
+        echo "• Estado App:         ❌ No instalado"
+    fi
+    echo "• Enlace en PATH:     $(if [ -L "$command_link" ]; then echo "✅ $command_link -> $(readlink -f "$command_link")"; else echo "❌ No presente"; fi)"
+    echo "• Lanzador Desktop:   $(if [ -f "$desktop_file" ]; then echo "✅ $desktop_file"; else echo "❌ No presente"; fi)"
+    echo "================================================================="
+}
+
+case "${1:-}" in
+    --status|-s|status)
+        show_status
+        exit 0
+        ;;
+    --help|-h|help)
+        show_help
+        exit 0
+        ;;
+esac
+
+echo "=== Google Antigravity IDE Installer (Golden Dog Linux / Debian 13) ==="
 
 # --- Dependencies ---
-echo "[1/4] Installing dependencies..."
-sudo apt update -qq
-sudo apt install -y ca-certificates curl tar desktop-file-utils python3
+echo "[1/4] Checking dependencies..."
+missing_pkgs=()
+for pkg in ca-certificates curl tar desktop-file-utils python3; do
+    if ! dpkg -s "$pkg" &>/dev/null; then
+        missing_pkgs+=("$pkg")
+    fi
+done
+if [ ${#missing_pkgs[@]} -gt 0 ]; then
+    sudo apt-get update -qq
+    sudo apt-get install -y "${missing_pkgs[@]}"
+fi
 
 # --- Helper script ---
 echo "[2/4] Creating update helper..."

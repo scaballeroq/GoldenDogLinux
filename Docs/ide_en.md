@@ -2,100 +2,82 @@
 sidebar_position: 5
 ---
 
-# Integrated Development Environments (IDEs) on Debian 13
+# Integrated Development Environments (IDEs) & AI Tools on Golden Dog Linux (Debian 13)
 
-This guide details the installation and configuration of the code editors and development environments managed in the `IDE` folder.
+This guide details the installation, update, and diagnostic scripts for the development environments and AI coding agents managed in the `IDE/` folder.
 
-The environment covers the modern terminal editor **Neovim** (boosted with LazyVim), the desktop editor **Visual Studio Code**, and developer integrations like **Google Antigravity**.
-
----
-
-## 1. Neovim and LazyVim (`neovim.sh`)
-
-Installs and configures an ultra-fast, modular terminal editing environment using Neovim and the LazyVim pre-configured layout.
-
-1. **Neovim and Dependency Installation**:
-   ```bash
-   sudo apt update
-   sudo apt install -y neovim gcc make g++ ripgrep fd-find xclip wl-copy git
-   ```
-   *(Note: C/C++ compilers, ripgrep, and fd are installed since they are essential for fuzzy finders and LSP server operations inside Neovim).*
-
-2. **Command Compatibility Symlinks**:
-   Maps `fdfind` (Debian's package binary name) to `fd` in the user's local path:
-   ```bash
-   mkdir -p ~/.local/bin
-   [ -f /usr/bin/fdfind ] && ln -sf /usr/bin/fdfind ~/.local/bin/fd
-   ```
-
-3. **LazyVim Deployment**:
-   Clones the official starter template to the user's config directory:
-   ```bash
-   git clone https://github.com/LazyVim/starter "$HOME/.config/nvim"
-   rm -rf "$HOME/.config/nvim/.git"
-   ```
+All installers are optimized for **Golden Dog Linux (Debian 13 Trixie)** on **KDE Plasma 6 (Wayland)**, featuring native Ozone Wayland desktop launchers, `~/.config/environment.d/` integration, and **Dolphin** context menu actions (`~/.local/share/kio/servicemenus/`).
 
 ---
 
-## 2. Visual Studio Code (`vscode.sh`)
+## 1. Google Antigravity Desktop 2.0 (`IDE/antigravity.sh`)
 
-Automates Visual Studio Code installation directly from Microsoft's official repositories to guarantee secure, automatic updates.
+Installs the official **Google Antigravity Desktop 2.0** application into `/opt/antigravity` with a `/usr/local/bin/antigravity` symlink:
 
-1. **Initial Dependencies**:
-   ```bash
-   sudo apt update
-   sudo apt install -y wget gpg apt-transport-https
-   ```
+* **Features**:
+  - 100% rootless local vs. remote version inspection (`--status` and `--check`).
+  - Atomic updater `/usr/local/bin/update-antigravity` with automatic rollback and `chrome-sandbox` SUID 4755 setup.
+  - Native 512x512 icon extraction directly from `app.asar`.
+  - Desktop launcher configured with `--ozone-platform-hint=auto --enable-features=WaylandWindowDecorations`.
+  - Dolphin context menu action: *"Open in Antigravity"*.
 
-2. **GPG Key Import**:
-   ```bash
-   wget -qO- https://packages.microsoft.com/keys/microsoft.asc | gpg --dearmor > packages.microsoft.gpg
-   sudo install -D -o root -g root -m 644 packages.microsoft.gpg /etc/apt/keyrings/packages.microsoft.gpg
-   rm -f packages.microsoft.gpg
-   ```
-
-3. **Official Repository Registration**:
-   ```bash
-   sudo sh -c 'echo "deb [arch=amd64,arm64,armhf signed-by=/etc/apt/keyrings/packages.microsoft.gpg] https://packages.microsoft.com/repos/code stable main" > /etc/apt/sources.list.d/vscode.list'
-   ```
-
-4. **Installation**:
-   ```bash
-   sudo apt update
-   sudo apt install -y code
-   ```
+* **Commands**:
+  ```bash
+  just antigravity               # Install or update Antigravity Desktop
+  ./IDE/antigravity.sh --status  # Fast rootless status check
+  ```
 
 ---
 
-## 3. Google Antigravity CLI (`antigravity.sh`)
+## 2. Google Antigravity CLI (`IDE/antigravity-cli.sh`)
 
-Installs the corporate AI-assisted coding and developer CLI helper tool for Debian.
+Installs the **`agy`** command-line tool 100% rootlessly into `~/.local/bin/agy`:
 
-1. **Keyring Setup and GPG Import**:
-   ```bash
-   sudo mkdir -p /etc/apt/keyrings
-   curl -fsSL https://us-central1-apt.pkg.dev/doc/repo-signing-key.gpg | \
-   sudo gpg --dearmor --yes -o /etc/apt/keyrings/antigravity-repo-key.gpg
-   ```
+* **Features**:
+  - Queries the official release manifest and downloads only when a newer version is available.
+  - Automatic fallback to the official installer (`https://antigravity.google/cli/install.sh`).
+  - Idempotent integration in `~/.bashrc.d/antigravity-cli.sh` and `~/.config/environment.d/10-antigravity-cli.conf`.
 
-2. **Google Artifact Registry Repository Registration**:
-   ```bash
-   echo "deb [signed-by=/etc/apt/keyrings/antigravity-repo-key.gpg] https://us-central1-apt.pkg.dev/projects/antigravity-auto-updater-dev/ antigravity-debian main" | \
-   sudo tee /etc/apt/sources.list.d/antigravity.list > /dev/null
-   ```
-
-3. **Tool Installation**:
-   ```bash
-   sudo apt update
-   sudo apt install -y antigravity
-   ```
+* **Commands**:
+  ```bash
+  just antigravity-cli               # Install or update agy CLI
+  ./IDE/antigravity-cli.sh --status  # Inspect local and remote versions
+  ```
 
 ---
 
-## Verification
+## 3. Google Antigravity IDE (`IDE/antigravity-ide.sh`)
 
-To verify that the code editors are working correctly:
+Installs **Google Antigravity IDE** into `/opt/antigravity-ide` with its `/usr/local/bin/update-antigravity-ide` helper and Dolphin context menu integration (*"Open in Antigravity IDE"*):
 
-- **Neovim**: Run `nvim` in your terminal. On the first launch, it will automatically download and set up the default LazyVim plugins. Once done, you can run `:LazyHealth` to verify language servers (LSPs) and compilers.
-- **VS Code**: Run `code` in the terminal or search for "Visual Studio Code" in your desktop application drawer.
-- **Antigravity**: Confirm it responds properly by running `antigravity --version` or executing its assigned CLI commands.
+```bash
+just antigravity-ide               # Install or update Antigravity IDE
+./IDE/antigravity-ide.sh --status  # Check installation status
+```
+
+---
+
+## 4. OpenCode AI CLI (`IDE/opencode.sh`)
+
+Manages the **OpenCode AI** terminal agent in user space via **Mise**:
+
+* **Features**:
+  - Idempotent installation (`mise use --global opencode@latest`) or version pinning (`--version <ver>`).
+  - Automatic cleanup of legacy binaries in `~/.opencode/bin` to avoid `PATH` conflicts.
+  - Propagates Mise shims to the KDE Plasma 6 session (`~/.config/environment.d/10-opencode.conf`).
+
+* **Commands**:
+  ```bash
+  just opencode               # Install OpenCode via Mise
+  ./IDE/opencode.sh --status  # Check Mise and OpenCode status
+  ./IDE/opencode.sh --update  # Upgrade to the latest version
+  ```
+
+---
+
+## 5. Batch Installation & Diagnostics
+
+```bash
+just ides         # Install Antigravity Desktop, CLI, IDE, and OpenCode
+just ides-status  # Run status diagnostics across all IDE tools
+```

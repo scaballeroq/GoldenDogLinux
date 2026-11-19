@@ -121,37 +121,57 @@ case "${1:-}" in
 esac
 
 echo "================================================================="
-echo "🐙 CONFIGURANDO GIT, DELTA, LAZYGIT Y GITHUB CLI (UBUNTU)"
+echo "🐙 CONFIGURANDO GIT, DELTA, LAZYGIT Y GITHUB CLI (GOLDEN DOG LINUX)"
 echo "================================================================="
 
-# 1. Instalar paquetes base desde APT
-echo "ℹ️ [1/4] Instalando Git, curl y dependencias vía APT..."
-$SUDO apt update
-$SUDO apt install -y git git-delta curl ca-certificates
+# 1. Instalar paquetes base desde APT de forma idempotente
+echo "ℹ️ [1/4] Verificando Git, Delta, curl y dependencias..."
+MISSING_PKGS=()
+for pkg in git git-delta curl ca-certificates; do
+    if ! dpkg -s "$pkg" &>/dev/null; then
+        MISSING_PKGS+=("$pkg")
+    fi
+done
+
+if [ ${#MISSING_PKGS[@]} -gt 0 ]; then
+    echo "   ⬇️ Instalando paquetes faltantes vía APT: ${MISSING_PKGS[*]}..."
+    $SUDO apt-get update -qq
+    $SUDO apt-get install -y "${MISSING_PKGS[@]}"
+else
+    echo "   ✅ Git y Git-Delta ya están instalados."
+fi
 
 # 2. Instalar GitHub CLI si no está instalado
 if ! command -v gh &>/dev/null; then
     echo "ℹ️ [2/4] Instalando GitHub CLI (gh)..."
-    $SUDO mkdir -p -m 755 /etc/apt/keyrings
-    curl -fsSL https://cli.github.com/packages/githubcli-archive-keyring.gpg | $SUDO tee /etc/apt/keyrings/githubcli-archive-keyring.gpg > /dev/null
-    $SUDO chmod go+r /etc/apt/keyrings/githubcli-archive-keyring.gpg
-    echo "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/githubcli-archive-keyring.gpg] https://cli.github.com/packages stable main" | $SUDO tee /etc/apt/sources.list.d/github-cli.list > /dev/null
-    $SUDO apt update
-    $SUDO apt install -y gh
+    if apt-cache show gh &>/dev/null && $SUDO apt-get install -y gh 2>/dev/null; then
+        echo "   ✅ GitHub CLI instalado desde repositorios oficiales de Debian 13."
+    else
+        $SUDO mkdir -p -m 755 /etc/apt/keyrings
+        curl -fsSL https://cli.github.com/packages/githubcli-archive-keyring.gpg | $SUDO tee /etc/apt/keyrings/githubcli-archive-keyring.gpg > /dev/null
+        $SUDO chmod go+r /etc/apt/keyrings/githubcli-archive-keyring.gpg
+        echo "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/githubcli-archive-keyring.gpg] https://cli.github.com/packages stable main" | $SUDO tee /etc/apt/sources.list.d/github-cli.list > /dev/null
+        $SUDO apt-get update -qq
+        $SUDO apt-get install -y gh
+    fi
 else
     echo "ℹ️ [2/4] GitHub CLI ya está instalado."
 fi
 
 # 3. Instalar Lazygit si no está presente
 if ! command -v lazygit &>/dev/null; then
-    echo "ℹ️ [3/4] Instalando Lazygit desde GitHub Releases..."
-    LAZYGIT_VERSION=$(curl -s "https://api.github.com/repos/jesseduffield/lazygit/releases/latest" | grep -Po '"tag_name": "v\K[^"]*' || echo "0.44.1")
-    TMP_DIR=$(mktemp -d)
-    curl -fsSL "https://github.com/jesseduffield/lazygit/releases/download/v${LAZYGIT_VERSION}/lazygit_${LAZYGIT_VERSION}_Linux_x86_64.tar.gz" -o "$TMP_DIR/lazygit.tar.gz"
-    tar -xzf "$TMP_DIR/lazygit.tar.gz" -C "$TMP_DIR" lazygit
-    $SUDO install -m 755 "$TMP_DIR/lazygit" /usr/local/bin/lazygit
-    rm -rf "$TMP_DIR"
-    echo "   - Lazygit instalado en /usr/local/bin/lazygit."
+    echo "ℹ️ [3/4] Instalando Lazygit..."
+    if apt-cache show lazygit &>/dev/null && $SUDO apt-get install -y lazygit 2>/dev/null; then
+        echo "   ✅ Lazygit instalado desde repositorios oficiales de Debian 13."
+    else
+        LAZYGIT_VERSION=$(curl -s "https://api.github.com/repos/jesseduffield/lazygit/releases/latest" | grep -Po '"tag_name": "v\K[^"]*' || echo "0.44.1")
+        TMP_DIR=$(mktemp -d)
+        curl -fsSL "https://github.com/jesseduffield/lazygit/releases/download/v${LAZYGIT_VERSION}/lazygit_${LAZYGIT_VERSION}_Linux_x86_64.tar.gz" -o "$TMP_DIR/lazygit.tar.gz"
+        tar -xzf "$TMP_DIR/lazygit.tar.gz" -C "$TMP_DIR" lazygit
+        $SUDO install -m 755 "$TMP_DIR/lazygit" /usr/local/bin/lazygit
+        rm -rf "$TMP_DIR"
+        echo "   ✅ Lazygit instalado en /usr/local/bin/lazygit."
+    fi
 else
     echo "ℹ️ [3/4] Lazygit ya está instalado."
 fi

@@ -7,9 +7,9 @@
 # - Optimizado para Debian GNU/Linux (Debian 13 Trixie / KDE Plasma 6).
 # - Soporta tanto la instalación desde cero como la reconfiguración idempotente.
 # - Paquetes modernos de Podman: passt (pasta de alto rendimiento), crun y catatonit.
-# - Almacenamiento overlay nativo del kernel para máxima velocidad I/O en SSD NVMe Kioxia.
+# - Almacenamiento overlay nativo del kernel para máxima velocidad I/O en SSD NVMe.
 # - Aceleración por hardware para GPU (AMD / Intel) vía grupos render/video.
-# - Integración con Firewalld asignando la interfaz podman+ a la zona trusted.
+# - Integración con UFW permitiendo tráfico y enrutamiento en la interfaz podman0.
 # - Permite enlace a puertos bajos (80, 443) en modo rootless vía sysctl.
 # - Activa loginctl linger para persistencia de contenedores tras cerrar sesión.
 # - Habilita podman.socket en systemd user para compatibilidad total con Docker API.
@@ -66,8 +66,8 @@ Características configuradas:
   • Paquetes Debian:     podman, podman-docker, passt (pasta), crun, catatonit, uidmap, dbus-user-session.
   • Almacenamiento NVMe: Overlay nativo del Kernel (sin sobrecarga FUSE) con ignore_chown_errors.
   • Red Rootless:        Stack de red nativo 'pasta' de alto rendimiento y baja latencia.
-  • Aceleración GPU AMD: Acceso a /dev/dri/renderD128 mediante grupos render y video.
-  • Cortafuegos:         Interfaz podman+ asociada a la zona trusted en Firewalld.
+  • Aceleración GPU:     Acceso a /dev/dri/renderD128 mediante grupos render y video.
+  • Cortafuegos:         Interfaz podman0 permitida y enrutada en UFW (cortafuegos nativo).
   • Puertos Rootless:    ip_unprivileged_port_start=80 para Traefik y proxies en puertos 80/443.
   • Persistencia Linger: loginctl linger para ejecutar contenedores en segundo plano.
   • Docker Socket API:   podman.socket en /run/user/\$UID/podman/podman.sock.
@@ -220,15 +220,15 @@ install_packages() {
     fi
 }
 
-# 3. Configurar almacenamiento overlay nativo (Kernel 7.3+ en NVMe Kioxia)
+# 3. Configurar almacenamiento overlay nativo (Debian 13 Kernel 6.12+ en SSD NVMe)
 configure_storage() {
     log_info "Configurando almacenamiento de contenedores de alto rendimiento (storage.conf)..."
     local storage_conf="$HOME/.config/containers/storage.conf"
     mkdir -p "$(dirname "$storage_conf")"
 
-    # En Debian Workstation (Linux 6.8+ / overlayfs nativo sin privilegios),
+    # En Debian 13 (Linux 6.12+ / overlayfs nativo sin privilegios),
     # el kernel soporta native unprivileged overlayfs. Omitir 'mount_program = fuse-overlayfs'
-    # permite a Podman usar Native Overlay Diff directamente sobre el SSD NVMe Kioxia
+    # permite a Podman usar Native Overlay Diff directamente sobre el SSD NVMe
     # sin la penalización de CPU/IO de FUSE.
     if [ ! -f "$storage_conf" ]; then
         cat > "$storage_conf" <<'EOF'
@@ -239,14 +239,14 @@ driver = "overlay"
 pull_options = {enable_partial_images = "true", use_hard_links = "false", ostree_repos = ""}
 
 [storage.options.overlay]
-# Native overlay del kernel en Linux 7.3 (evita sobrecarga de FUSE en SSD NVMe)
+# Native overlay del kernel en Debian 13 (evita sobrecarga de FUSE en SSD NVMe)
 ignore_chown_errors = "true"
 EOF
         log_ok "storage.conf creado con driver overlay nativo para SSD NVMe."
     else
         # Si existe pero tiene forzado fuse-overlayfs, optimizarlo para el kernel actual
         if grep -q 'mount_program = "/usr/bin/fuse-overlayfs"' "$storage_conf" 2>/dev/null; then
-            log_step "Optimizando storage.conf existente para usar overlay nativo del kernel 7.3..."
+            log_step "Optimizando storage.conf existente para usar overlay nativo del kernel..."
             sed -i 's|mount_program = "/usr/bin/fuse-overlayfs"|# mount_program = "/usr/bin/fuse-overlayfs" (desactivado: native overlay activo)|g' "$storage_conf"
             if ! grep -q "ignore_chown_errors" "$storage_conf" 2>/dev/null; then
                 sed -i '/\[storage.options.overlay\]/a ignore_chown_errors = "true"' "$storage_conf"

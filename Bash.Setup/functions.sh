@@ -53,6 +53,7 @@ up() {
 backup() {
     cp "$1" "${1}.bak-$(date +%Y%m%d-%H%M%S)"
 }
+alias backup_file='backup'
 
 # -----------------------------------------------------------------------------
 # extract: Extractor universal
@@ -225,22 +226,24 @@ transcode-video-1080p() {
 # -----------------------------------------------------------------------------
 img2jpg() {
   if [ $# -lt 1 ]; then echo "Uso: img2jpg <imagen> [calidad: 85]"; return 1; fi
-  if ! command -v magick &> /dev/null; then echo "❌ Falta ImageMagick"; return 1; fi
+  local im_cmd=""
+  if command -v magick &> /dev/null; then im_cmd="magick"; elif command -v convert &> /dev/null; then im_cmd="convert"; else echo "❌ Falta ImageMagick (magick / convert)"; return 1; fi
 
   local img="$1"
   local quality="${2:-85}"
   echo "🖼️  Optimizando JPG ($quality%)..."
-  magick "$img" -strip -interlace Plane -gaussian-blur 0.05 -quality "$quality" "${img%.*}-optimized.jpg"
+  "$im_cmd" "$img" -strip -interlace Plane -gaussian-blur 0.05 -quality "$quality" "${img%.*}-optimized.jpg"
   echo "✅ ${img%.*}-optimized.jpg"
 }
 
 img2png() {
   if [ $# -lt 1 ]; then echo "Uso: img2png <imagen>"; return 1; fi
-  if ! command -v magick &> /dev/null; then echo "❌ Falta ImageMagick"; return 1; fi
+  local im_cmd=""
+  if command -v magick &> /dev/null; then im_cmd="magick"; elif command -v convert &> /dev/null; then im_cmd="convert"; else echo "❌ Falta ImageMagick (magick / convert)"; return 1; fi
 
   local img="$1"; shift
   echo "🖼️  Optimizando PNG..."
-  magick "$img" "$@" -strip -define png:compression-filter=5 \
+  "$im_cmd" "$img" "$@" -strip -define png:compression-filter=5 \
     -define png:compression-level=9 \
     -define png:compression-strategy=1 \
     -define png:exclude-chunk=all \

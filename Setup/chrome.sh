@@ -51,6 +51,14 @@ else
     SUDO=""
 fi
 
+run_as_user() {
+    if [ -n "${SUDO_USER:-}" ] && [ "$SUDO_USER" != "root" ]; then
+        sudo -u "$REAL_USER" env HOME="$USER_HOME" USER="$REAL_USER" "$@"
+    else
+        "$@"
+    fi
+}
+
 require_root() {
     if [ "$EUID" -ne 0 ]; then
         if ! command -v sudo &>/dev/null; then
@@ -179,23 +187,23 @@ optimize_wayland() {
         return 1
     fi
 
-    mkdir -p "$USER_DESKTOP_DIR"
-    cp "$SYSTEM_DESKTOP" "$USER_DESKTOP_FILE"
+    run_as_user mkdir -p "$USER_DESKTOP_DIR"
+    run_as_user cp "$SYSTEM_DESKTOP" "$USER_DESKTOP_FILE"
 
     local wayland_flags="--ozone-platform-hint=auto --enable-features=VaapiVideoDecodeLinuxGL,VaapiVideoEncoder --ignore-gpu-blocklist --enable-gpu-rasterization --enable-zero-copy"
     
-    sed -i "s|^Exec=/usr/bin/google-chrome-stable %U|Exec=/usr/bin/google-chrome-stable $wayland_flags %U|" "$USER_DESKTOP_FILE"
-    sed -i "s|^Exec=/usr/bin/google-chrome-stable$|Exec=/usr/bin/google-chrome-stable $wayland_flags|" "$USER_DESKTOP_FILE"
+    run_as_user sed -i "s|^Exec=/usr/bin/google-chrome-stable %U|Exec=/usr/bin/google-chrome-stable $wayland_flags %U|" "$USER_DESKTOP_FILE"
+    run_as_user sed -i "s|^Exec=/usr/bin/google-chrome-stable$|Exec=/usr/bin/google-chrome-stable $wayland_flags|" "$USER_DESKTOP_FILE"
 
-    chmod 644 "$USER_DESKTOP_FILE"
-    update-desktop-database "$USER_DESKTOP_DIR" 2>/dev/null || true
+    run_as_user chmod 644 "$USER_DESKTOP_FILE"
+    run_as_user update-desktop-database "$USER_DESKTOP_DIR" 2>/dev/null || true
     echo -e "${GREEN}✅ Lanzador optimizado para Wayland configurado en $USER_DESKTOP_FILE.${NC}"
 }
 
 restore_desktop() {
     if [ -f "$USER_DESKTOP_FILE" ]; then
-        rm -f "$USER_DESKTOP_FILE"
-        update-desktop-database "$USER_DESKTOP_DIR" 2>/dev/null || true
+        run_as_user rm -f "$USER_DESKTOP_FILE"
+        run_as_user update-desktop-database "$USER_DESKTOP_DIR" 2>/dev/null || true
         echo -e "${GREEN}✅ Lanzador personalizado eliminado. Se usará el lanzador estándar del sistema.${NC}"
     else
         echo -e "${YELLOW}ℹ️ No se detectó un lanzador personalizado en el perfil de usuario.${NC}"

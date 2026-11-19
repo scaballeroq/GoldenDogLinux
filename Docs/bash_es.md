@@ -99,9 +99,9 @@ Incluye funciones en bash para simplificar tareas recurrentes:
 Automatiza la gestión de almacenamiento y descargas externas.
 
 ### Sincronización Rclone
-Facilita la sincronización y copia bidireccional con servicios como Google Drive mediante límites controlados de transacciones para evitar bloqueos del servicio:
-- `rclone-documentos`: Sincroniza local -> nube.
-- `rclone-videos-down`: Descarga archivos multimedia de la nube al equipo local.
+Facilita la sincronización y copia bidireccional con servicios como Google Drive y OneDrive mediante límites controlados de transacciones (`--tpslimit 10 --fast-list`) para evitar bloqueos de la API:
+- `gdrive-documentos` / `gdrive-imagenes`: Sincroniza local -> nube (con variantes `-copy` y `-dry`).
+- `gdrive-videos-down` / `gdrive-documentos-down`: Descarga archivos desde la nube al equipo local.
 
 ### Descargas yt-dlp
 Utilidades para automatizar la extracción multimedia:
@@ -111,18 +111,19 @@ Utilidades para automatizar la extracción multimedia:
 
 ---
 
-## 7. Entorno KDE Plasma 6 (`kde_settings.sh`)
+## 7. Entorno KDE Plasma 6 Funcional (`kde_settings.sh`)
 
-Aplica configuraciones automáticas para el entorno de escritorio KDE Plasma 6:
-- Habilitación de la luz nocturna (filtro de luz azul).
-- Configuración del formato horario de 24 horas y fecha en el panel.
-- Optimización de velocidad de animaciones en KWin.
+Proporciona atajos rápidos de consola para el entorno de escritorio KDE Plasma 6 preservando al 100% la personalización visual de Golden Dog Linux:
+- Recarga rápida de Plasma (`plasma-restart`) y KWin (`kwin-reload`).
+- Accesos directos a módulos de Preferencias del Sistema (`kde-settings`, `kde-conf-display`, `kde-conf-audio`, `kde-conf-network`, `kde-conf-power`, etc.).
+- Atajos para lanzar `files` (Dolphin), `editor` (Kate), `sysmon` (Plasma System Monitor) y portapapeles Wayland (`clipcopy` / `clippaste`).
 
 ---
 
 ## 8. Funciones para Contenedores (`podman-functions.sh`)
 
-Aliases y funciones que simplifican el control de contenedores y Pods de Podman:
-- `psh <contenedor>`: Abre una shell interactiva dentro del contenedor indicado.
+Aliases y funciones que simplifican el control de contenedores y Quadlets de Podman:
+- `pexec <contenedor>` (o `psh <contenedor>`): Abre una shell interactiva dentro del contenedor indicado.
 - `plogs <contenedor>`: Muestra e interactúa con los logs en tiempo real.
-- `pclean`: Realiza una purga completa de imágenes y contenedores sin uso en el sistema.
+- `quadlet-status` / `quadlet-reload`: Inspecciona y recarga unidades Quadlet de systemd user.
+- `pclean` / `pclean-all`: Realiza una purga completa de imágenes y contenedores sin uso en el sistema.

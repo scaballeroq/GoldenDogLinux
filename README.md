@@ -1,64 +1,97 @@
-# 🐕 Golden Dog Linux Environment Configuration (Debian 13 KDE Plasma)
+# 🐕 Golden Dog Linux — Asistente de Configuración (Debian 13 KDE Plasma)
 
-Este repositorio contiene una colección organizada, modular y automatizada de scripts de configuración para **Golden Dog Linux** (<https://goldendoglinux.org/>), una distribución minimalista basada en **Debian GNU/Linux 13 (Trixie)** con **KDE Plasma (Wayland)**, que incluye **Cockpit** y **UFW** preinstalados y configurados.
+Este repositorio contiene una colección organizada, modular y automatizada de scripts para dejar a punto **Golden Dog Linux** (<https://goldendoglinux.org/>), una distribución minimalista basada en **Debian GNU/Linux 13 (Trixie)** con **KDE Plasma (Wayland)**, que incluye **Cockpit** y **UFW** preinstalados y configurados.
+
+> [!TIP]
+> **¿Eres nuevo/a en Linux o buscas una guía sencilla sin tecnicismos?**
+> 👉 **[Lee aquí la Guía Fácil Paso a Paso (`Docs/guia_rapida_es.md`)](./Docs/guia_rapida_es.md)** con explicaciones claras para cualquier nivel.
+> *(English version available at [`README.en.md`](./README.en.md) and [`Docs/quick_guide_en.md`](./Docs/quick_guide_en.md)).*
 
 > [!IMPORTANT]
-> **Apariencia de KDE intacta:** Golden Dog Linux trae una personalización visual propia muy cuidada. Ninguno de los scripts de este repositorio modifica temas globales, colores, iconos, cursores, paneles, fondos de pantalla ni decoraciones de ventana de KDE Plasma.
+> **Apariencia de KDE 100% intacta:** Golden Dog Linux trae una personalización visual propia muy cuidada. Ninguno de los scripts de este repositorio modifica temas globales, colores, iconos, cursores, paneles, fondos de pantalla ni decoraciones de ventana de KDE Plasma.
 
 ---
 
-## 📂 Organización del Repositorio
+## 🚀 Inicio Rápido en 3 Pasos (Para Todos los Usuarios)
 
-### 🐚 [Bash.Setup](./Bash.Setup/)
-Configuración modular para **Bash** (`~/.bashrc.d`) y **Zsh** (`~/.zshrc.d`):
-- **`aliases.sh`**: Atajos de navegación, utilidades modernas (`eza`, `bat`, `duf`, `dust`), Git, **APT**, **UFW** (`fw*`), Libvirt y Podman.
-- **`environment.sh`**: Variables globales (`EDITOR`, `PATH`, Wayland, `QT_QPA_PLATFORMTHEME="kde"`, `ELECTRON_OZONE_PLATFORM_HINT="auto"`, `DOCKER_HOST`, `LIBVIRT_DEFAULT_URI`) y Mise shims.
-- **`functions.sh`**: Colección de funciones avanzadas (`mkcd`, `up`, `extract`, `duh`, `backup_file`, `monitors`).
-- **`kde_settings.sh`**: Atajos funcionales para KDE Plasma (`systemsettings`, Dolphin, Kate, Plasma System Monitor, portapapeles Wayland) sin alterar la apariencia visual.
-- **`history.sh`**, **`options.sh`**, **`podman-functions.sh`**, **`rclone_aliases.sh`**, **`yt-dlp_aliases.sh`**.
+Si acabas de instalar **Golden Dog Linux** en cualquier PC o portátil con procesador **AMD** o **Intel** *(tarjetas gráficas Nvidia excluidas)*:
 
-### 🐳 [Podman](./Podman/)
-Ecosistema de contenedores rootless con Quadlets nativos de systemd (`podman-install.sh`, `quadlets-setup.sh`, `podman-utils.sh`, `services-shared/`, `templates/`).
+### 1. Abre la terminal e instala `git` y `just`
+```bash
+sudo apt update && sudo apt install -y git just
+```
 
-### 🖥️ [Virtualizacion](./Virtualizacion/)
-- **`virtualization.sh`**: Configuración de KVM/QEMU, Libvirt, virt-manager, Polkit sin contraseña para el grupo `libvirt`, backend nftables y reglas UFW (`virbr0` y Cockpit).
+### 2. Descarga este proyecto
+```bash
+mkdir -p ~/Workspace/Repositorios
+cd ~/Workspace/Repositorios
+git clone https://github.com/GoldendogLinux/GoldenDogLinux.git
+cd GoldenDogLinux
+```
 
-### ⚙️ [Setup](./Setup/)
-Scripts de configuración del sistema, optimización funcional y endurecimiento (compatible con cualquier PC de sobremesa o portátil **AMD** o **Intel**; tarjetas gráficas **Nvidia excluidas**):
-- **`post-install.sh`**, **`post-install-amd.sh`**, **`post-install-intel.sh`**: Despachador por CPU/GPU, paquetes base, PipeWire, ZRAM y soporte Flatpak en KDE Discover (`plasma-discover-backend-flatpak`).
-- **`amd-setup.sh`** & **`intel-setup.sh`**: Scripts independientes para cada fabricante (microcódigo, firmware, drivers Mesa RADV/ANV, VA-API, variables Wayland y parámetros KVM).
-- **`kde-settings.sh`**: Mejoras **únicamente funcionales** para KDE Plasma 6 (Dolphin en modo detallado con miniaturas multimedia, servicemenus KIO para Kitty y Antigravity, atajo `Ctrl+Alt+T`).
-- **`kdeconnect.sh`**: Integración de KDE Connect + `sshfs` (Dolphin) y reglas de UFW (`1714:1764` TCP/UDP).
-- **`cockpit.sh`**: Verificación y ampliación modular de Cockpit (`cockpit-podman`, `cockpit-machines`, `cockpit-storaged`, `cockpit-files`, `IdleTimeout=15`) y regla UFW (`9090/tcp`).
-- **`seguridad.sh`**: Configuración de **UFW** nativo (Cockpit, KDE Connect, mDNS, Podman, KVM, `--dev-ports`) y parámetros `sysctl` para contenedores rootless y virtualización.
-- **`debian-tuning.sh`**: `sysctl` (inotify, `max_map_count`, TCP BBR), límites `nofile`, ZRAM y exclusiones de desarrollo en **KDE Baloo**.
-- **`laptop-setup.sh`**: `power-profiles-daemon`, Bluetooth `FastConnectable`, cierre de tapa en `systemd-logind`, desplazamiento natural en KWin Wayland y perfiles PowerDevil.
-- **`hp-printer-setup.sh`**: Pila de impresión CUPS/HPLIP y reglas UFW (`631/tcp`, `5353/udp`).
-- **`kitty.sh`** & **`ghostty.sh`**: Terminales aceleradas por GPU con integración en KDE (`kglobalshortcutsrc`) y Dolphin (`servicemenus`).
-- **`multimedia.sh`** & **`flatpak.sh`**: Códecs, VA-API, reproductores KDE (`gwenview`, `haruna`/`mpv`, `vlc`) y apps Flatpak con `xdg-desktop-portal-kde`.
-- **`chrome.sh`**, **`firefox.sh`**, **`steam.sh`**, **`shell.sh`**, **`zsh-setup.sh`**, **`starship.sh`**, **`fonts.sh`**, **`fastfetch.sh`**, **`fingerprint-setup.sh`**, **`zram-setup.sh`**, **`yt-dlp-setup.sh`**.
-
-### 📦 [ProgrammingLanguages](./ProgrammingLanguages/) & 💻 [IDE](./IDE/)
-Runtimes aislados con `mise` y `uv` (`python.sh`, `nodejs.sh`, `rust.sh`, `java.sh`, etc.) y herramientas de desarrollo (`git.sh`, `antigravity.sh`, `antigravity-cli.sh`, `antigravity-ide.sh`, `opencode.sh`).
-
----
-
-## ⚡ Automatización mediante Justfile
+### 3. Ejecuta la configuración automática (o elige solo lo que necesites)
 
 ```bash
-# Instalación completa automática (detecta AMD/Intel y Portátil/Sobremesa)
+# Opción A: Configurar TODO automáticamente (detecta si tu equipo es AMD o Intel)
 just setup-all
 
-# Perfiles explícitos por hardware
-just setup-laptop-amd
-just setup-laptop-intel
-just setup-desktop-amd
-just setup-desktop-intel
-
-# Diagnóstico integral
-just status
-just security-status
-just cockpit-status
-just kde-status
-just kdeconnect-status
+# Opción B: Configurar solo la base del sistema + multimedia + apps de escritorio (sin herramientas de programación)
+just post-install multimedia flatpak chrome kde-setup tuning security
 ```
+
+Cuando termine, **reinicia tu ordenador** y tendrás todos los drivers, códecs multimedia, tienda de aplicaciones y optimizaciones listas.
+
+---
+
+## 🎯 ¿Qué hace cada comando? (Tabla Rápida)
+
+Puedes instalar todo de golpe con `just setup-all` o ejecutar **solo la pieza que quieras** en cualquier momento:
+
+| Comando Fácil | ¿Para qué sirve? | Comprobar su estado |
+| :--- | :--- | :--- |
+| `just post-install` | Instala drivers **AMD** o **Intel**, microcódigo, audio **PipeWire**, **ZRAM** y soporte **Flatpak** en KDE Discover. | `just amd-status` / `just intel-status` |
+| `just multimedia` | Instala todos los códecs de vídeo/audio (**FFmpeg**, **GStreamer**), aceleración **VA-API** y miniaturas de vídeo en Dolphin. | `just multimedia-status` |
+| `just kde-setup` | Mejora **Dolphin** (vista detallada y miniaturas), añade el atajo `Ctrl+Alt+T` y menús de clic derecho (**sin tocar tu tema visual**). | `just kde-status` |
+| `just flatpak` | Configura el catálogo **Flathub** e instala utilidades base (**Flatseal**, **Warehouse**) para instalar apps como VLC, Spotify o LibreOffice. | `just flatpak-status` |
+| `just chrome` | Instala el navegador **Google Chrome** oficial con aceleración de vídeo Wayland. | `just chrome-status` |
+| `just firefox` | Instala el navegador **Mozilla Firefox** oficial (`.deb` nativo en español). | `just firefox-status` |
+| `just tuning` | Acelera el sistema: memoria **ZRAM** al 50%, red **TCP BBR**, apagado rápido y exclusiones de carpetas pesadas en **KDE Baloo**. | `just tuning-status` |
+| `just security` | Configura el cortafuegos **UFW** nativo permitiendo **Cockpit** (`9090`), **KDE Connect**, contenedores **Podman** y máquinas virtuales **KVM**. | `just security-status` |
+| `just cockpit` | Configura el panel de administración web **Cockpit** (`https://localhost:9090`) en modo ahorro de batería (bajo demanda). | `just cockpit-status` |
+| `just shell` | Instala herramientas modernas de terminal (`eza`, `bat`, `fzf`, `zoxide`, `btop`, `ripgrep`) y activa los atajos de `Bash.Setup`. | `just shell-status` |
+| `just kitty` | Instala y configura la terminal **Kitty** acelerada por GPU con desenfoque Wayland y tema Catppuccin Mocha. | `just kitty-status` |
+| `just fonts` | Instala las fuentes **Nerd Fonts** (`JetBrainsMono`, `FiraCode`, `CascadiaCode`, `Meslo`, `Hack`) para ver iconos en la terminal. | `just fonts-status` |
+| `just fastfetch` | Configura el resumen visual del sistema (**Fastfetch** — escribe `ff` en la terminal para verlo). | `just fastfetch-status` |
+| `just languages` | *(Para desarrolladores)* Instala **Mise**, **Node.js LTS**, **Python + uv**, **Rust** y **OpenJDK 21**. | `just languages-status` |
+| `just ides` | *(Para desarrolladores)* Instala **Google Antigravity Desktop 2.0**, **Antigravity CLI (`agy`)**, **Antigravity IDE** y **OpenCode AI**. | `just ides-status` |
+| `just podman-setup` | *(Para desarrolladores)* Configura contenedores **Podman Rootless** y servicios **Quadlets** de systemd. | `just podman-status` |
+| `just virtualization` | *(Avanzado)* Configura máquinas virtuales **KVM/QEMU** con **Virt-Manager** y **Cockpit Machines**. | `just virtualization-status` |
+
+---
+
+## 📚 Índice de Documentación (`Docs/`)
+
+Toda la documentación está disponible en español e inglés dentro de la carpeta [`Docs/`](./Docs/):
+
+1. 🌟 **[Guía Fácil Paso a Paso (Para Todos los Niveles)](./Docs/guia_rapida_es.md)** | *[Beginner's Quick Guide (EN)](./Docs/quick_guide_en.md)*
+2. ⚙️ **[Configuración del Sistema, KDE y Multimedia](./Docs/setup_es.md)** | *[System Setup (EN)](./Docs/setup_en.md)*
+3. 🛡️ **[Seguridad y Cortafuegos UFW](./Docs/seguridad_es.md)** | *[Security & UFW (EN)](./Docs/seguridad_en.md)*
+4. 📦 **[Aplicaciones de Escritorio (Flatpak / Flathub)](./Docs/apps_es.md)** | *[Flatpak Apps (EN)](./Docs/apps_en.md)*
+5. 🐚 **[Terminal, Atajos y Funciones (`Bash.Setup`)](./Docs/bash_es.md)** | *[Bash & Zsh Setup (EN)](./Docs/bash_en.md)*
+6. 🐙 **[Control de Versiones (Git, Delta, Lazygit, GitHub CLI)](./Docs/git_es.md)** | *[Git Setup (EN)](./Docs/git_en.md)*
+7. 💻 **[Entornos de Desarrollo e IA (Antigravity & OpenCode)](./Docs/ide_es.md)** | *[IDEs & AI Tools (EN)](./Docs/ide_en.md)*
+8. 🐍 **[Lenguajes de Programación (Mise, Node, Python, Rust, Java)](./Docs/languages_es.md)** | *[Languages (EN)](./Docs/languages_en.md)*
+9. 🧪 **[Guía Práctica de Proyectos Python con `uv` (`py-project`)](./Docs/python_uv_es.md)**
+10. 🐳 **[Contenedores Podman Rootless y Quadlets](./Docs/podman_es.md)** | *[Podman Containers (EN)](./Docs/podman_en.md)*
+11. 🖥️ **[Virtualización KVM/QEMU con Virt-Manager y Cockpit](./Docs/virtualizacion_es.md)** | *[KVM Virtualization (EN)](./Docs/virtualization_en.md)*
+
+---
+
+## 📂 Organización Técnica del Repositorio
+
+* **[`Setup/`](./Setup/)**: Scripts independientes de sistema, hardware (`amd-setup.sh`, `intel-setup.sh`), escritorio (`kde-settings.sh`, `kitty.sh`, `fastfetch.sh`, `fonts.sh`), navegadores (`chrome.sh`, `firefox.sh`), multimedia (`multimedia.sh`, `flatpak.sh`, `yt-dlp-setup.sh`), rendimiento (`debian-tuning.sh`, `zram-setup.sh`) y seguridad/administración (`seguridad.sh`, `cockpit.sh`).
+* **[`Bash.Setup/`](./Bash.Setup/)**: Configuración modular para **Bash** (`~/.bashrc.d`) y **Zsh** (`~/.zshrc.d`) con atajos útiles (`aliases.sh`, `functions.sh`, `kde_settings.sh`, `podman-functions.sh`, `rclone_aliases.sh`, `yt-dlp_aliases.sh`).
+* **[`ProgrammingLanguages/`](./ProgrammingLanguages/)**: Gestión limpia de runtimes con `mise.sh`, proyectos Python aislados con `uv` (`python.sh`, `python-uv-init.sh`), `nodejs.sh`, `rust.sh` (con `mold` y `sccache`) y `java.sh` (OpenJDK 21 + Maven/Gradle).
+* **[`IDE/`](./IDE/)**: Instaladores y actualizadores para `git.sh`, `antigravity.sh`, `antigravity-cli.sh`, `antigravity-ide.sh` y `opencode.sh`.
+* **[`Podman/`](./Podman/)**: Ecosistema de contenedores rootless con Quadlets de systemd, plantillas de proyectos y el asistente `podman-utils`.
+* **[`Virtualizacion/`](./Virtualizacion/)**: Aprovisionamiento de KVM/QEMU, Libvirt, aceleración 3D VirGL, Polkit sin contraseña e integración con Cockpit y UFW.

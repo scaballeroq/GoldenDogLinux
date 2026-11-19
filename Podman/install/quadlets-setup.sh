@@ -55,7 +55,7 @@ EOF
 
 show_status() {
     echo "================================================================="
-    echo "🔍 ESTADO DE SYSTEMD QUADLETS - UBUNTU WORKSTATION"
+    echo "🔍 ESTADO DE SYSTEMD QUADLETS - GOLDEN DOG LINUX (DEBIAN 13)"
     echo "================================================================="
     if ! command -v podman &>/dev/null; then
         echo "• Motor Podman:        ❌ No instalado en el sistema"
@@ -133,7 +133,7 @@ verify_quadlets() {
     local podman_version
     podman_version=$(podman --version 2>/dev/null | grep -oP '\d+\.\d+' | head -1 || echo "detectado")
     
-    log_ok "Quadlets soportado nativamente (Podman $podman_version en Ubuntu Workstation)."
+    log_ok "Quadlets soportado nativamente (Podman $podman_version en Golden Dog Linux / Debian 13)."
     echo ""
     echo "============================================"
     log_ok "Quadlets configurado correctamente"
@@ -165,7 +165,7 @@ case "${1:-}" in
         ;;
     "")
         echo "============================================"
-        echo "  Configurador de Quadlets - Ubuntu Workstation"
+        echo "  Configurador de Quadlets - Golden Dog Linux (Debian 13)"
         echo "============================================"
         echo ""
         require_podman

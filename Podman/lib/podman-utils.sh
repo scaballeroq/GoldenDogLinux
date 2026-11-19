@@ -655,7 +655,7 @@ cmd_doctor() {
 # =============================================================================
 usage() {
     cat <<EOF
-🐳 podman-utils - Gestor de Proyectos y Contenedores Quadlets (Ubuntu Linux)
+🐳 podman-utils - Gestor de Proyectos y Contenedores Quadlets (Golden Dog Linux / Debian 13)
    Compatible con: Cualquier PC o portátil AMD / Intel en Golden Dog Linux
 
 Uso:

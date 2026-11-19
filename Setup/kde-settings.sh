@@ -52,8 +52,6 @@ run_as_user() {
 detect_preferred_terminal() {
     if command -v kitty &>/dev/null; then
         echo "kitty"
-    elif command -v ghostty &>/dev/null; then
-        echo "ghostty"
     elif command -v konsole &>/dev/null; then
         echo "konsole"
     else
@@ -80,7 +78,7 @@ Acciones que realiza este script (sin tocar temas ni apariencia):
   • Paquetes KDE Gear: Instala utilidades oficiales (Dolphin, Kate, Spectacle, Okular,
                        Gwenview, Ark, kio-extras, dolphin-plugins, ffmpegthumbs, wl-clipboard).
   • Productividad:     Dolphin en modo detallado con vista previa de miniaturas multimedia.
-  • Terminal & Atajos: Configura la terminal preferida (Kitty/Ghostty/Konsole) y Ctrl+Alt+T.
+  • Terminal & Atajos: Configura la terminal preferida (Kitty/Konsole) y Ctrl+Alt+T.
   • Menú contextual:   Acciones de clic derecho en Dolphin (Abrir en Kitty, Antigravity, IDE).
 EOF
 }

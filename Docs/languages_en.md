@@ -35,109 +35,63 @@ Mise is a modern CLI version manager that replaces older tools like `asdf`, `nvm
 
 ## 2. Language Runtimes and SDKs
 
-Once Mise is installed, the following development environments are deployed globally:
+### Node.js LTS & Corepack (`nodejs.sh`)
+* **Dependencies**: Verifies and installs `build-essential`, `python3`, and `make` via APT if missing, required to build native npm dependencies (`node-gyp`), with automatic multi-core parallelism (`JOBS=$(nproc)`).
+* **Installation**: Configures the latest global Node.js LTS release in Mise:
+  ```bash
+  mise use --global node@lts
+  ```
+* **Corepack (pnpm & yarn)**: Enables Corepack with unattended downloads (`COREPACK_ENABLE_DOWNLOAD_PROMPT=0`) and generates native shell completions for `npm` and `pnpm`.
 
-### Node.js (`nodejs.sh` and `angular.sh`)
-* **Dependencies**: Installs `build-essential`, `python3`, `g++`, and `make` via APT, which are required to build native npm dependencies (`node-gyp`).
-* **Installation**: Configures the global Node.js LTS 22 release:
-  ```bash
-  mise use --global node@22
-  ```
-* **Safe NPM Updates**: Cleans npm cache and pre-installs the `promise-retry` package to bypass common npm registry upgrade errors on Debian, then updates NPM:
-  ```bash
-  mise exec node@22 -- npm install -g npm@latest
-  ```
-* **Angular CLI**: Installs the official Angular CLI globally:
-  ```bash
-  mise use --global npm:@angular/cli@latest
-  ```
-
-### Python (`python.sh`)
-* **Dependencies**: Installs system libraries required to build C extensions for Python (`libssl-dev`, `zlib1g-dev`, `libffi-dev`, etc.).
-* **Installation**: Installs the optimized 3.12 branch and updates the pip package manager:
-  ```bash
-  mise use --global python@3.12
-  mise exec python@3.12 -- python -m pip install --upgrade pip
-  ```
-
-### .NET SDK (`dotnet.sh`)
-* **Installation**: Installs the latest major version of the .NET SDK:
-  ```bash
-  mise use --global dotnet@10
-  ```
-
-### Gemini CLI (`gemini.sh`)
-* **Installation**: Installs the Google Gemini command-line helper interface:
-  ```bash
-  mise use --global npm:@google/gemini-cli@latest
-  ```
+### Native Python + `uv` Package Manager (`python.sh` & `python-uv-init.sh`)
+* **PEP 668 Philosophy**: Python is **not** installed globally in Mise to protect `/usr/bin/python3` and Debian system tools (APT, UFW, KDE Plasma 6).
+* **Per-project `uv` management**: Installs `uv` globally via Mise (`mise use --global uv@latest`) with `UV_LINK_MODE=copy` and links the interactive `py-project` wizard (`python-uv-init.sh`) to `~/.local/bin/py-project` to create isolated virtual environments from templates (Basic, FastAPI, Typer/Rich CLI, Data Science).
 
 ---
 
 ## 3. Rust Environment (`rust.sh`)
 
-Rust is managed through its official standard toolchain installer **Rustup**.
+Rust is managed through **Rustup**, accelerated with the **Mold** linker and **sccache** compilation cache:
 
-1. **System Build Dependencies**:
+1. **System Build Dependencies, Mold, and sccache**:
    ```bash
-   sudo apt install -y build-essential cmake libssl-dev pkg-config curl
+   sudo apt-get install -y build-essential cmake libssl-dev pkg-config curl mold sccache
    ```
 
-2. **Rustup Installation**:
-   Downloads the installation script without directly modifying the global environment path to preserve modular loading:
+2. **Rustup & IDE Components**:
+   Installs the `stable` toolchain along with `rust-analyzer`, `clippy`, `rustfmt`, and `rust-src`:
    ```bash
-   curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y --no-modify-path
+   curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y --default-toolchain stable --no-modify-path
+   rustup component add rust-analyzer clippy rustfmt rust-src
    ```
 
-3. **Modular Environment Loading**:
-   Adds the Cargo bin path variables inside `~/.bashrc.d/rust.sh`:
-   ```bash
-   if [ -f "$HOME/.cargo/env" ]; then
-       . "$HOME/.cargo/env"
-   fi
-   ```
+3. **Cargo Optimizations (`~/.cargo/config.toml`)**:
+   Automatically configures CPU thread count (`jobs = NPROC`), `rustc-wrapper = "sccache"`, and the `mold` linker (`-C link-arg=-fuse-ld=mold`).
 
 4. **Fast Binary Installer (`cargo-binstall`)**:
-   Downloads and integrates `cargo-binstall`, which installs Rust-written CLI tools directly from GitHub pre-compiled binaries instead of compiling them from source locally (saving massive compilation times):
-   ```bash
-   curl -L --proto '=https' --tlsv1.2 -sSf https://raw.githubusercontent.com/cargo-bins/cargo-binstall/main/install-from-binstall-release.sh | bash
-   ```
+   Installs `cargo-binstall` along with `cargo-update` and `cargo-watch`.
 
 ---
 
-## 4. OpenJDK Java compatible with AutoFirma (`java.sh`)
+## 4. OpenJDK 21 LTS (`java.sh`)
 
-AutoFirma requires Java Virtual Machine integration and NSS tools. These are installed system-wide via APT:
-```bash
-sudo apt install -y default-jre default-jdk libnss3-tools
-```
+Installs `openjdk-21-jdk`, `openjdk-21-jre`, `maven`, `ca-certificates-java`, `pcscd`, and `libnss3-tools` (compatible with smartcards and AutoFirma):
+* Configures `_JAVA_AWT_WM_NONREPARENTING=1` and font antialiasing for KWin Wayland.
+* Optimizes **Maven** (`MAVEN_ARGS="-T 1C"`) and **Gradle** (`~/.gradle/gradle.properties` with daemon, parallel execution, caching, and `vfs.watch`).
 
 ---
 
 ## 5. Task Automation (`justfile`)
 
-A `justfile` is included to trigger individual runtime installations using simple commands:
+Both the root `justfile` and `ProgrammingLanguages/justfile` provide recipes to install or inspect all languages:
 
-```make
-# Installs Mise
-mise:
-    ./mise.sh
-
-# Installs Node
-node:
-    ./nodejs.sh
-
-# Installs Python
-python:
-    ./python.sh
-
-# Installs Rust
-rust:
-    ./rust.sh
-
-# Installs Gemini CLI
-gemini:
-    ./gemini.sh
+```bash
+just languages          # Install Mise, Node.js LTS, Python/uv, Rust, and OpenJDK 21
+just languages-status   # Show full diagnostics for all runtimes
+just mise               # Install/update Mise
+just node               # Install/update Node.js LTS + Corepack
+just python             # Verify native Python + install uv
+just python-uv          # Interactive wizard to create Python projects with uv
+just rust               # Install/update Rust + Mold + sccache
+just java               # Install/update OpenJDK 21 + Maven + Gradle
 ```
-
-You can execute any recipe with `just <recipe>` inside the `ProgrammingLanguages` folder.

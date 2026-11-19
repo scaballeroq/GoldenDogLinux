@@ -10,7 +10,7 @@
 #       * Esquema de colores para resaltado de sintaxis (cargado al final de ~/.zshrc).
 #       * Sugerencias automáticas asíncronas (history + completion).
 #       * Caché de compinit en ~/.cache/zsh/ y fpath previo a compinit.
-#       * Teclas Home/End/Delete/Ctrl+Flechas configuradas para Konsole, Kitty y Ghostty.
+#       * Teclas Home/End/Delete/Ctrl+Flechas configuradas para Konsole y Kitty.
 #       * Integración de FZF (Ctrl+R, Ctrl+T, Alt+C) y Zoxide (smart cd).
 #   - Estructura modular en ~/.zshrc.d/:
 #       * Enlaces simbólicos a los módulos de Bash.Setup/*.sh.
@@ -227,7 +227,7 @@ unsetopt BEEP
 # Aliases base
 alias ls='ls --color=auto'
 
-# Atajos de teclado estándar para Konsole, Kitty y Ghostty en Debian 13
+# Atajos de teclado estándar para Konsole y Kitty en Debian 13
 bindkey -e
 bindkey '^[[H'  beginning-of-line
 bindkey '^[[F'  end-of-line
@@ -337,20 +337,22 @@ EOF
     echo "ℹ️ [5/5] Creando módulos de entorno para lenguajes y servicios..."
 
     # 5.1. Java
-    cat << 'EOF' | run_as_user tee "$ZSHRC_D/java.zsh" > /dev/null
+    local deb_arch
+    deb_arch=$(dpkg --print-architecture 2>/dev/null || echo "amd64")
+    cat << EOF | run_as_user tee "$ZSHRC_D/java.zsh" > /dev/null
 # OpenJDK Environment & Optimizations
-if [ -d "/usr/lib/jvm/java-21-openjdk-amd64" ]; then
-    export JAVA_HOME="/usr/lib/jvm/java-21-openjdk-amd64"
+if [ -d "/usr/lib/jvm/java-21-openjdk-${deb_arch}" ]; then
+    export JAVA_HOME="/usr/lib/jvm/java-21-openjdk-${deb_arch}"
 elif [ -d "/usr/lib/jvm/default-java" ]; then
     export JAVA_HOME="/usr/lib/jvm/default-java"
 fi
 
-if [ -n "${JAVA_HOME:-}" ] && [ -d "${JAVA_HOME}/bin" ]; then
-    [[ ":$PATH:" != *":${JAVA_HOME}/bin:"* ]] && export PATH="${JAVA_HOME}/bin:$PATH"
+if [ -n "\${JAVA_HOME:-}" ] && [ -d "\${JAVA_HOME}/bin" ]; then
+    [[ ":\$PATH:" != *":\${JAVA_HOME}/bin:"* ]] && export PATH="\${JAVA_HOME}/bin:\$PATH"
 fi
 
 export _JAVA_AWT_WM_NONREPARENTING=1
-export JDK_JAVA_OPTIONS="-Dawt.useSystemAAFontSettings=on -Dswing.aatext=true"
+export _JAVA_OPTIONS="-Dawt.useSystemAAFontSettings=on -Dswing.aatext=true"
 export MAVEN_ARGS="-T 1C"
 export MAVEN_OPTS="-Xms512m -Xmx4096m -XX:+UseG1GC"
 EOF

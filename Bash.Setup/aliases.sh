@@ -118,11 +118,12 @@ fi
 # -----------------------------------------------------------------------------
 alias h='history'
 alias c='clear'
+alias path='echo -e "${PATH//:/\\n}"'
 alias sudo='sudo '
 alias grep='grep --color=auto'
 alias ports='sudo ss -tulanp'
 alias myip='curl -s --connect-timeout 2 ifconfig.me'
-alias localip='ip -4 addr show | grep -oP "(?<=inet\s)\d+(\.\d+){3}"'
+alias localip='ip -4 -o addr show scope global | awk "{split(\$4,a,\"/\"); print a[1]}"'
 
 # Cortafuegos Nativo (UFW - Uncomplicated Firewall)
 alias fw='sudo ufw'

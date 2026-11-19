@@ -109,7 +109,7 @@ Componentes gestionados en Debian 13 (Trixie):
   • GStreamer 1.26:     base, good, bad (libgstva nativo), ugly, libav, gl y pipewire.
   • KDE / Dolphin:      ffmpegthumbs, kio-extras, ffmpegthumbnailer, HEIF y AVIF.
   • Audio PipeWire 1.4: pipewire-audio, pipewire-alsa, pipewire-pulse, wireplumber y libspa-0.2-bluetooth.
-  • Reproductores:      Gwenview, Haruna (Qt6/MPV), MPV (gpu-next) y VLC.
+  • Reproductores:      Gwenview (visor oficial KDE Gear) y miniaturas KIO/FFmpegThumbs (reproductores extra vía Flatpak).
 EOF
 }
 
@@ -248,7 +248,6 @@ install_codecs() {
         gstreamer1.0-libav \
         gstreamer1.0-gl \
         gstreamer1.0-pipewire \
-        gstreamer1.0-vaapi \
         gstreamer1.0-tools \
         ffmpegthumbnailer \
         heif-thumbnailer \

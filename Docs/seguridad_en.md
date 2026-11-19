@@ -8,34 +8,36 @@ This guide details the security, network, and system hardening automated in [`Se
 
 ---
 
-## 1. Mandatory Native Firewall (Firewalld)
+## 1. Native Firewall (UFW)
 
-Per monorepo master rules, **UFW is permanently disabled** and **Firewalld** (`firewall-cmd`) is strictly enforced:
+In **Golden Dog Linux (Debian 13)**, **UFW** (`Uncomplicated Firewall`) comes pre-installed and configured by default. The [`Setup/seguridad.sh`](../Setup/seguridad.sh) script verifies its status and applies the rules needed for a local development workstation:
 
-1. **Disabling UFW & Starting Firewalld**:
+1. **Enabling UFW & Default Policy**:
    ```bash
-   sudo ufw disable
-   sudo systemctl disable --now ufw
-   sudo systemctl mask ufw
-   sudo systemctl enable --now firewalld
+   sudo systemctl enable --now ufw
+   sudo ufw default deny incoming
+   sudo ufw default allow outgoing
+   sudo ufw --force enable
    ```
 
-2. **Rules for KDE Plasma 6, KDE Connect, and Development**:
-   - **KDE Connect (`kdeconnect` service in Firewalld)**: Enables notification sync, media controls, shared clipboard, and file transfer between your phone and PC.
-   - **Local Discovery (`mdns`)**: Enables printer discovery (HP LaserJet) and local network services.
-   - **Remote Access (`ssh`)**: Maintains secure SSH access.
+2. **Rules for Golden Dog Linux, KDE Plasma 6, and Development**:
+   - **Cockpit Web Console (`9090/tcp`)**: Allows local and LAN access to the web administration console at `https://localhost:9090`.
+   - **KDE Connect (`1714:1764` TCP/UDP)**: Enables notification sync, media controls, shared clipboard, and file transfer between your phone and PC.
+   - **Local Discovery (`5353/udp` mDNS/Avahi)**: Enables printer discovery and local network services.
+   - **Remote Access (`ssh`)**: Allowed automatically if the SSH service is active.
    - **Virtual Machines & Containers**:
-     - Rootless Podman subnets (`podman+` and `cni-podman+`) in the `trusted` zone.
-     - KVM virtualization bridge (`virbr0` and `virbr+`) in the `trusted` zone with active IP Masquerade.
+     - Podman bridge (`podman0`): `ufw allow in on podman0` and `ufw route allow in on podman0`.
+     - KVM virtualization bridge (`virbr0`): `ufw allow in on virbr0`, `ufw route allow in on virbr0`, and `ufw route allow out on virbr0`.
+   - **Local Development Ports (`--dev-ports` / `just dev-ports`)**: Optionally opens ports `5173/tcp` (Vite), `3000/tcp` (Next.js/React), `8000/tcp` (FastAPI), and `8080/tcp`.
 
 ---
 
 ## 2. Network and Kernel Tuning (Sysctl) for Development
 
-Applies Kernel settings in `/etc/sysctl.d/99-development-network.conf` to guarantee full compatibility with rootless Podman and KVM virtual machines:
+Applies Kernel settings in `/etc/sysctl.d/99-dev-network.conf` to guarantee full compatibility with rootless Podman and KVM virtual machines:
 
 ```ini
-# /etc/sysctl.d/99-development-network.conf
+# /etc/sysctl.d/99-dev-network.conf
 
 # Packet forwarding for containers and VMs
 net.ipv4.ip_forward = 1
@@ -52,7 +54,6 @@ net.ipv4.ip_unprivileged_port_start = 80
 net.ipv4.ping_group_range = 0 2147483647
 
 # Full support for user namespaces
-kernel.unprivileged_userns_clone = 1
 user.max_user_namespaces = 262144
 ```
 
@@ -72,6 +73,9 @@ For a development workstation on a private home network:
 # Apply security and network setup
 just security
 
-# Inspect firewall, network interfaces, and sysctl parameters
+# Open local dev ports (5173, 3000, 8000, 8080)
+just dev-ports
+
+# Inspect UFW, network interfaces, and sysctl parameters
 just security-status
 ```

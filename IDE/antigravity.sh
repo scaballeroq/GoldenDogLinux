@@ -123,7 +123,7 @@ check_dependencies() {
         fi
     done
 
-    # Soporte compatible para paquetes con sufijo time64 (Debian 24.04/26.10)
+    # Soporte compatible para paquetes con sufijo time64 (Debian 13 Trixie)
     if ! is_pkg_installed "libasound2t64" && ! is_pkg_installed "libasound2"; then
         missing+=("libasound2t64")
     fi
@@ -659,7 +659,7 @@ chown root:root "$stage_root/$top_dir"
 chmod 0755 "$stage_root/$top_dir"
 printf '%s\n' "$version" >"$stage_root/.linuxcapable-version"
 
-# Permisos SUID 4755 en chrome-sandbox para compatibilidad con restricciones AppArmor en Debian 24.04/26.10
+# Permisos SUID 4755 en chrome-sandbox para compatibilidad con restricciones de namespaces en Debian 13 Trixie
 if [ ! -f "$stage_root/$top_dir/chrome-sandbox" ] || [ -L "$stage_root/$top_dir/chrome-sandbox" ]; then
 	echo "El componente chrome-sandbox no se encontró o no es válido." >&2
 	exit 1

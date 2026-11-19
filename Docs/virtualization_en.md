@@ -40,7 +40,7 @@ The script detects the host CPU vendor and sets performance flags in `/etc/modpr
 
 ## 4. Networking & Safe Wi-Fi Detection
 
-- **Default NAT Network (`virbr0`)**: Standard virtual network protected by Firewalld (`trusted` zone and active masquerade).
+- **Default NAT Network (`virbr0`)**: Standard virtual network integrated with **UFW** (`ufw allow in on virbr0`, `ufw route allow in/out on virbr0`).
 - **Safe Wi-Fi Detection**: On laptops using wireless connections, bridge creation (`br0`) is intentionally skipped to prevent breaking the Wi-Fi link (802.11 standard limitation). If the active connection is wired Ethernet, `br0` is provisioned automatically.
 
 ---
