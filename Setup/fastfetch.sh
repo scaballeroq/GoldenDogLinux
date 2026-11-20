@@ -9,6 +9,8 @@
 #   * 'debian' (Predeterminado / Oficial): Configuración oficial categorizada
 #     (Hardware, Sistema, Theming & Escritorio) con logo oficial Debian swirl,
 #     acentos rojo rubí (#D70A53) y barras de progreso.
+#   * 'debian-simple': Hardware esencial, display unificado y categoría Desktop.
+#   * 'goldendog': Basado en debian-simple con logo GoldenDog Linux y paleta dorada/gradiente.
 #   * 'modern': Diseño condensado clásico con logo Debian y paleta rubí.
 #   * 'compact' (FastCat): Caja minimalista con bordes redondeados (sin logo ASCII).
 #   * Personalizado: Soporta cualquier archivo config-<nombre>.jsonc o ruta externa.
@@ -73,6 +75,12 @@ get_theme_path() {
             fi
             return 0
             ;;
+        goldendog|golden-dog)
+            if [ -f "$SCRIPT_DIR/config-goldendog.jsonc" ]; then
+                echo "$SCRIPT_DIR/config-goldendog.jsonc"
+            fi
+            return 0
+            ;;
         modern)
             if [ -f "$SCRIPT_DIR/config-modern.jsonc" ]; then
                 echo "$SCRIPT_DIR/config-modern.jsonc"
@@ -111,6 +119,9 @@ get_theme_title() {
             ;;
         config-debian-simple.jsonc)
             echo "Debian Simple (Hardware esencial, display unificado y categoría Desktop)"
+            ;;
+        config-goldendog.jsonc)
+            echo "GoldenDog Linux (Logo GoldenDog en gradiente + estructura Debian Simple)"
             ;;
         config-modern.jsonc)
             echo "Debian Modern Minimal (Logo ASCII y paleta rubí condensada)"
@@ -271,6 +282,7 @@ list_themes() {
     echo "💡 Atajos rápidos con Justfile:"
     echo "   just fastfetch --theme debian"
     echo "   just fastfetch --theme debian-simple"
+    echo "   just fastfetch --theme goldendog"
     echo "   just fastfetch --theme modern"
     echo "   just fastfetch --theme compact"
     echo "   just fastfetch --menu"
@@ -408,6 +420,7 @@ OPCIONES:
 TEMAS PREDEFINIDOS DISPONIBLES:
   debian         (Predeterminado) Tema oficial Debian con métricas completas por categorías.
   debian-simple  Tema Debian simplificado (sin Swap/Battery/Locale, display unificado, categoría Desktop).
+  goldendog      Tema GoldenDog Linux basado en debian-simple con logo del perro en gradiente.
   modern         Diseño condensado con logo Debian ASCII y acentos rubí.
   compact        Caja minimalista redondeada FastCat sin logo, ideal para paneles reducidos.
   <ruta.jsonc>   Cualquier ruta a un archivo de configuración Fastfetch personalizado.
