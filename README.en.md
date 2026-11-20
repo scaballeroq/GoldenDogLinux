@@ -57,6 +57,7 @@ When finished, **restart your computer** and enjoy!
 | `just security` | Configures the native **UFW** firewall for **Cockpit** (`9090`), **KDE Connect**, **Podman** containers, and **KVM** virtual machines. | `just security-status` |
 | `just cockpit` | Optimizes the preinstalled **Cockpit** web console (`https://localhost:9090`), adds extra modules (`podman`, `files`, `sosreport`), and enables idle timeout (`IdleTimeout=15`). | `just cockpit-status` |
 | `just shell` | Installs modern CLI tools (`eza`, `bat`, `fzf`, `zoxide`, `btop`, `ripgrep`) and enables `Bash.Setup` shortcuts. | `just shell-status` |
+| `just zsh` | *(Optional)* Configures modular **Zsh** (`~/.zshrc.d`) with Powerline styling, syntax highlighting, and autosuggestions (`just zsh-default` to switch). | `just zsh-status` |
 | `just kitty` | Installs and configures the GPU-accelerated **Kitty** terminal with Wayland blur and Catppuccin Mocha palette. | `just kitty-status` |
 | `just fonts` | Installs **Nerd Fonts** (`JetBrainsMono`, `FiraCode`, `CascadiaCode`, `Meslo`, `Hack`) for terminal icons. | `just fonts-status` |
 | `just fastfetch` | Configures the visual system summary (**Fastfetch** — type `ff` in the terminal to see it). | `just fastfetch-status` |

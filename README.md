@@ -59,6 +59,7 @@ Puedes instalar todo de golpe con `just setup-all` o ejecutar **solo la pieza qu
 | `just security` | Configura el cortafuegos **UFW** nativo permitiendo **Cockpit** (`9090`), **KDE Connect**, contenedores **Podman** y máquinas virtuales **KVM**. | `just security-status` |
 | `just cockpit` | Optimiza el panel web preinstalado **Cockpit** (`https://localhost:9090`), añade módulos extra (`podman`, `files`, `sosreport`) y activa ahorro de batería (`IdleTimeout=15`). | `just cockpit-status` |
 | `just shell` | Instala herramientas modernas de terminal (`eza`, `bat`, `fzf`, `zoxide`, `btop`, `ripgrep`) y activa los atajos de `Bash.Setup`. | `just shell-status` |
+| `just zsh` | *(Opcional)* Configura **Zsh** modular (`~/.zshrc.d`) con Powerline, resaltado de sintaxis y autosugerencias (`just zsh-default` para fijarlo). | `just zsh-status` |
 | `just kitty` | Instala y configura la terminal **Kitty** acelerada por GPU con desenfoque Wayland y tema Catppuccin Mocha. | `just kitty-status` |
 | `just fonts` | Instala las fuentes **Nerd Fonts** (`JetBrainsMono`, `FiraCode`, `CascadiaCode`, `Meslo`, `Hack`) para ver iconos en la terminal. | `just fonts-status` |
 | `just fastfetch` | Configura el resumen visual del sistema (**Fastfetch** — escribe `ff` en la terminal para verlo). | `just fastfetch-status` |
@@ -90,7 +91,7 @@ Toda la documentación está disponible en español e inglés dentro de la carpe
 
 ## 📂 Organización Técnica del Repositorio
 
-* **[`Setup/`](./Setup/)**: Scripts independientes de sistema, hardware (`amd-setup.sh`, `intel-setup.sh`), escritorio (`kde-settings.sh`, `kitty.sh`, `fastfetch.sh`, `fonts.sh`), navegadores (`chrome.sh`, `firefox.sh`), multimedia (`multimedia.sh`, `flatpak.sh`, `yt-dlp-setup.sh`), rendimiento (`debian-tuning.sh`, `zram-setup.sh`) y seguridad/administración (`seguridad.sh`, `cockpit.sh`).
+* **[`Setup/`](./Setup/)**: Scripts independientes de sistema, hardware (`amd-setup.sh`, `intel-setup.sh`), escritorio (`kde-settings.sh`, `kitty.sh`, `fastfetch.sh`, `fonts.sh`), shell (`shell.sh`, `zsh-setup.sh`, `starship.sh`), navegadores (`chrome.sh`, `firefox.sh`), multimedia (`multimedia.sh`, `flatpak.sh`, `yt-dlp-setup.sh`), rendimiento (`debian-tuning.sh`, `zram-setup.sh`) y seguridad/administración (`seguridad.sh`, `cockpit.sh`).
 * **[`Bash.Setup/`](./Bash.Setup/)**: Configuración modular para **Bash** (`~/.bashrc.d`) y **Zsh** (`~/.zshrc.d`) con atajos útiles (`aliases.sh`, `functions.sh`, `kde_settings.sh`, `podman-functions.sh`, `rclone_aliases.sh`, `yt-dlp_aliases.sh`).
 * **[`ProgrammingLanguages/`](./ProgrammingLanguages/)**: Gestión limpia de runtimes con `mise.sh`, proyectos Python aislados con `uv` (`python.sh`, `python-uv-init.sh`), `nodejs.sh`, `rust.sh` (con `mold` y `sccache`) y `java.sh` (OpenJDK 21 + Maven/Gradle).
 * **[`IDE/`](./IDE/)**: Instaladores y actualizadores para `git.sh`, `antigravity.sh`, `antigravity-cli.sh`, `antigravity-ide.sh` y `opencode.sh`.
