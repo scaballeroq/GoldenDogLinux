@@ -147,8 +147,8 @@ show_status() {
 
     if command -v vulkaninfo &>/dev/null; then
         local vk_dev
-        vk_dev=$(vulkaninfo --summary 2>/dev/null | grep -i "deviceName" | head -n1 | sed 's/.*= //' || echo "Vulkan activo")
-        echo "  - Vulkan Mesa:         ✅ Instalado ($vk_dev)"
+        vk_dev=$(vulkaninfo --summary 2>/dev/null | grep -i "deviceName" | sed -n '1s/.*= //p' || echo "Vulkan activo")
+        echo "  - Vulkan Mesa:         ✅ Instalado (${vk_dev:-Vulkan activo})"
     else
         echo "  - Vulkan Mesa:         ❌ vulkan-tools no instalado"
     fi
@@ -161,7 +161,7 @@ show_status() {
 
     echo "-----------------------------------------------------------------"
     echo "• Pila de Códecs, FFmpeg y Herramientas de Audio:"
-    echo "  - FFmpeg:              $(if command -v ffmpeg &>/dev/null; then echo "✅ Instalado ($(ffmpeg -version 2>/dev/null | head -n1 | awk '{print $3}'))"; else echo "❌ No instalado"; fi)"
+    echo "  - FFmpeg:              $(if command -v ffmpeg &>/dev/null; then echo "✅ Instalado ($(ffmpeg -version 2>/dev/null | awk 'NR==1 {print $3}'))"; else echo "❌ No instalado"; fi)"
     echo "  - libavcodec-extra:    $(if dpkg -s libavcodec-extra &>/dev/null; then echo "✅ Instalado"; else echo "❌ No instalado"; fi)"
     echo "  - Códecs Audio CLI:    $(if command -v flac &>/dev/null && command -v opusenc &>/dev/null; then echo "✅ Instalados (FLAC, Opus, Vorbis, LAME)"; else echo "⚠️ Parciales"; fi)"
     echo "  - MediaInfo:           $(if command -v mediainfo &>/dev/null; then echo "✅ Instalado"; else echo "❌ No instalado"; fi)"
@@ -192,25 +192,25 @@ show_status() {
     echo "-----------------------------------------------------------------"
     echo "• Reproductores y Aplicaciones Multimedia (KDE Plasma Wayland):"
     echo "  - Gwenview (Imágenes): $(if command -v gwenview &>/dev/null; then echo "✅ Instalado (KDE Gear)"; else echo "❌ No instalado"; fi)"
-    echo "  - Haruna (Vídeo KDE):  $(if command -v haruna &>/dev/null; then echo "✅ Instalado (Qt6 / MPV)"; else echo "ℹ️ Opcional"; fi)"
-    echo "  - MPV Media Player:    $(if command -v mpv &>/dev/null; then echo "✅ Instalado ($(mpv --version 2>/dev/null | head -n1 | awk '{print $2}'))"; else echo "❌ No instalado"; fi)"
-    echo "  - Config MPV Wayland:  $(if [ -f "$USER_HOME/.config/mpv/mpv.conf" ]; then echo "✅ Optimizado (vo=gpu-next / hwdec=vaapi / ao=pipewire)"; else echo "❌ Sin configurar"; fi)"
+    echo "  - Haruna (Vídeo KDE):  $(if command -v haruna &>/dev/null; then echo "✅ Instalado (Qt6 / MPV)"; else echo "ℹ️ Opcional (vía Flatpak/APT)"; fi)"
+    echo "  - MPV Media Player:    $(if command -v mpv &>/dev/null; then echo "✅ Instalado ($(mpv --version 2>/dev/null | awk 'NR==1 {print $2}'))"; else echo "ℹ️ Opcional (Celluloid/MPV vía Flatpak)"; fi)"
+    echo "  - Config MPV Wayland:  $(if [ -f "$USER_HOME/.config/mpv/mpv.conf" ]; then echo "✅ Optimizado (vo=gpu-next / hwdec=vaapi / ao=pipewire)"; else echo "ℹ️ Por defecto"; fi)"
     local vlc_info=""
     if dpkg -s vlc &>/dev/null; then
         local vlc_v
         vlc_v=$(dpkg-query -W -f='${Version}' vlc 2>/dev/null | cut -d- -f1 || echo "3.0.x")
         vlc_info="✅ Instalado vía APT (v$vlc_v)"
     fi
-    if flatpak list 2>/dev/null | grep -qi "org.videolan.VLC"; then
+    if [ -n "$(flatpak list 2>/dev/null | grep -i 'org.videolan.VLC' || true)" ]; then
         vlc_info="${vlc_info:+$vlc_info | }✅ Instalado vía Flatpak"
     fi
-    echo "  - VLC Media Player:    ${vlc_info:-❌ No instalado}"
+    echo "  - VLC Media Player:    ${vlc_info:-ℹ️ Opcional (disponible en Flatpak)}"
 
     echo "-----------------------------------------------------------------"
     echo "• Entorno Flatpak / Flathub:"
     local flathub_sys flathub_user
-    flathub_sys=$(flatpak remotes --system 2>/dev/null | grep -qi "flathub" && echo "✅ Configurado (system)" || echo "❌ No configurado")
-    flathub_user=$(run_as_user flatpak remotes --user 2>/dev/null | grep -qi "flathub" && echo "✅ Configurado (user)" || echo "no configurado")
+    flathub_sys=$([ -n "$(flatpak remotes --system 2>/dev/null | grep -i 'flathub' || true)" ] && echo "✅ Configurado (system)" || echo "❌ No configurado")
+    flathub_user=$([ -n "$(run_as_user flatpak remotes --user 2>/dev/null | grep -i 'flathub' || true)" ] && echo "✅ Configurado (user)" || echo "no configurado")
     echo "  - Remoto Flathub:      $flathub_sys | user: $flathub_user"
     echo "================================================================="
 }
@@ -221,12 +221,13 @@ show_status() {
 install_codecs() {
     echo "🎵 [1/3] Instalando suite de códecs, miniaturas Dolphin y aceleración VA-API Wayland..."
 
-    # Asegurar componentes contrib, non-free y non-free-firmware en Debian 13 (deb822 y clásico)
-    if [ -f /etc/apt/sources.list.d/debian.sources ]; then
+    # Golden Dog Linux ya incluye main, contrib, non-free y non-free-firmware en /etc/apt/sources.list.d/debian.sources.
+    # Solo modificamos si faltan componentes y nunca tocamos un archivo comentado como /etc/apt/sources.list si existe debian.sources.
+    if [ -f /etc/apt/sources.list.d/debian.sources ] && ! grep -q "non-free-firmware" /etc/apt/sources.list.d/debian.sources 2>/dev/null; then
         $SUDO sed -i '/^Components:/ {/contrib/! s/$/ contrib/}' /etc/apt/sources.list.d/debian.sources 2>/dev/null || true
-        $SUDO sed -i '/^Components:/ {/non-free/! s/$/ non-free/}' /etc/apt/sources.list.d/debian.sources 2>/dev/null || true
+        $SUDO sed -i '/^Components:/ {/non-free$/! {/non-free /! s/$/ non-free/}}' /etc/apt/sources.list.d/debian.sources 2>/dev/null || true
         $SUDO sed -i '/^Components:/ {/non-free-firmware/! s/$/ non-free-firmware/}' /etc/apt/sources.list.d/debian.sources 2>/dev/null || true
-    elif [ -f /etc/apt/sources.list ]; then
+    elif [ ! -f /etc/apt/sources.list.d/debian.sources ] && [ -f /etc/apt/sources.list ]; then
         $SUDO sed -i '/^deb / {/contrib/! s/\(main\)/\1 contrib non-free non-free-firmware/}' /etc/apt/sources.list 2>/dev/null || true
     fi
 

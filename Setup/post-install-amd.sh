@@ -94,7 +94,9 @@ if [ -f "$SCRIPT_DIR/zram-setup.sh" ]; then
 else
     sudo apt-get install -y zram-tools 2>/dev/null || true
     if [ -f /etc/default/zramswap ]; then
+        sudo sed -i 's/^#*ALGO=.*/ALGO=zstd/' /etc/default/zramswap
         sudo sed -i 's/^#*ALGORITHM=.*/ALGORITHM=zstd/' /etc/default/zramswap
+        grep -q "^ALGO=" /etc/default/zramswap || echo "ALGO=zstd" | sudo tee -a /etc/default/zramswap >/dev/null
         sudo sed -i 's/^#*PERCENT=.*/PERCENT=50/' /etc/default/zramswap
         sudo systemctl enable --now zramswap.service 2>/dev/null || true
         sudo systemctl restart zramswap.service 2>/dev/null || true

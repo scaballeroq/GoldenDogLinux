@@ -31,6 +31,26 @@ else
     SUDO=""
 fi
 
+REAL_UID=$(id -u "$REAL_USER" 2>/dev/null || echo "1000")
+
+run_as_user() {
+    local runtime_dir="${XDG_RUNTIME_DIR:-/run/user/$REAL_UID}"
+    local dbus_addr="${DBUS_SESSION_BUS_ADDRESS:-unix:path=$runtime_dir/bus}"
+    if [ -n "${SUDO_USER:-}" ] && [ "$SUDO_USER" != "root" ]; then
+        sudo -u "$REAL_USER" env \
+            HOME="$USER_HOME" \
+            USER="$REAL_USER" \
+            XDG_RUNTIME_DIR="$runtime_dir" \
+            DBUS_SESSION_BUS_ADDRESS="$dbus_addr" \
+            "$@"
+    else
+        env \
+            XDG_RUNTIME_DIR="$runtime_dir" \
+            DBUS_SESSION_BUS_ADDRESS="$dbus_addr" \
+            "$@"
+    fi
+}
+
 require_root() {
     if [ "$EUID" -ne 0 ] && ! command -v sudo &>/dev/null; then
         echo "❌ Error: Esta operación requiere privilegios de administrador ('sudo')."
@@ -99,7 +119,7 @@ show_status() {
     if systemctl is-active --quiet ufw 2>/dev/null; then
         echo "  - Estado de UFW:             ✅ Activo"
         if [ "$EUID" -eq 0 ] || sudo -n true 2>/dev/null; then
-            if $SUDO ufw status 2>/dev/null | grep -qE "9090(/tcp)?\s+ALLOW"; then
+            if LC_ALL=C $SUDO ufw status 2>/dev/null | grep -qE "9090(/tcp)?\s+ALLOW"; then
                 echo "  - Puerto 9090 (Cockpit):     ✅ Permitido en UFW"
             else
                 echo "  - Puerto 9090 (Cockpit):     ⚠️ No encontrado en reglas UFW"
@@ -114,7 +134,7 @@ show_status() {
     echo "-----------------------------------------------------------------"
     echo "• Integraciones de Contenedores y Virtualización:"
     local podman_user_socket="❌ Inactivo"
-    if systemctl --user is-active podman.socket 2>/dev/null | grep -q '^active'; then
+    if [ "$(run_as_user systemctl --user is-active podman.socket 2>/dev/null || true)" = "active" ]; then
         podman_user_socket="✅ Activo (Rootless)"
     else
         podman_user_socket="ℹ️ Inactivo (se activa con 'systemctl --user enable --now podman.socket')"
@@ -259,13 +279,18 @@ else
     echo "ℹ️ [1/4] Todos los módulos de Cockpit ya se encuentran instalados."
 fi
 
-# 2. Configuración optimizada de Cockpit para portátiles
+# 2. Configuración optimizada de Cockpit para portátiles y acceso en red local (LAN)
 echo "ℹ️ [2/4] Configurando optimizaciones de rendimiento y sesión (/etc/cockpit/cockpit.conf)..."
+HOST_IP=$(ip -4 route get 1.1.1.1 2>/dev/null | awk '{print $7; exit}' || echo "")
+LAN_ORIGIN=""
+if [ -n "$HOST_IP" ] && [ "$HOST_IP" != "127.0.0.1" ]; then
+    LAN_ORIGIN=" https://${HOST_IP}:9090"
+fi
 $SUDO mkdir -p /etc/cockpit
 cat <<EOF | $SUDO tee /etc/cockpit/cockpit.conf > /dev/null
 # Configuración optimizada de Cockpit para Golden Dog Linux (Debian Workstation)
 [WebService]
-Origins = https://localhost:9090 https://127.0.0.1:9090
+Origins = https://localhost:9090 https://127.0.0.1:9090 https://$(hostname -f 2>/dev/null || hostname):9090${LAN_ORIGIN}
 MaxStartups = 5
 AllowUnencrypted = false
 
@@ -281,7 +306,7 @@ $SUDO systemctl enable --now cockpit.socket
 # 4. Configurar UFW (puerto 9090/tcp)
 echo "ℹ️ [4/4] Verificando UFW (puerto 9090/tcp para Cockpit)..."
 if command -v ufw &>/dev/null && systemctl is-active --quiet ufw 2>/dev/null; then
-    if ! $SUDO ufw status 2>/dev/null | grep -qE "9090(/tcp)?\s+ALLOW"; then
+    if ! LC_ALL=C $SUDO ufw status 2>/dev/null | grep -qE "9090(/tcp)?\s+ALLOW"; then
         $SUDO ufw allow 9090/tcp comment 'Cockpit Web Console' >/dev/null 2>&1 || true
         $SUDO ufw reload >/dev/null 2>&1 || true
         echo "  ✅ Regla UFW para Cockpit (9090/tcp) añadida."

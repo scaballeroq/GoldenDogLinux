@@ -229,7 +229,7 @@ show_status() {
     fi
 
     if command -v fc-list &>/dev/null; then
-        if fc-list : family 2>/dev/null | grep -qi "Nerd Font"; then
+        if [ -n "$(fc-list : family 2>/dev/null | grep -i 'Nerd Font' || true)" ]; then
             echo "• Nerd Fonts:         ✅ Detectada(s)"
         else
             echo "• Nerd Fonts:         ⚠️ No detectadas (ejecuta ./Setup/fonts.sh para iconos)"
@@ -245,11 +245,11 @@ install_binary() {
     fi
 
     echo "⬇️ [1/3] Instalando Starship..."
-    if ! apt-cache show starship &>/dev/null; then
+    if ! LC_ALL=C apt-cache show starship &>/dev/null; then
         $SUDO apt-get update -qq || true
     fi
 
-    if apt-cache show starship &>/dev/null && $SUDO apt-get install -y starship; then
+    if LC_ALL=C apt-cache show starship &>/dev/null && $SUDO apt-get install -y starship; then
         echo "  ✅ Starship instalado desde repositorios APT de Debian 13."
         return 0
     fi

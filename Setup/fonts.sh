@@ -181,7 +181,7 @@ count_font_files() {
 fc_list_has_family() {
     local family="$1"
     if command -v fc-list &>/dev/null; then
-        fc-list ":family=$family" family 2>/dev/null | grep -i "$family" >/dev/null 2>&1
+        [ -n "$(fc-list ":family=$family" family 2>/dev/null | grep -i "$family" || true)" ]
         return $?
     fi
     return 1

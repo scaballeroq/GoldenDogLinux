@@ -142,7 +142,7 @@ get_firefox_version() {
 
 get_firefox_origin() {
     if is_firefox_installed; then
-        apt-cache policy "$PACKAGE_NAME" 2>/dev/null | awk '/\*\*\*/{getline; print $2, $3; found=1; exit} END{if (!found) print "APT local"}'
+        apt-cache policy "$PACKAGE_NAME" 2>/dev/null | awk '/\*\*\*/{getline; origin=$2 " " $3; found=1} END{if (found) print origin; else print "APT local"}'
     else
         echo "n/a"
     fi
@@ -170,7 +170,7 @@ show_status() {
     # 3. Pinning APT
     if [ -f "$PREFERENCES_FILE" ]; then
         local pin_prio
-        pin_prio=$(awk -F': *' 'tolower($1)=="pin-priority"{print $2; found=1; exit} END{if (!found) print "n/a"}' "$PREFERENCES_FILE" 2>/dev/null || echo "n/a")
+        pin_prio=$(awk -F': *' 'tolower($1)=="pin-priority"{prio=$2; found=1} END{if (found) print prio; else print "n/a"}' "$PREFERENCES_FILE" 2>/dev/null || echo "n/a")
         echo -e "• ${BOLD}Prioridad APT (Pinning):${NC}  ${GREEN}✅ Activa (Prioridad: $pin_prio)${NC}"
     else
         echo -e "• ${BOLD}Prioridad APT (Pinning):${NC}  ${YELLOW}⚠️ No configurada${NC}"

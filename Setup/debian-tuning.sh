@@ -137,9 +137,9 @@ show_status() {
     fi
     if [ -f /etc/default/zramswap ]; then
         local zram_algo zram_pct
-        zram_algo=$(grep "^ALGORITHM=" /etc/default/zramswap 2>/dev/null | cut -d= -f2 || echo "n/a")
-        zram_pct=$(grep "^PERCENT=" /etc/default/zramswap 2>/dev/null | cut -d= -f2 || echo "n/a")
-        echo "  - Configuración zramswap:      Algoritmo: $zram_algo | RAM: $zram_pct%"
+        zram_algo=$(awk -F= '/^(ALGO|ALGORITHM)=/ {print $2; exit}' /etc/default/zramswap 2>/dev/null || echo "n/a")
+        zram_pct=$(awk -F= '/^PERCENT=/ {print $2; exit}' /etc/default/zramswap 2>/dev/null || echo "n/a")
+        echo "  - Configuración zramswap:      Algoritmo: ${zram_algo:-n/a} | RAM: ${zram_pct:-n/a}%"
     fi
     echo "-----------------------------------------------------------------"
     echo "• Límites de Descriptores (nofile):"
@@ -152,8 +152,8 @@ show_status() {
         local baloo_cmd="balooctl6"
         command -v balooctl6 &>/dev/null || baloo_cmd="balooctl"
         local baloo_state
-        baloo_state=$(run_as_user "$baloo_cmd" status 2>/dev/null | head -n1 || echo "desconocido")
-        echo "  - Estado de Baloo:             $baloo_state"
+        baloo_state=$(run_as_user "$baloo_cmd" status 2>/dev/null | sed -n '1p' || true)
+        echo "  - Estado de Baloo:             ${baloo_state:-desconocido}"
         echo "  - Exclusiones baloofilerc:     $(grep -q 'node_modules' "$USER_HOME/.config/baloofilerc" 2>/dev/null && echo '✅ Configurado' || echo 'ℹ️ No encontrado')"
     else
         echo "  - KDE Baloo:                   ℹ️ No disponible o no activo"
@@ -163,8 +163,11 @@ show_status() {
     if [ -f /sys/block/nvme0n1/queue/scheduler ]; then
         echo "  - I/O Scheduler NVMe:          $(cat /sys/block/nvme0n1/queue/scheduler 2>/dev/null || echo 'n/a')"
     fi
-    echo "  - fstrim.timer (SSD/NVMe):     $(systemctl is-active fstrim.timer 2>/dev/null || echo 'inactivo')"
-    echo "  - irqbalance (Multi-core):     $(systemctl is-active irqbalance 2>/dev/null || echo 'inactivo')"
+    local fstrim_state="inactivo" irq_state="inactivo"
+    systemctl is-active --quiet fstrim.timer 2>/dev/null && fstrim_state="✅ activo"
+    systemctl is-active --quiet irqbalance 2>/dev/null && irq_state="✅ activo"
+    echo "  - fstrim.timer (SSD/NVMe):     $fstrim_state"
+    echo "  - irqbalance (Multi-core):     $irq_state"
     echo "================================================================="
 }
 
@@ -306,7 +309,9 @@ apply_zram() {
             $SUDO env DEBIAN_FRONTEND=noninteractive apt-get install -y zram-tools 2>/dev/null || true
         fi
         if [ -f /etc/default/zramswap ]; then
+            $SUDO sed -i 's/^#*ALGO=.*/ALGO=zstd/' /etc/default/zramswap
             $SUDO sed -i 's/^#*ALGORITHM=.*/ALGORITHM=zstd/' /etc/default/zramswap
+            grep -q "^ALGO=" /etc/default/zramswap || echo "ALGO=zstd" | $SUDO tee -a /etc/default/zramswap >/dev/null
             $SUDO sed -i 's/^#*PERCENT=.*/PERCENT=50/' /etc/default/zramswap
             $SUDO sed -i 's/^#*PRIORITY=.*/PRIORITY=100/' /etc/default/zramswap
             $SUDO systemctl enable --now zramswap.service 2>/dev/null || true

@@ -108,7 +108,7 @@ get_ytdlp_version() {
     if command -v yt-dlp &>/dev/null; then
         run_as_user yt-dlp --version 2>/dev/null || echo "Desconocida"
     elif dpkg -s yt-dlp &>/dev/null; then
-        dpkg -s yt-dlp 2>/dev/null | awk '/^Version:/ {print $2; exit}' || echo "Instalado"
+        dpkg -s yt-dlp 2>/dev/null | awk '/^Version:/ {ver=$2} END{print (ver ? ver : "Instalado")}' || echo "Instalado"
     else
         echo "No instalado"
     fi
@@ -117,7 +117,7 @@ get_ytdlp_version() {
 get_ffmpeg_version() {
     if command -v ffmpeg &>/dev/null; then
         local ver
-        ver=$(ffmpeg -version 2>/dev/null | awk 'NR==1 {for(i=1;i<=NF;i++) if($i ~ /^[0-9]/) {print $i; exit}}' || true)
+        ver=$(ffmpeg -version 2>/dev/null | awk 'NR==1 {for(i=1;i<=NF;i++) if($i ~ /^[0-9]/) {ver=$i; break}} END{print ver}' || true)
         echo "${ver:-Instalado}"
     else
         echo "No instalado"
@@ -127,7 +127,7 @@ get_ffmpeg_version() {
 get_aria2_version() {
     if command -v aria2c &>/dev/null; then
         local ver
-        ver=$(aria2c --version 2>/dev/null | awk 'NR==1 {print $3}' || true)
+        ver=$(aria2c --version 2>/dev/null | awk 'NR==1 {ver=$3} END{print ver}' || true)
         echo "${ver:-Instalado}"
     else
         echo "No instalado"
@@ -137,7 +137,7 @@ get_aria2_version() {
 get_mutagen_version() {
     if dpkg -s python3-mutagen &>/dev/null; then
         local ver
-        ver=$(dpkg -s python3-mutagen 2>/dev/null | awk '/^Version:/ {print $2; exit}' || true)
+        ver=$(dpkg -s python3-mutagen 2>/dev/null | awk '/^Version:/ {ver=$2} END{print ver}' || true)
         echo "${ver:-Instalado}"
     else
         echo "No instalado"

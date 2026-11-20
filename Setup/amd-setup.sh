@@ -93,15 +93,17 @@ EOF
 }
 
 install_amd_stack() {
-    echo "ℹ️ [1/3] Instalando microcódigo AMD y firmware oficial..."
+    echo "ℹ️ [1/3] Instalando microcódigo AMD y firmware oficial (incluyendo Wi-Fi/BT MediaTek/Realtek)..."
     $SUDO apt-get update -qq
     $SUDO DEBIAN_FRONTEND=noninteractive apt-get install -y \
         amd64-microcode \
         firmware-linux \
         firmware-linux-nonfree \
         firmware-amd-graphics \
+        firmware-mediatek \
+        firmware-realtek \
         firmware-misc-nonfree 2>/dev/null || \
-        $SUDO DEBIAN_FRONTEND=noninteractive apt-get install -y amd64-microcode firmware-linux-nonfree 2>/dev/null || true
+        $SUDO DEBIAN_FRONTEND=noninteractive apt-get install -y amd64-microcode firmware-amd-graphics firmware-mediatek firmware-linux-nonfree 2>/dev/null || true
 
     echo "ℹ️ [2/3] Instalando stack gráfico AMD Mesa (RADV / RadeonSI / VA-API / Vulkan)..."
     $SUDO DEBIAN_FRONTEND=noninteractive apt-get install -y \
@@ -116,7 +118,7 @@ install_amd_stack() {
         libgl1-mesa-dri 2>/dev/null || \
         $SUDO DEBIAN_FRONTEND=noninteractive apt-get install -y mesa-va-drivers mesa-vulkan-drivers vainfo || true
 
-    if dpkg --print-foreign-architectures 2>/dev/null | grep -q "i386"; then
+    if [ -n "$(dpkg --print-foreign-architectures 2>/dev/null | grep -w 'i386' || true)" ]; then
         echo "ℹ️ Arquitectura i386 detectada: Instalando drivers Mesa Vulkan/DRI 32-bit..."
         $SUDO DEBIAN_FRONTEND=noninteractive apt-get install -y \
             mesa-vulkan-drivers:i386 \
@@ -134,17 +136,25 @@ install_amd_stack() {
 }
 
 show_status() {
-    local cpu_model gpu_info
+    local cpu_model gpu_info pstate_driver pstate_gov pstate_epp wifi_info
     cpu_model=$(grep -m1 'model name' /proc/cpuinfo | cut -d: -f2 | xargs || echo "Desconocido")
-    gpu_info=$(lspci 2>/dev/null | grep -iE 'vga|3d|display' | grep -i 'amd\|ati' | head -n1 | cut -d: -f3 | xargs || echo "No detectada")
+    gpu_info=$(lspci 2>/dev/null | grep -iE 'vga|3d|display' | grep -i 'amd\|ati' | sed -n '1p' | cut -d: -f3 | xargs || true)
+    [ -z "$gpu_info" ] && gpu_info="No detectada"
+    pstate_driver=$(cat /sys/devices/system/cpu/cpu0/cpufreq/scaling_driver 2>/dev/null || echo "n/a")
+    pstate_gov=$(cat /sys/devices/system/cpu/cpu0/cpufreq/scaling_governor 2>/dev/null || echo "n/a")
+    pstate_epp=$(cat /sys/devices/system/cpu/cpu0/cpufreq/energy_performance_preference 2>/dev/null || echo "n/a")
+    wifi_info=$(lspci 2>/dev/null | grep -iE 'network|wireless' | sed -n '1p' | cut -d: -f3 | xargs || true)
 
     echo "================================================================="
     echo "🔍 ESTADO DE HARDWARE Y DRIVERS AMD - GOLDEN DOG LINUX"
     echo "================================================================="
     echo "• CPU:                  $cpu_model"
+    echo "• Escalado CPU (P-State):$pstate_driver (governor: $pstate_gov | EPP: $pstate_epp)"
     echo "• GPU AMD:              $gpu_info"
+    [ -n "$wifi_info" ] && echo "• Red / Wi-Fi:          $wifi_info"
     echo "• amd64-microcode:      $(if dpkg -s amd64-microcode &>/dev/null; then echo '✅ Instalado'; else echo '❌ No instalado'; fi)"
     echo "• firmware-amd-graphics:$(if dpkg -s firmware-amd-graphics &>/dev/null; then echo '✅ Instalado'; else echo '⚠️ No instalado'; fi)"
+    echo "• firmware-mediatek:    $(if dpkg -s firmware-mediatek &>/dev/null; then echo '✅ Instalado'; else echo 'ℹ️ No instalado'; fi)"
     echo "• Mesa Vulkan (RADV):   $(if dpkg -s mesa-vulkan-drivers &>/dev/null; then echo '✅ Instalado'; else echo '❌ No instalado'; fi)"
     echo "• Mesa VA-API:          $(if dpkg -s mesa-va-drivers &>/dev/null; then echo '✅ Instalado'; else echo '❌ No instalado'; fi)"
     echo "• radeontop:            $(if command -v radeontop &>/dev/null; then echo '✅ Instalado'; else echo 'ℹ️ No instalado'; fi)"

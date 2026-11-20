@@ -106,7 +106,7 @@ open_dev_ports() {
         exit 1
     fi
 
-    if ! $SUDO ufw status 2>/dev/null | grep -q "Status: active"; then
+    if ! LC_ALL=C $SUDO ufw status 2>/dev/null | grep -q "Status: active"; then
         echo "⚡ Activando UFW..."
         $SUDO ufw --force enable
     fi
@@ -153,7 +153,7 @@ if ! command -v ufw &>/dev/null; then
 fi
 
 $SUDO systemctl enable --now ufw 2>/dev/null || true
-if ! $SUDO ufw status 2>/dev/null | grep -q "Status: active"; then
+if ! LC_ALL=C $SUDO ufw status 2>/dev/null | grep -q "Status: active"; then
     $SUDO ufw default deny incoming >/dev/null 2>&1 || true
     $SUDO ufw default allow outgoing >/dev/null 2>&1 || true
     $SUDO ufw --force enable >/dev/null 2>&1 || true

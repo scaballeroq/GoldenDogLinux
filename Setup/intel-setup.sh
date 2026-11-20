@@ -155,7 +155,8 @@ install_intel_stack() {
 show_status() {
     local cpu_model gpu_info
     cpu_model=$(grep -m1 'model name' /proc/cpuinfo | cut -d: -f2 | xargs || echo "Desconocido")
-    gpu_info=$(lspci 2>/dev/null | grep -iE 'vga|3d|display' | grep -i 'intel' | head -n1 | cut -d: -f3 | xargs || echo "No detectada")
+    gpu_info=$(lspci 2>/dev/null | grep -iE 'vga|3d|display' | grep -i 'intel' | sed -n '1p' | cut -d: -f3 | xargs || true)
+    [ -z "$gpu_info" ] && gpu_info="No detectada"
 
     echo "================================================================="
     echo "🔍 ESTADO DE HARDWARE Y DRIVERS INTEL - GOLDEN DOG LINUX"

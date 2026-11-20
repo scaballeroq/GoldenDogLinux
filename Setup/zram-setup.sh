@@ -72,8 +72,9 @@ show_status() {
 
     echo ""
     echo "• Parámetros del Kernel:"
-    echo "  - vm.page-cluster: $(sysctl -n vm.page-cluster 2>/dev/null || echo 'n/a') (Objetivo: 0 para ZRAM)"
-    echo "  - vm.swappiness:   $(sysctl -n vm.swappiness 2>/dev/null || echo 'n/a') (Recomendado: 60-100)"
+    echo "  - Algoritmo activo: $(cat /sys/block/zram0/comp_algorithm 2>/dev/null || echo 'n/a')"
+    echo "  - vm.page-cluster:  $(sysctl -n vm.page-cluster 2>/dev/null || echo 'n/a') (Objetivo: 0 para ZRAM)"
+    echo "  - vm.swappiness:    $(sysctl -n vm.swappiness 2>/dev/null || echo 'n/a') (Recomendado: 60-100)"
     echo "================================================================="
 }
 
@@ -86,7 +87,7 @@ disable_zram() {
 
 apply_zram() {
     echo "================================================================="
-    echo "⚙️ CONFIGURANDO ZRAM CON ZSTD AL 50% DE RAM - DEBIAN WORKSTATION"
+    echo "⚙️ CONFIGURANDO ZRAM CON ZSTD AL 50% DE RAM - GOLDEN DOG LINUX"
     echo "================================================================="
 
     # 1. Instalar paquete oficial zram-tools
@@ -97,13 +98,15 @@ apply_zram() {
     fi
 
     # 2. Configurar parámetros en /etc/default/zramswap
+    # Nota: En Debian 13 (Trixie), /usr/sbin/zramswap lee la variable ALGO
+    # (definimos también ALGORITHM por compatibilidad con versiones previas).
     echo "ℹ️ [2/4] Escribiendo configuración /etc/default/zramswap..."
     cat <<'EOF' | $SUDO tee /etc/default/zramswap > /dev/null
 # ==============================================================================
-# /etc/default/zramswap - Configuración ZRAM Debian Workstation
-# Configuración ZRAM automática para Golden Dog Linux (Debian 13)
+# /etc/default/zramswap - Configuración ZRAM Golden Dog Linux (Debian 13)
 # ==============================================================================
-# Algoritmo de compresión moderno
+# Algoritmo de compresión moderno (ALGO es la clave leída por zramswap en Debian 13)
+ALGO=zstd
 ALGORITHM=zstd
 
 # Porcentaje de memoria RAM asignada a ZRAM (50% de 32GB = 16GB ZRAM)

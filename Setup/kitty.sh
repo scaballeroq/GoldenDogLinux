@@ -82,7 +82,7 @@ show_status() {
     echo "🔍 ESTADO DE KITTY TERMINAL - DEBIAN 13 (KDE PLASMA 6)"
     echo "================================================================="
     echo "• Kitty instalado:          $(if command -v kitty &>/dev/null; then echo "✅ Kitty ($(kitty --version 2>/dev/null | awk '{print $2}'))"; else echo "❌ No instalado"; fi)"
-    echo "• JetBrainsMono Nerd Font:  $(if fc-list "JetBrainsMono Nerd Font" 2>/dev/null | grep -qi "JetBrainsMono"; then echo "✅ Disponible"; else echo "⚠️ No detectada (se usará fallback)"; fi)"
+    echo "• JetBrainsMono Nerd Font:  $(if [ -n "$(fc-list 'JetBrainsMono Nerd Font' 2>/dev/null | grep -i 'JetBrainsMono' || true)" ]; then echo "✅ Disponible"; else echo "⚠️ No detectada (se usará fallback)"; fi)"
     echo "• Configuración kitty.conf: $(if [ -f "$USER_HOME/.config/kitty/kitty.conf" ]; then echo "✅ Presente ($USER_HOME/.config/kitty/kitty.conf)"; else echo "❌ No presente"; fi)"
     echo "• Terminal KDE Plasma 6:    $(if [ "$kde_term" = "kitty" ]; then echo "✅ Kitty (predeterminada)"; else echo "ℹ️ ${kde_term:-Otra o por defecto}"; fi)"
     echo "• Atajo KDE (Ctrl+Alt+T):   $(if grep -qi "Ctrl+Alt+T" "$USER_HOME/.config/kglobalshortcutsrc" 2>/dev/null; then echo "✅ Configurado"; else echo "❌ No configurado"; fi)"
