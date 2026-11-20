@@ -249,6 +249,13 @@ case "${1:-}" in
         show_status
         exit 0
         ;;
+    "")
+        ;;
+    *)
+        echo "❌ Opción no reconocida: $1"
+        show_help
+        exit 1
+        ;;
 esac
 
 # ------------------------------------------------------------------------------
@@ -328,8 +335,8 @@ PATH=$DEFAULT_JVM/bin:\${PATH}
 # Integración gráfica Wayland KWin (evita ventanas grises en aplicaciones AWT/Swing)
 _JAVA_AWT_WM_NONREPARENTING=1
 
-# Suavizado de tipografías subpixel para pantallas 1080p
-_JAVA_OPTIONS="-Dawt.useSystemAAFontSettings=on -Dswing.aatext=true"
+# Suavizado de tipografías subpixel para pantallas 1080p/HiDPI en KDE Plasma 6
+JAVA_TOOL_OPTIONS="-Dawt.useSystemAAFontSettings=on -Dswing.aatext=true"
 
 # Optimización multihilo para Apache Maven (adaptada a los núcleos y RAM del sistema)
 MAVEN_ARGS="-T 1C"
@@ -340,19 +347,19 @@ if command -v systemctl &>/dev/null; then
     run_as_user env \
         JAVA_HOME="$DEFAULT_JVM" \
         _JAVA_AWT_WM_NONREPARENTING=1 \
-        _JAVA_OPTIONS="-Dawt.useSystemAAFontSettings=on -Dswing.aatext=true" \
+        JAVA_TOOL_OPTIONS="-Dawt.useSystemAAFontSettings=on -Dswing.aatext=true" \
         MAVEN_ARGS="-T 1C" \
         MAVEN_OPTS="-Xms512m -Xmx${MAVEN_HEAP} -XX:+UseG1GC" \
-        systemctl --user import-environment JAVA_HOME _JAVA_AWT_WM_NONREPARENTING _JAVA_OPTIONS MAVEN_ARGS MAVEN_OPTS 2>/dev/null || true
+        systemctl --user import-environment JAVA_HOME _JAVA_AWT_WM_NONREPARENTING JAVA_TOOL_OPTIONS MAVEN_ARGS MAVEN_OPTS 2>/dev/null || true
 fi
 if command -v dbus-update-activation-environment &>/dev/null; then
     run_as_user env \
         JAVA_HOME="$DEFAULT_JVM" \
         _JAVA_AWT_WM_NONREPARENTING=1 \
-        _JAVA_OPTIONS="-Dawt.useSystemAAFontSettings=on -Dswing.aatext=true" \
+        JAVA_TOOL_OPTIONS="-Dawt.useSystemAAFontSettings=on -Dswing.aatext=true" \
         MAVEN_ARGS="-T 1C" \
         MAVEN_OPTS="-Xms512m -Xmx${MAVEN_HEAP} -XX:+UseG1GC" \
-        dbus-update-activation-environment --systemd JAVA_HOME _JAVA_AWT_WM_NONREPARENTING _JAVA_OPTIONS MAVEN_ARGS MAVEN_OPTS 2>/dev/null || true
+        dbus-update-activation-environment --systemd JAVA_HOME _JAVA_AWT_WM_NONREPARENTING JAVA_TOOL_OPTIONS MAVEN_ARGS MAVEN_OPTS 2>/dev/null || true
 fi
 
 # 7.2. Shell Bash (predeterminada)
@@ -369,7 +376,7 @@ if [ -n "\${JAVA_HOME:-}" ] && [ -d "\${JAVA_HOME}/bin" ]; then
 fi
 
 export _JAVA_AWT_WM_NONREPARENTING=1
-export _JAVA_OPTIONS="-Dawt.useSystemAAFontSettings=on -Dswing.aatext=true"
+export JAVA_TOOL_OPTIONS="-Dawt.useSystemAAFontSettings=on -Dswing.aatext=true"
 export MAVEN_ARGS="-T 1C"
 export MAVEN_OPTS="-Xms512m -Xmx${MAVEN_HEAP} -XX:+UseG1GC"
 EOF
@@ -392,7 +399,7 @@ if [ -n "\${JAVA_HOME:-}" ] && [ -d "\${JAVA_HOME}/bin" ]; then
 fi
 
 export _JAVA_AWT_WM_NONREPARENTING=1
-export _JAVA_OPTIONS="-Dawt.useSystemAAFontSettings=on -Dswing.aatext=true"
+export JAVA_TOOL_OPTIONS="-Dawt.useSystemAAFontSettings=on -Dswing.aatext=true"
 export MAVEN_ARGS="-T 1C"
 export MAVEN_OPTS="-Xms512m -Xmx${MAVEN_HEAP} -XX:+UseG1GC"
 EOF

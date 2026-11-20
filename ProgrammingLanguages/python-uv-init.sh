@@ -7,6 +7,7 @@
 set -euo pipefail
 
 export UV_LINK_MODE="${UV_LINK_MODE:-copy}"
+export PATH="$HOME/.local/bin:$HOME/.local/share/mise/shims:$PATH"
 
 # Colores para salida visual
 GREEN='\033[0;32m'
@@ -15,6 +16,35 @@ YELLOW='\033[1;33m'
 CYAN='\033[0;36m'
 BOLD='\033[1m'
 NC='\033[0m' # Sin color
+
+show_help() {
+    cat <<EOF
+🚀 py-project (python-uv-init.sh) - Generador de Proyectos Python Aislados con 'uv'
+   Golden Dog Linux (Debian 13 / KDE Plasma 6 Wayland)
+
+Uso:
+  $0 [NOMBRE_PROYECTO] [VERSION_PYTHON] [PLANTILLA]
+  $0 --help | -h
+
+Plantillas disponibles:
+  1 | basic       Estructura estándar minimalista con pyproject.toml y main.py
+  2 | fastapi     API REST moderna con FastAPI, Uvicorn y Pydantic
+  3 | cli         Herramienta de terminal con Typer y Rich
+  4 | data        Entorno de Ciencia de Datos con NumPy, Pandas y Matplotlib
+
+Ejemplos:
+  $0                          # Modo asistente interactivo
+  $0 mi-api 3.13 fastapi      # Crea proyecto FastAPI con Python 3.13
+  $0 mi-cli 3.13 cli          # Crea proyecto CLI con Python 3.13
+EOF
+}
+
+case "${1:-}" in
+    --help|-h|help)
+        show_help
+        exit 0
+        ;;
+esac
 
 # Verificar que 'uv' esté instalado
 if ! command -v uv &>/dev/null; then

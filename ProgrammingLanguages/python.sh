@@ -174,6 +174,13 @@ case "${1:-}" in
         show_status
         exit 0
         ;;
+    "")
+        ;;
+    *)
+        echo "❌ Opción no reconocida: $1"
+        show_help
+        exit 1
+        ;;
 esac
 
 echo "================================================================="

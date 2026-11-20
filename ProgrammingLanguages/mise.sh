@@ -300,7 +300,6 @@ configure_environment() {
     cat << 'EOF' | run_as_user tee "$ENV_CONF_FILE" > /dev/null
 # Integración de Mise con la sesión gráfica / Wayland (KDE Plasma 6)
 PATH=${HOME}/.local/share/mise/shims:${HOME}/.local/bin:${PATH}
-MISE_SHELL=bash
 COREPACK_ENABLE_DOWNLOAD_PROMPT=0
 EOF
 
@@ -326,7 +325,13 @@ configure_shells() {
 # =============================================================================
 # MISE VERSION MANAGER (Bash Shell Activation)
 # =============================================================================
-if [ -x "$HOME/.local/bin/mise" ] || command -v mise &>/dev/null; then
+if [ -d "$HOME/.local/bin" ] && [[ ":$PATH:" != *":$HOME/.local/bin:"* ]]; then
+    export PATH="$HOME/.local/bin:$PATH"
+fi
+
+if [ -x "$HOME/.local/bin/mise" ]; then
+    eval "$("$HOME/.local/bin/mise" activate bash)"
+elif command -v mise &>/dev/null; then
     eval "$(mise activate bash)"
 fi
 EOF
@@ -335,7 +340,7 @@ EOF
     local bashrc="$USER_HOME/.bashrc"
     if [ -f "$bashrc" ] && ! grep -q "mise activate" "$bashrc" 2>/dev/null; then
         if ! grep -q "\.bashrc\.d" "$bashrc" 2>/dev/null; then
-            echo -e '\n# Mise (Language Version Manager)\nif command -v mise &>/dev/null || [ -x "$HOME/.local/bin/mise" ]; then eval "$(mise activate bash)"; fi' | run_as_user tee -a "$bashrc" > /dev/null
+            echo -e '\n# Mise (Language Version Manager)\nif [ -x "$HOME/.local/bin/mise" ]; then eval "$("$HOME/.local/bin/mise" activate bash)"; elif command -v mise &>/dev/null; then eval "$(mise activate bash)"; fi' | run_as_user tee -a "$bashrc" > /dev/null
         fi
     fi
 
@@ -348,14 +353,20 @@ EOF
 # =============================================================================
 # MISE VERSION MANAGER (Zsh Shell Activation)
 # =============================================================================
-if [ -x "$HOME/.local/bin/mise" ] || command -v mise &>/dev/null; then
+if [ -d "$HOME/.local/bin" ] && [[ ":$PATH:" != *":$HOME/.local/bin:"* ]]; then
+    export PATH="$HOME/.local/bin:$PATH"
+fi
+
+if [ -x "$HOME/.local/bin/mise" ]; then
+    eval "$("$HOME/.local/bin/mise" activate zsh)"
+elif command -v mise &>/dev/null; then
     eval "$(mise activate zsh)"
 fi
 EOF
 
         if ! grep -q "mise activate" "$USER_HOME/.zshrc" 2>/dev/null; then
             if ! grep -q "\.zshrc\.d" "$USER_HOME/.zshrc" 2>/dev/null; then
-                echo -e '\n# Mise (Language Version Manager)\nif command -v mise &>/dev/null || [ -x "$HOME/.local/bin/mise" ]; then eval "$(mise activate zsh)"; fi' | run_as_user tee -a "$USER_HOME/.zshrc" > /dev/null
+                echo -e '\n# Mise (Language Version Manager)\nif [ -x "$HOME/.local/bin/mise" ]; then eval "$("$HOME/.local/bin/mise" activate zsh)"; elif command -v mise &>/dev/null; then eval "$(mise activate zsh)"; fi' | run_as_user tee -a "$USER_HOME/.zshrc" > /dev/null
             fi
         fi
     fi

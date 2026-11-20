@@ -225,10 +225,10 @@ install_system_deps() {
     log_info "Comprobando dependencias de compilación y enlazado en Debian..."
     local missing_pkgs=()
 
-    # build-essential, cmake, libssl-dev, pkg-config, curl son imprescindibles para compilar crates C/C++
+    # build-essential, cmake, libssl-dev, pkg-config, clang, libclang-dev, curl son imprescindibles para compilar crates C/C++ y bindgen
     # mold es el enlazador ultrarrápido moderno para Linux
     # sccache es el compilador caché para Rust
-    for pkg in build-essential cmake libssl-dev pkg-config curl mold sccache; do
+    for pkg in build-essential cmake libssl-dev pkg-config clang libclang-dev curl mold sccache; do
         if ! check_pkg "$pkg"; then
             missing_pkgs+=("$pkg")
         fi
@@ -288,8 +288,9 @@ configure_cargo_optimizations() {
     local config_file="$CARGO_HOME/config.toml"
     run_as_user mkdir -p "$CARGO_HOME"
 
+    # Enlazador Mold para invocación directa vía clang (evita fallos cuando cc no es clang)
     local use_mold=0
-    if command -v mold &>/dev/null; then
+    if command -v mold &>/dev/null && command -v clang &>/dev/null; then
         use_mold=1
     fi
 
@@ -303,7 +304,7 @@ configure_cargo_optimizations() {
 
     cat <<EOF | run_as_user tee "$config_file" > /dev/null
 # ==============================================================================
-# Cargo Configuration - Debian Workstation
+# Cargo Configuration - Debian Workstation (Debian 13 Trixie)
 # Optimización de compilación paralela adaptada a la CPU actual
 # ==============================================================================
 
@@ -315,6 +316,7 @@ $(if [ "$use_sccache" -eq 1 ]; then echo 'rustc-wrapper = "sccache"'; fi)
 # Enlazador ultrarrápido Mold para sistemas Linux ($target_arch)
 $(if [ "$use_mold" -eq 1 ]; then cat <<MOLDEOF
 [target.${target_arch}-unknown-linux-gnu]
+linker = "clang"
 rustflags = ["-C", "link-arg=-fuse-ld=mold"]
 MOLDEOF
 fi)
