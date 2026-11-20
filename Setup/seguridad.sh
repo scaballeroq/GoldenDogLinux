@@ -4,14 +4,14 @@
 # ==============================================================================
 # Configuración orientada a estación de trabajo local/hogar para desarrollo:
 # • UFW nativo + Goldendog Firewall GUI (goldendog-firewall) y KDE Plasma Firewall
-#   (plasma-firewall / kcm_firewall) preinstalados en Golden Dog Linux.
+#   (plasma-firewall / kcm_firewall) preinstalados y preconfigurados en Golden Dog Linux.
 # • Reglas 100% compatibles y editables desde la interfaz gráfica Goldendog Firewall:
 #   Cockpit (9090/tcp), KDE Connect (1714:1764 tcp/udp), mDNS (5353/udp), SSH (22/tcp),
 #   y enrutamiento para KVM/QEMU (virbr0) y Podman (podman0).
 # • Sincronización de IP Forwarding con /etc/ufw/sysctl.conf y /etc/sysctl.d/99-dev-network.conf
 #   (coexistiendo con el baseline de hardening /etc/sysctl.d/90-goldendog.conf).
 # • Sysctl: IP Forwarding con accept_ra=2 (IPv6 SLAAC estable), puertos sin privilegios (>=80),
-#   ping_group_range completo para contenedores rootless y diagnóstico de user namespaces en Debian 13.
+#   ping_group_range completo para contenedores rootless y soporte de user namespaces.
 # • Soporte CLI: --status / -s, --gui / --open, --dev-ports / -d, --close-dev-ports, --sysctl, --help / -h.
 # ==============================================================================
 
@@ -28,14 +28,28 @@ else
 fi
 
 if [ "$EUID" -ne 0 ]; then
-    if ! command -v sudo &> /dev/null; then
-        echo "❌ Error: 'sudo' no está disponible."
-        exit 1
-    fi
     SUDO="sudo"
 else
     SUDO=""
 fi
+
+DEV_SYSCTL_CONF="/etc/sysctl.d/99-dev-network.conf"
+UFW_SYSCTL_CONF="/etc/ufw/sysctl.conf"
+
+# Puertos de desarrollo local (formato "puerto/proto:Comentario GUI")
+DEV_PORTS=(
+    "5173/tcp:Vite Astro Frontend 5173"
+    "3000/tcp:Nextjs Nodejs Dev 3000"
+    "8000/tcp:FastAPI Python Dev 8000"
+    "8080/tcp:Local Web Containers 8080"
+)
+
+require_root() {
+    if [ "$EUID" -ne 0 ] && ! command -v sudo &>/dev/null; then
+        echo "❌ Error: Esta operación requiere privilegios de administrador ('sudo')."
+        exit 1
+    fi
+}
 
 run_as_user() {
     if [ "$EUID" -eq 0 ] && [ "$REAL_USER" != "root" ]; then
@@ -48,6 +62,7 @@ run_as_user() {
             DBUS_SESSION_BUS_ADDRESS="${DBUS_SESSION_BUS_ADDRESS:-unix:path=/run/user/$uid/bus}" \
             DISPLAY="${DISPLAY:-:0}" \
             WAYLAND_DISPLAY="${WAYLAND_DISPLAY:-wayland-0}" \
+            ${XDG_CURRENT_DESKTOP:+XDG_CURRENT_DESKTOP="$XDG_CURRENT_DESKTOP"} \
             "$@"
     else
         "$@"
@@ -63,8 +78,8 @@ Uso:
   $0 [OPCIÓN]
 
 Opciones:
-  (sin argumentos)      Verifica UFW y sus interfaces gráficas (goldendog-firewall / plasma-firewall),
-                        aplica reglas compatibles con la GUI (Cockpit, KDE Connect, mDNS, Podman, KVM)
+  (sin argumentos)      Verifica UFW preconfigurado y sus GUIs (goldendog-firewall / plasma-firewall),
+                        añade solo las reglas faltantes (Cockpit, KDE Connect, mDNS, Podman, KVM)
                         y configura sysctl para desarrollo rootless sin bloqueos.
   --status, -s          Muestra el diagnóstico completo (sin requerir sudo) de UFW, políticas,
                         interfaces gráficas, baseline 90-goldendog.conf y sysctl de red.
@@ -76,7 +91,7 @@ Opciones:
   --help, -h            Muestra este mensaje de ayuda.
 
 Características en Golden Dog Linux:
-  • UFW + GUI Nativa:   Preinstalados de serie ('ufw', 'goldendog-firewall' y 'plasma-firewall').
+  • UFW + GUI Nativa:   Preinstalados y activos de serie ('ufw', 'goldendog-firewall' y 'plasma-firewall').
                         Todas las reglas de puerto usan sintaxis numérica con comentario limpio para
                         que puedan visualizarse y editarse directamente en Goldendog Firewall.
   • Podman & KVM:       Reglas de paso y enrutamiento para 'virbr0' y 'podman0', más persistencia
@@ -120,13 +135,16 @@ show_status() {
     echo "• Cortafuegos UFW (Nativo):   $ufw_state_str"
     echo "• Políticas por defecto UFW:  Entrada: $ufw_in_policy | Salida: $ufw_out_policy | Reenvío: $ufw_fwd_policy"
 
+    local gui_pkgs
+    gui_pkgs=$(dpkg-query -W -f='${Package}\t${db:Status-Status}\n' goldendog-firewall plasma-firewall 2>/dev/null || true)
+
     echo "• Interfaces Gráficas (GUI):"
-    if command -v goldendog-firewall &>/dev/null || dpkg -s goldendog-firewall &>/dev/null; then
+    if command -v goldendog-firewall &>/dev/null || grep -qx $'goldendog-firewall\tinstalled' <<< "$gui_pkgs"; then
         echo "  - Goldendog Firewall:       ✅ Instalada (ejecutar 'goldendog-firewall' o '$0 --gui')"
     else
         echo "  - Goldendog Firewall:       ⚠️ No detectada"
     fi
-    if dpkg -s plasma-firewall &>/dev/null || [ -f /usr/share/applications/kcm_firewall.desktop ]; then
+    if grep -qx $'plasma-firewall\tinstalled' <<< "$gui_pkgs" || [ -f /usr/share/applications/kcm_firewall.desktop ]; then
         echo "  - KDE Plasma Firewall KCM:  ✅ Integrado en Preferencias del Sistema (systemsettings kcm_firewall)"
     else
         echo "  - KDE Plasma Firewall KCM:  ℹ️ No instalado"
@@ -135,7 +153,7 @@ show_status() {
     if command -v ufw &>/dev/null; then
         if [ "$EUID" -eq 0 ] || sudo -n true 2>/dev/null; then
             echo "-----------------------------------------------------------------"
-            $SUDO ufw status verbose 2>/dev/null || true
+            LC_ALL=C $SUDO ufw status verbose 2>/dev/null || true
         else
             echo "  ℹ️ Para listar las reglas activas en terminal usa 'sudo ufw status' o abre 'goldendog-firewall'."
         fi
@@ -154,7 +172,11 @@ show_status() {
 
     echo "-----------------------------------------------------------------"
     echo "⚙️ Parámetros de Kernel para Desarrollo (Podman Rootless & KVM):"
-    echo "  • Perfil 99-dev-network.conf:               $([ -f /etc/sysctl.d/99-dev-network.conf ] && echo '✅ Activo' || echo 'ℹ️ Pendiente de aplicar ($0)')"
+    if [ -f "$DEV_SYSCTL_CONF" ]; then
+        echo "  • Perfil 99-dev-network.conf:               ✅ Activo"
+    else
+        echo "  • Perfil 99-dev-network.conf:               ℹ️ Pendiente de aplicar ($0)"
+    fi
     echo "  • Reenvío IPv4 (ip_forward):                $(cat /proc/sys/net/ipv4/ip_forward 2>/dev/null || echo 'n/a') (Requerido: 1)"
     echo "  • Reenvío IPv6 (forwarding):                $(cat /proc/sys/net/ipv6/conf/all/forwarding 2>/dev/null || echo 'n/a') (Requerido: 1)"
     echo "  • IPv6 Router Advertisements (accept_ra):   $(cat /proc/sys/net/ipv6/conf/all/accept_ra 2>/dev/null || echo 'n/a') (Requerido: 2 si forwarding=1)"
@@ -174,13 +196,43 @@ show_status() {
     echo "================================================================="
 }
 
+ensure_ufw_active() {
+    require_root
+    if ! command -v ufw &>/dev/null; then
+        echo "❌ UFW no está disponible."
+        exit 1
+    fi
+    if ! systemctl is-enabled --quiet ufw 2>/dev/null || ! systemctl is-active --quiet ufw 2>/dev/null; then
+        $SUDO systemctl enable --now ufw >/dev/null 2>&1 || true
+    fi
+    if ! LC_ALL=C $SUDO ufw status 2>/dev/null | grep -q "Status: active"; then
+        echo "⚡ Activando UFW..."
+        $SUDO ufw default deny incoming >/dev/null 2>&1 || true
+        $SUDO ufw default allow outgoing >/dev/null 2>&1 || true
+        $SUDO ufw --force enable >/dev/null 2>&1 || true
+    fi
+}
+
+# Añade una regla en UFW solo si no aparece ya en el snapshot actual.
+# Uso: ufw_add_if_missing "$snapshot" "<regex_match>" <args de ufw...>
+ufw_add_if_missing() {
+    local snapshot="$1"
+    local pattern="$2"
+    shift 2
+    if grep -qE "$pattern" <<< "$snapshot"; then
+        return 1
+    fi
+    $SUDO ufw "$@" >/dev/null 2>&1 || true
+    return 0
+}
+
 open_firewall_gui() {
     echo "🛡️ Abriendo interfaz gráfica de cortafuegos de Golden Dog Linux..."
     if command -v goldendog-firewall &>/dev/null; then
-        run_as_user goldendog-firewall &>/dev/null &
+        nohup run_as_user goldendog-firewall >/dev/null 2>&1 &
         echo "✅ Goldendog Firewall iniciado."
     elif command -v systemsettings &>/dev/null && [ -f /usr/share/applications/kcm_firewall.desktop ]; then
-        run_as_user systemsettings kcm_firewall &>/dev/null &
+        nohup run_as_user systemsettings kcm_firewall >/dev/null 2>&1 &
         echo "✅ Módulo de Cortafuegos de KDE Plasma iniciado."
     else
         echo "❌ No se encontró 'goldendog-firewall' ni 'plasma-firewall'."
@@ -192,28 +244,31 @@ open_dev_ports() {
     echo "================================================================="
     echo "🌐 HABILITANDO PUERTOS DE DESARROLLO LOCAL EN UFW"
     echo "================================================================="
-    if ! command -v ufw &>/dev/null; then
-        echo "❌ UFW no está disponible."
-        exit 1
+    ensure_ufw_active
+
+    local ufw_snapshot changed=0
+    ufw_snapshot=$(LC_ALL=C $SUDO ufw status 2>/dev/null || true)
+
+    local entry port comment
+    for entry in "${DEV_PORTS[@]}"; do
+        port="${entry%%:*}"
+        comment="${entry#*:}"
+        if ufw_add_if_missing "$ufw_snapshot" "^${port}[[:space:]]+ALLOW" allow "$port" comment "$comment"; then
+            changed=1
+        fi
+    done
+
+    if [ "$changed" -eq 1 ]; then
+        $SUDO ufw reload >/dev/null 2>&1 || true
+        echo "  ✅ Puertos abiertos en UFW (visibles y editables en Goldendog Firewall):"
+    else
+        echo "  ✅ Todos los puertos de desarrollo ya estaban abiertos en UFW:"
     fi
-
-    if ! $SUDO ufw status 2>/dev/null | grep -q "Status: active"; then
-        echo "⚡ Activando UFW..."
-        $SUDO ufw --force enable >/dev/null 2>&1 || true
-    fi
-
-    # Reglas con formato numérico y comentario individual compatibles con el editor de Goldendog Firewall
-    $SUDO ufw allow 5173/tcp comment 'Vite Astro Frontend 5173' >/dev/null 2>&1 || true
-    $SUDO ufw allow 3000/tcp comment 'Nextjs Nodejs Dev 3000' >/dev/null 2>&1 || true
-    $SUDO ufw allow 8000/tcp comment 'FastAPI Python Dev 8000' >/dev/null 2>&1 || true
-    $SUDO ufw allow 8080/tcp comment 'Local Web Containers 8080' >/dev/null 2>&1 || true
-    $SUDO ufw reload >/dev/null 2>&1 || true
-
-    echo "  ✅ Puertos abiertos en UFW (visibles y editables en Goldendog Firewall):"
-    echo "     • 5173/tcp (Vite Astro Frontend 5173)"
-    echo "     • 3000/tcp (Nextjs Nodejs Dev 3000)"
-    echo "     • 8000/tcp (FastAPI Python Dev 8000)"
-    echo "     • 8080/tcp (Local Web Containers 8080)"
+    for entry in "${DEV_PORTS[@]}"; do
+        port="${entry%%:*}"
+        comment="${entry#*:}"
+        echo "     • $port ($comment)"
+    done
     echo "================================================================="
 }
 
@@ -221,24 +276,34 @@ close_dev_ports() {
     echo "================================================================="
     echo "🔒 CERRANDO PUERTOS DE DESARROLLO LOCAL EN UFW"
     echo "================================================================="
+    require_root
     if ! command -v ufw &>/dev/null; then
         echo "❌ UFW no está disponible."
         exit 1
     fi
 
-    for port in 5173/tcp 3000/tcp 8000/tcp 8080/tcp; do
-        $SUDO ufw delete allow "$port" >/dev/null 2>&1 || true
-        $SUDO ufw delete allow in "$port" >/dev/null 2>&1 || true
+    local ufw_snapshot changed=0 entry port
+    ufw_snapshot=$(LC_ALL=C $SUDO ufw status 2>/dev/null || true)
+    for entry in "${DEV_PORTS[@]}"; do
+        port="${entry%%:*}"
+        if grep -qE "^${port}[[:space:]]+ALLOW" <<< "$ufw_snapshot"; then
+            $SUDO ufw delete allow "$port" >/dev/null 2>&1 || true
+            $SUDO ufw delete allow in "$port" >/dev/null 2>&1 || true
+            changed=1
+        fi
     done
-    $SUDO ufw reload >/dev/null 2>&1 || true
-    echo "  ✅ Puertos de desarrollo (5173, 3000, 8000, 8080) eliminados de UFW."
+
+    if [ "$changed" -eq 1 ]; then
+        $SUDO ufw reload >/dev/null 2>&1 || true
+        echo "  ✅ Puertos de desarrollo (5173, 3000, 8000, 8080) eliminados de UFW."
+    else
+        echo "  ✅ Ninguno de los puertos de desarrollo estaba abierto en UFW."
+    fi
     echo "================================================================="
 }
 
-apply_dev_sysctl() {
-    echo "⚙️ Aplicando parámetros sysctl de red y contenedores rootless..."
-    $SUDO mkdir -p /etc/sysctl.d
-    $SUDO tee /etc/sysctl.d/99-dev-network.conf > /dev/null <<'EOF'
+build_dev_sysctl_conf() {
+    cat <<'EOF'
 # ==============================================================================
 # RED DE DESARROLLO Y VIRTUALIZACIÓN - GOLDEN DOG LINUX (DEBIAN 13 KDE)
 # Complementa /etc/sysctl.d/90-goldendog.conf sin alterar sus reglas de hardening
@@ -262,17 +327,50 @@ net.ipv4.ping_group_range = 0 2147483647
 # Garantizar soporte de user namespaces sin privilegios en Debian 13 (Podman / Flatpak)
 kernel.unprivileged_userns_clone = 1
 EOF
+}
+
+apply_dev_sysctl() {
+    require_root
+    echo "⚙️ Verificando parámetros sysctl de red y contenedores rootless..."
+    local desired_conf current_conf="" needs_reload=0
+    desired_conf=$(build_dev_sysctl_conf)
+    if [ -r "$DEV_SYSCTL_CONF" ]; then
+        current_conf=$(cat "$DEV_SYSCTL_CONF")
+    fi
+
+    if [ "$current_conf" != "$desired_conf" ]; then
+        $SUDO mkdir -p /etc/sysctl.d
+        printf '%s\n' "$desired_conf" | $SUDO tee "$DEV_SYSCTL_CONF" >/dev/null
+        needs_reload=1
+    fi
 
     # Sincronizar IP forwarding en /etc/ufw/sysctl.conf para que al guardar cambios desde
     # Goldendog Firewall (que recarga /etc/ufw/sysctl.conf) no se desactive el enrutamiento KVM/Podman
-    if [ -f /etc/ufw/sysctl.conf ]; then
-        $SUDO sed -i -E 's|^#?[[:space:]]*net/ipv4/ip_forward=.*|net/ipv4/ip_forward=1|' /etc/ufw/sysctl.conf
-        $SUDO sed -i -E 's|^#?[[:space:]]*net/ipv6/conf/default/forwarding=.*|net/ipv6/conf/default/forwarding=1|' /etc/ufw/sysctl.conf
-        $SUDO sed -i -E 's|^#?[[:space:]]*net/ipv6/conf/all/forwarding=.*|net/ipv6/conf/all/forwarding=1|' /etc/ufw/sysctl.conf
+    if [ -f "$UFW_SYSCTL_CONF" ]; then
+        if ! grep -qx "net/ipv4/ip_forward=1" "$UFW_SYSCTL_CONF" 2>/dev/null || \
+           ! grep -qx "net/ipv6/conf/default/forwarding=1" "$UFW_SYSCTL_CONF" 2>/dev/null || \
+           ! grep -qx "net/ipv6/conf/all/forwarding=1" "$UFW_SYSCTL_CONF" 2>/dev/null; then
+            $SUDO sed -i -E 's|^#?[[:space:]]*net/ipv4/ip_forward=.*|net/ipv4/ip_forward=1|' "$UFW_SYSCTL_CONF"
+            $SUDO sed -i -E 's|^#?[[:space:]]*net/ipv6/conf/default/forwarding=.*|net/ipv6/conf/default/forwarding=1|' "$UFW_SYSCTL_CONF"
+            $SUDO sed -i -E 's|^#?[[:space:]]*net/ipv6/conf/all/forwarding=.*|net/ipv6/conf/all/forwarding=1|' "$UFW_SYSCTL_CONF"
+            needs_reload=1
+        fi
     fi
 
-    $SUDO sysctl --system >/dev/null 2>&1 || true
-    echo "  ✅ Parámetros sysctl aplicados en /etc/sysctl.d/99-dev-network.conf y sincronizados con /etc/ufw/sysctl.conf."
+    # También recargar si algún parámetro vivo en /proc/sys aún no refleja el perfil
+    if [ "$needs_reload" -eq 0 ]; then
+        if [ "$(cat /proc/sys/net/ipv6/conf/all/forwarding 2>/dev/null || echo 0)" != "1" ] || \
+           [ "$(cat /proc/sys/net/ipv4/ip_unprivileged_port_start 2>/dev/null || echo 1024)" != "80" ]; then
+            needs_reload=1
+        fi
+    fi
+
+    if [ "$needs_reload" -eq 1 ]; then
+        $SUDO sysctl --system >/dev/null 2>&1 || true
+        echo "  ✅ Parámetros sysctl aplicados en $DEV_SYSCTL_CONF y sincronizados con $UFW_SYSCTL_CONF."
+    else
+        echo "  ✅ Parámetros sysctl ya aplicados y sincronizados ($DEV_SYSCTL_CONF)."
+    fi
 }
 
 case "${1:-}" in
@@ -316,6 +414,7 @@ echo "================================================================="
 # 1. Verificar UFW e interfaces gráficas nativas de Golden Dog Linux
 echo "🔥 [1/4] Verificando UFW (preinstalado) e interfaz Goldendog Firewall..."
 if ! command -v ufw &>/dev/null; then
+    require_root
     echo "📦 Instalando UFW vía APT..."
     export DEBIAN_FRONTEND=noninteractive
     $SUDO apt-get update -qq
@@ -330,34 +429,36 @@ elif [ -f /usr/share/applications/kcm_firewall.desktop ]; then
     echo "  ✅ Módulo gráfico 'plasma-firewall' (KDE System Settings) disponible."
 fi
 
-$SUDO systemctl enable --now ufw 2>/dev/null || true
-if ! $SUDO ufw status 2>/dev/null | grep -q "Status: active"; then
-    $SUDO ufw default deny incoming >/dev/null 2>&1 || true
-    $SUDO ufw default allow outgoing >/dev/null 2>&1 || true
-    $SUDO ufw --force enable >/dev/null 2>&1 || true
-fi
+ensure_ufw_active
 
 # 2. Reglas de red compatibles con Goldendog Firewall GUI (Cockpit, KDE Connect, mDNS, KVM, Podman)
-echo "🌐 [2/4] Aplicando reglas de red en UFW (compatibles con Goldendog Firewall)..."
-$SUDO ufw allow 9090/tcp comment 'Cockpit Web Console' >/dev/null 2>&1 || true
-$SUDO ufw allow 1714:1764/tcp comment 'KDE Connect TCP' >/dev/null 2>&1 || true
-$SUDO ufw allow 1714:1764/udp comment 'KDE Connect UDP' >/dev/null 2>&1 || true
-$SUDO ufw allow 5353/udp comment 'mDNS Avahi' >/dev/null 2>&1 || true
+echo "🌐 [2/4] Verificando reglas de red en UFW (compatibles con Goldendog Firewall)..."
+UFW_SNAPSHOT=$(LC_ALL=C $SUDO ufw status 2>/dev/null || true)
+UFW_CHANGED=0
+
+ufw_add_if_missing "$UFW_SNAPSHOT" "^9090/tcp[[:space:]]+ALLOW" allow 9090/tcp comment 'Cockpit Web Console' && UFW_CHANGED=1 || true
+ufw_add_if_missing "$UFW_SNAPSHOT" "^1714:1764/tcp[[:space:]]+ALLOW" allow 1714:1764/tcp comment 'KDE Connect TCP' && UFW_CHANGED=1 || true
+ufw_add_if_missing "$UFW_SNAPSHOT" "^1714:1764/udp[[:space:]]+ALLOW" allow 1714:1764/udp comment 'KDE Connect UDP' && UFW_CHANGED=1 || true
+ufw_add_if_missing "$UFW_SNAPSHOT" "^5353/udp[[:space:]]+ALLOW" allow 5353/udp comment 'mDNS Avahi' && UFW_CHANGED=1 || true
 
 # Reglas para puentes virtuales KVM/Libvirt (virbr0) y Podman (podman0)
-$SUDO ufw allow in on virbr0 comment 'KVM Libvirt NAT Bridge' >/dev/null 2>&1 || true
-$SUDO ufw route allow in on virbr0 comment 'KVM Libvirt Forward In' >/dev/null 2>&1 || true
-$SUDO ufw route allow out on virbr0 comment 'KVM Libvirt Forward Out' >/dev/null 2>&1 || true
-$SUDO ufw allow in on podman0 comment 'Podman Bridge' >/dev/null 2>&1 || true
-$SUDO ufw route allow in on podman0 comment 'Podman Forward In' >/dev/null 2>&1 || true
+ufw_add_if_missing "$UFW_SNAPSHOT" "on virbr0[[:space:]]+ALLOW[[:space:]]+IN" allow in on virbr0 comment 'KVM Libvirt NAT Bridge' && UFW_CHANGED=1 || true
+ufw_add_if_missing "$UFW_SNAPSHOT" "on virbr0[[:space:]]+ALLOW FWD" route allow in on virbr0 comment 'KVM Libvirt Forward In' && UFW_CHANGED=1 || true
+ufw_add_if_missing "$UFW_SNAPSHOT" "ALLOW FWD[[:space:]]+.*on virbr0" route allow out on virbr0 comment 'KVM Libvirt Forward Out' && UFW_CHANGED=1 || true
+ufw_add_if_missing "$UFW_SNAPSHOT" "on podman0[[:space:]]+ALLOW[[:space:]]+IN" allow in on podman0 comment 'Podman Bridge' && UFW_CHANGED=1 || true
+ufw_add_if_missing "$UFW_SNAPSHOT" "on podman0[[:space:]]+ALLOW FWD" route allow in on podman0 comment 'Podman Forward In' && UFW_CHANGED=1 || true
 
 if systemctl is-active --quiet ssh 2>/dev/null || systemctl is-active --quiet sshd 2>/dev/null; then
     # Usar 22/tcp en lugar del alias 'ssh' para que la regla sea editable desde Goldendog Firewall GUI
-    $SUDO ufw allow 22/tcp comment 'SSH Server' >/dev/null 2>&1 || true
+    ufw_add_if_missing "$UFW_SNAPSHOT" "^22/tcp[[:space:]]+ALLOW" allow 22/tcp comment 'SSH Server' && UFW_CHANGED=1 || true
 fi
 
-$SUDO ufw reload >/dev/null 2>&1 || true
-echo "  ✅ Reglas de UFW configuradas (Cockpit 9090, KDE Connect, mDNS, virbr0, podman0)."
+if [ "$UFW_CHANGED" -eq 1 ]; then
+    $SUDO ufw reload >/dev/null 2>&1 || true
+    echo "  ✅ Reglas de UFW actualizadas y recargadas (Cockpit 9090, KDE Connect, mDNS, virbr0, podman0)."
+else
+    echo "  ✅ Todas las reglas de UFW ya estaban configuradas."
+fi
 
 # 3. Parámetros de Kernel (Sysctl) para Podman Rootless & KVM
 echo "⚙️ [3/4] Configurando parámetros sysctl de red y namespaces..."

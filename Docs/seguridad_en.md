@@ -14,7 +14,7 @@ This guide details the security, network, and system hardening automated in [`Se
 > **What is a firewall (UFW)? (Beginner-Friendly Summary)**
 > A firewall acts like your computer's security guard: it blocks unsolicited incoming network connections while letting you browse and download normally.
 
-In **Golden Dog Linux (Debian 13)**, **UFW** (`Uncomplicated Firewall`) comes pre-installed (and `seguridad.sh` installs it automatically if missing). The [`Setup/seguridad.sh`](../Setup/seguridad.sh) script verifies its status and applies the rules needed for a local development workstation:
+In **Golden Dog Linux (Debian 13)**, **UFW** (`Uncomplicated Firewall`) comes pre-installed and active out of the box alongside the **Goldendog Firewall** (`goldendog-firewall`) and **KDE Plasma Firewall** (`plasma-firewall`) GUIs. The [`Setup/seguridad.sh`](../Setup/seguridad.sh) script idempotently verifies its state and adds only the missing rules needed for a local development workstation (all using numeric port syntax compatible with `goldendog-firewall`):
 
 1. **Enabling UFW & Default Policy**:
    ```bash
@@ -28,17 +28,17 @@ In **Golden Dog Linux (Debian 13)**, **UFW** (`Uncomplicated Firewall`) comes pr
    - **Cockpit Web Console (`9090/tcp`)**: Allows local and LAN access to the web administration console at `https://localhost:9090`.
    - **KDE Connect (`1714:1764` TCP/UDP)**: Enables notification sync, media controls, shared clipboard, and file transfer between your phone and PC.
    - **Local Discovery (`5353/udp` mDNS/Avahi)**: Enables printer discovery and local network services.
-   - **Remote Access (`ssh`)**: Allowed automatically if `ssh` or `sshd` is active.
+   - **Remote Access (`22/tcp`)**: Allowed automatically if `ssh` or `sshd` is active, using numeric syntax (`22/tcp`) so it remains editable in `goldendog-firewall`.
    - **Virtual Machines & Containers**:
      - Podman bridge (`podman0`): `ufw allow in on podman0` and `ufw route allow in on podman0`.
      - KVM virtualization bridge (`virbr0`): `ufw allow in on virbr0`, `ufw route allow in on virbr0`, and `ufw route allow out on virbr0`.
-   - **Local Development Ports (`--dev-ports` / `just dev-ports`)**: Optionally opens ports `5173/tcp` (Vite), `3000/tcp` (Next.js/React), `8000/tcp` (FastAPI), and `8080/tcp`.
+   - **Local Development Ports (`--dev-ports` / `just dev-ports`)**: Optionally opens ports `5173/tcp` (Vite), `3000/tcp` (Next.js/React), `8000/tcp` (FastAPI), and `8080/tcp` (and `--close-dev-ports` closes them).
 
 ---
 
 ## 2. Network and Kernel Tuning (Sysctl) for Development
 
-Applies Kernel settings in `/etc/sysctl.d/99-dev-network.conf` to guarantee full compatibility with rootless Podman and KVM virtual machines:
+Complements Golden Dog Linux's base hardening profile (`/etc/sysctl.d/90-goldendog.conf`) by applying settings in `/etc/sysctl.d/99-dev-network.conf` —and syncing IP forwarding into `/etc/ufw/sysctl.conf` so saving rules from `goldendog-firewall` preserves container/VM routing— to guarantee full compatibility with rootless Podman and KVM virtual machines:
 
 ```ini
 # /etc/sysctl.d/99-dev-network.conf
@@ -46,6 +46,7 @@ Applies Kernel settings in `/etc/sysctl.d/99-dev-network.conf` to guarantee full
 # Packet forwarding for containers and VMs
 net.ipv4.ip_forward = 1
 net.ipv6.conf.all.forwarding = 1
+net.ipv6.conf.default.forwarding = 1
 
 # Preserve IPv6 Router Advertisements (SLAAC) with forwarding enabled
 net.ipv6.conf.all.accept_ra = 2
@@ -57,8 +58,8 @@ net.ipv4.ip_unprivileged_port_start = 80
 # Allow ICMP (ping) in unprivileged containers
 net.ipv4.ping_group_range = 0 2147483647
 
-# Full support for user namespaces
-user.max_user_namespaces = 262144
+# Ensure unprivileged user namespaces support on Debian 13 (Podman / Flatpak)
+kernel.unprivileged_userns_clone = 1
 ```
 
 ---

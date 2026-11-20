@@ -14,7 +14,7 @@ Esta guía detalla el proceso de seguridad, red y endurecimiento del sistema (ha
 > **¿Qué es un cortafuegos (UFW)? (Para principiantes)**
 > Un cortafuegos actúa como el portero de tu ordenador: bloquea cualquier conexión entrante que no hayas pedido desde internet o tu red, mientras te deja navegar y descargar con normalidad.
 
-En **Golden Dog Linux (Debian 13)**, **UFW** (`Uncomplicated Firewall`) viene preinstalado (y `seguridad.sh` lo instala automáticamente si faltara). El script [`Setup/seguridad.sh`](../Setup/seguridad.sh) verifica su estado y aplica las reglas necesarias para una estación de trabajo y desarrollo local:
+En **Golden Dog Linux (Debian 13)**, **UFW** (`Uncomplicated Firewall`) ya viene preinstalado y activo de serie junto con las interfaces gráficas **Goldendog Firewall** (`goldendog-firewall`) y **KDE Plasma Firewall** (`plasma-firewall`). El script [`Setup/seguridad.sh`](../Setup/seguridad.sh) verifica su estado de forma idempotente y añade únicamente las reglas faltantes para una estación de trabajo y desarrollo local (todas con sintaxis numérica compatible con `goldendog-firewall`):
 
 1. **Activación y Política Base de UFW**:
    ```bash
@@ -28,17 +28,17 @@ En **Golden Dog Linux (Debian 13)**, **UFW** (`Uncomplicated Firewall`) viene pr
    - **Cockpit Web Console (`9090/tcp`)**: Permite el acceso local y en LAN a la consola web de administración en `https://localhost:9090`.
    - **KDE Connect (`1714:1764` TCP/UDP)**: Permite la sincronización de notificaciones, control multimedia, portapapeles compartido y transferencia de archivos entre tu teléfono y tu PC.
    - **Descubrimiento Local (`5353/udp` mDNS/Avahi)**: Permite detectar impresoras, dispositivos multimedia y servicios locales.
-   - **Acceso Remoto (`ssh`)**: Si el servicio `ssh` o `sshd` está activo, se autoriza automáticamente en UFW.
+   - **Acceso Remoto (`22/tcp`)**: Si el servicio `ssh` o `sshd` está activo, se autoriza automáticamente en UFW usando puerto numérico (`22/tcp`) para que sea editable desde `goldendog-firewall`.
    - **Máquinas Virtuales y Contenedores**:
      - Puente de contenedores Podman (`podman0`): `ufw allow in on podman0` y `ufw route allow in on podman0`.
      - Puente de virtualización KVM (`virbr0`): `ufw allow in on virbr0`, `ufw route allow in on virbr0` y `ufw route allow out on virbr0`.
-   - **Puertos Locales de Desarrollo (`--dev-ports` / `just dev-ports`)**: Abre opcionalmente los puertos `5173/tcp` (Vite), `3000/tcp` (Next.js/React), `8000/tcp` (FastAPI) y `8080/tcp`.
+   - **Puertos Locales de Desarrollo (`--dev-ports` / `just dev-ports`)**: Abre opcionalmente los puertos `5173/tcp` (Vite), `3000/tcp` (Next.js/React), `8000/tcp` (FastAPI) y `8080/tcp` (y `--close-dev-ports` los cierra).
 
 ---
 
 ## 2. Optimización de Red y Kernel (Sysctl) para Desarrollo
 
-Aplica configuraciones del Kernel en `/etc/sysctl.d/99-dev-network.conf` para garantizar compatibilidad completa con Podman Rootless y máquinas virtuales KVM sin necesidad de ejecutar contenedores como root:
+Complementa el perfil base de endurecimiento de Golden Dog Linux (`/etc/sysctl.d/90-goldendog.conf`) aplicando configuraciones en `/etc/sysctl.d/99-dev-network.conf` —y sincronizando el IP forwarding en `/etc/ufw/sysctl.conf` para que no se pierda al guardar reglas desde `goldendog-firewall`— con el fin de garantizar compatibilidad completa con Podman Rootless y máquinas virtuales KVM:
 
 ```ini
 # /etc/sysctl.d/99-dev-network.conf
@@ -46,6 +46,7 @@ Aplica configuraciones del Kernel en `/etc/sysctl.d/99-dev-network.conf` para ga
 # Reenvío de paquetes para contenedores y VMs
 net.ipv4.ip_forward = 1
 net.ipv6.conf.all.forwarding = 1
+net.ipv6.conf.default.forwarding = 1
 
 # Preservar recepción de Router Advertisements (SLAAC) con forwarding activo
 net.ipv6.conf.all.accept_ra = 2
@@ -57,8 +58,8 @@ net.ipv4.ip_unprivileged_port_start = 80
 # Permitir operaciones ICMP (ping) en contenedores sin privilegios
 net.ipv4.ping_group_range = 0 2147483647
 
-# Soporte completo de espacios de nombres de usuario (user namespaces)
-user.max_user_namespaces = 262144
+# Garantizar soporte de user namespaces sin privilegios en Debian 13 (Podman / Flatpak)
+kernel.unprivileged_userns_clone = 1
 ```
 
 ---
