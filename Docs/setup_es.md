@@ -81,7 +81,7 @@ Muestra información estética del hardware y sistema (`ff` o `fastfetch`). Sopo
 - **Mozilla Firefox** (`firefox.sh`): Paquete nativo `.deb` oficial de Mozilla (con localización `firefox-l10n-es-es`) y APT Pin-Priority 1000, eliminando Firefox ESR.
 - **Descargador `yt-dlp`** (`yt-dlp-setup.sh`): Instala `yt-dlp`, `ffmpeg`, `aria2`, `python3-mutagen` y configura `deno` vía Mise para descargas de vídeo/audio sin bloqueos.
 - **Flatpak** (`flatpak.sh`): Catálogo modular de 22 aplicaciones con integración en KDE Discover (ver [guía de aplicaciones Flatpak](./apps_es.md)).
-- **Cockpit Web Console** (`cockpit.sh`): Activación bajo demanda por `cockpit.socket` en `https://localhost:9090` con módulos para Podman, KVM Machines, Storage, NetworkManager y Files (soporta `--open`, `--client`, `--start`, `--stop`, `--restart`, `--disable`).
+- **Cockpit Web Console** (`cockpit.sh`): Ya viene preinstalado en Golden Dog Linux; este gestor añade los módulos complementarios (`cockpit-podman`, `cockpit-files`, `cockpit-sosreport`), optimiza `/etc/cockpit/cockpit.conf` (`IdleTimeout=15`, orígenes locales/LAN) y mantiene activación bajo demanda por `cockpit.socket` en `https://localhost:9090` (soporta `--open`, `--client`, `--start`, `--stop`, `--restart`, `--disable`).
 
 ---
 

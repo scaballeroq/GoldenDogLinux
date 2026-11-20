@@ -80,7 +80,7 @@ Aesthetic hardware and system summary (`ff` or `fastfetch`) supporting 4 themes:
 - **Mozilla Firefox** (`firefox.sh`): Native `.deb` package from Mozilla with APT Pin-Priority 1000, replacing Firefox ESR. *(Note: this script currently installs the Spanish `firefox-l10n-es-es` language pack alongside `firefox`.)*
 - **`yt-dlp` Downloader** (`yt-dlp-setup.sh`): Installs `yt-dlp`, `ffmpeg`, `aria2`, `python3-mutagen`, and configures `deno` via Mise for reliable YouTube downloads.
 - **Flatpak** (`flatpak.sh`): Modular 22-app catalog integrated with KDE Discover (see the [Flatpak Apps Guide](./apps_en.md)).
-- **Cockpit Web Console** (`cockpit.sh`): On-demand activation via `cockpit.socket` at `https://localhost:9090` with Podman, KVM Machines, Storage, NetworkManager, and Files modules (supports `--open`, `--client`, `--start`, `--stop`, `--restart`, `--disable`).
+- **Cockpit Web Console** (`cockpit.sh`): Preinstalled in Golden Dog Linux; this manager adds complementary modules (`cockpit-podman`, `cockpit-files`, `cockpit-sosreport`), optimizes `/etc/cockpit/cockpit.conf` (`IdleTimeout=15`, local/LAN origins), and keeps on-demand activation via `cockpit.socket` at `https://localhost:9090` (supports `--open`, `--client`, `--start`, `--stop`, `--restart`, `--disable`).
 
 ---
 

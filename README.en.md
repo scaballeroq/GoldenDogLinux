@@ -55,7 +55,7 @@ When finished, **restart your computer** and enjoy!
 | `just firefox` | Installs the official **Mozilla Firefox** browser (native `.deb`). | `just firefox-status` |
 | `just tuning` | Speeds up the system: 50% **ZRAM** swap, **TCP BBR** networking, fast shutdowns, and heavy-folder exclusions in **KDE Baloo**. | `just tuning-status` |
 | `just security` | Configures the native **UFW** firewall for **Cockpit** (`9090`), **KDE Connect**, **Podman** containers, and **KVM** virtual machines. | `just security-status` |
-| `just cockpit` | Configures the **Cockpit** web console (`https://localhost:9090`) with on-demand socket activation. | `just cockpit-status` |
+| `just cockpit` | Optimizes the preinstalled **Cockpit** web console (`https://localhost:9090`), adds extra modules (`podman`, `files`, `sosreport`), and enables idle timeout (`IdleTimeout=15`). | `just cockpit-status` |
 | `just shell` | Installs modern CLI tools (`eza`, `bat`, `fzf`, `zoxide`, `btop`, `ripgrep`) and enables `Bash.Setup` shortcuts. | `just shell-status` |
 | `just kitty` | Installs and configures the GPU-accelerated **Kitty** terminal with Wayland blur and Catppuccin Mocha palette. | `just kitty-status` |
 | `just fonts` | Installs **Nerd Fonts** (`JetBrainsMono`, `FiraCode`, `CascadiaCode`, `Meslo`, `Hack`) for terminal icons. | `just fonts-status` |

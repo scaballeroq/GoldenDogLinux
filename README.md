@@ -57,7 +57,7 @@ Puedes instalar todo de golpe con `just setup-all` o ejecutar **solo la pieza qu
 | `just firefox` | Instala el navegador **Mozilla Firefox** oficial (`.deb` nativo en español). | `just firefox-status` |
 | `just tuning` | Acelera el sistema: memoria **ZRAM** al 50%, red **TCP BBR**, apagado rápido y exclusiones de carpetas pesadas en **KDE Baloo**. | `just tuning-status` |
 | `just security` | Configura el cortafuegos **UFW** nativo permitiendo **Cockpit** (`9090`), **KDE Connect**, contenedores **Podman** y máquinas virtuales **KVM**. | `just security-status` |
-| `just cockpit` | Configura el panel de administración web **Cockpit** (`https://localhost:9090`) en modo ahorro de batería (bajo demanda). | `just cockpit-status` |
+| `just cockpit` | Optimiza el panel web preinstalado **Cockpit** (`https://localhost:9090`), añade módulos extra (`podman`, `files`, `sosreport`) y activa ahorro de batería (`IdleTimeout=15`). | `just cockpit-status` |
 | `just shell` | Instala herramientas modernas de terminal (`eza`, `bat`, `fzf`, `zoxide`, `btop`, `ripgrep`) y activa los atajos de `Bash.Setup`. | `just shell-status` |
 | `just kitty` | Instala y configura la terminal **Kitty** acelerada por GPU con desenfoque Wayland y tema Catppuccin Mocha. | `just kitty-status` |
 | `just fonts` | Instala las fuentes **Nerd Fonts** (`JetBrainsMono`, `FiraCode`, `CascadiaCode`, `Meslo`, `Hack`) para ver iconos en la terminal. | `just fonts-status` |

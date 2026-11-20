@@ -66,7 +66,7 @@ just setup-all
 
 The assistant will automatically detect whether your CPU/GPU is **AMD** or **Intel** and configure everything step by step (base system, multimedia, Flatpak, Chrome, tuning, KDE, shell, security, fonts, Fastfetch, Kitty, IDEs, Git, languages, and Podman). When it finishes, **restart your computer** and enjoy!
 
-*(Note: Optional extras such as `firefox`, `zsh`, `starship`, `cockpit`, `yt-dlp`, `virtualization`, and `kodi` are not part of `setup-all` and can be run individually whenever you want.)*
+*(Note: Optional extras such as `firefox`, `zsh`, `starship`, `yt-dlp`, `virtualization`, and `kodi` —or optimizing/extending the preinstalled `cockpit` console— are not part of `setup-all` and can be run individually whenever you want.)*
 
 ---
 

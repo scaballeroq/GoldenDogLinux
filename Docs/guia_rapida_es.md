@@ -66,7 +66,7 @@ just setup-all
 
 El asistente detectará automáticamente si tu procesador es **AMD** o **Intel** y configurará todo paso a paso (sistema base, multimedia, Flatpak, Chrome, rendimiento, KDE, terminal, seguridad, fuentes, Fastfetch, Kitty, IDEs, Git, lenguajes y Podman). Cuando termine, **reinicia tu ordenador** y estará listo.
 
-*(Nota: Herramientas opcionales como `firefox`, `zsh`, `starship`, `cockpit`, `yt-dlp`, `virtualization` o `kodi` no están en `setup-all` y puedes instalarlas aparte si las quieres.)*
+*(Nota: Herramientas opcionales como `firefox`, `zsh`, `starship`, `yt-dlp`, `virtualization` o `kodi` —o la optimización y módulos extra de `cockpit`, que ya viene preinstalado— no están en `setup-all` y puedes ejecutarlas aparte si las quieres.)*
 
 ---
 
