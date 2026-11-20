@@ -26,16 +26,16 @@ add_newline = true
 success_symbol = "[❯](bold #d97cdc)"
 error_symbol = "[✖](bold red)"
 
-# Icono del SO (Golden Dog Linux - Golden Retriever; alternativa Nerd Font: "󰩃 ")
+# Icono del SO (Logo oficial Debian Swirl en Nerd Fonts: " ")
 [os]
 format = "[$symbol]($style) "
-style = "bold #f5c211"
+style = "bold #d70a53"
 disabled = false
 
 [os.symbols]
-Linux = "🐕 "
-Debian = "🐕 "
-Unknown = "🐕 "
+Linux = " "
+Debian = " "
+Unknown = " "
 
 # Usuario y Hostname (Mantiene el rosa característico de Golden Dog Linux)
 [username]

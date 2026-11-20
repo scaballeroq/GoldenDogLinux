@@ -11,6 +11,7 @@
 #     acentos rojo rubí (#D70A53) y barras de progreso.
 #   * 'debian-simple': Hardware esencial, display unificado y categoría Desktop.
 #   * 'goldendog': Basado en debian-simple con logo GoldenDog Linux y paleta dorada/gradiente.
+#   * 'goldendog-compact': Versión compacta de GoldenDog Linux con logo mejorado en alta definición.
 #   * 'modern': Diseño condensado clásico con logo Debian y paleta rubí.
 #   * 'compact' (FastCat): Caja minimalista con bordes redondeados (sin logo ASCII).
 #   * Personalizado: Soporta cualquier archivo config-<nombre>.jsonc o ruta externa.
@@ -81,6 +82,14 @@ get_theme_path() {
             fi
             return 0
             ;;
+        goldendog-compact|golden-dog-compact|"goldendog compact")
+            if [ -f "$SCRIPT_DIR/config-goldendog compact.jsonc" ]; then
+                echo "$SCRIPT_DIR/config-goldendog compact.jsonc"
+            elif [ -f "$SCRIPT_DIR/config-goldendog-compact.jsonc" ]; then
+                echo "$SCRIPT_DIR/config-goldendog-compact.jsonc"
+            fi
+            return 0
+            ;;
         modern)
             if [ -f "$SCRIPT_DIR/config-modern.jsonc" ]; then
                 echo "$SCRIPT_DIR/config-modern.jsonc"
@@ -122,6 +131,9 @@ get_theme_title() {
             ;;
         config-goldendog.jsonc)
             echo "GoldenDog Linux (Logo GoldenDog en gradiente + estructura Debian Simple)"
+            ;;
+        "config-goldendog compact.jsonc"|config-goldendog-compact.jsonc)
+            echo "GoldenDog Compact (Logo GoldenDog HD mejorado + vista compacta sin barras)"
             ;;
         config-modern.jsonc)
             echo "Debian Modern Minimal (Logo ASCII y paleta rubí condensada)"
@@ -262,18 +274,19 @@ list_themes() {
         base=$(basename "$file")
         theme_key="${base#config-}"
         theme_key="${theme_key%.jsonc}"
+        local cli_key="${theme_key// /-}"
 
         local status_indicator="  "
         if [ -f "$USER_CONFIG_FILE" ] && cmp -s "$file" "$USER_CONFIG_FILE"; then
             status_indicator="🟢 [ACTIVO]"
-            current_active="$theme_key"
+            current_active="$cli_key"
         fi
 
-        echo "$count) $theme_key $status_indicator"
+        echo "$count) $cli_key $status_indicator"
         echo "   ✨ Descripción: $(get_theme_title "$file")"
         echo "   📁 Archivo:     Setup/$base"
-        echo "   🚀 Aplicar:     $(basename "$0") --theme $theme_key"
-        echo "   👁️  Previsualizar: $(basename "$0") --preview $theme_key"
+        echo "   🚀 Aplicar:     $(basename "$0") --theme $cli_key"
+        echo "   👁️  Previsualizar: $(basename "$0") --preview $cli_key"
         echo ""
         ((count++))
     done
@@ -283,6 +296,7 @@ list_themes() {
     echo "   just fastfetch --theme debian"
     echo "   just fastfetch --theme debian-simple"
     echo "   just fastfetch --theme goldendog"
+    echo "   just fastfetch --theme goldendog-compact"
     echo "   just fastfetch --theme modern"
     echo "   just fastfetch --theme compact"
     echo "   just fastfetch --menu"
@@ -304,6 +318,7 @@ interactive_menu() {
         base=$(basename "$file")
         local key="${base#config-}"
         key="${key%.jsonc}"
+        key="${key// /-}"
 
         theme_keys+=("$key")
         theme_files+=("$file")
@@ -418,24 +433,27 @@ OPCIONES:
   -h, --help                Muestra esta ayuda.
 
 TEMAS PREDEFINIDOS DISPONIBLES:
-  debian         (Predeterminado) Tema oficial Debian con métricas completas por categorías.
-  debian-simple  Tema Debian simplificado (sin Swap/Battery/Locale, display unificado, categoría Desktop).
-  goldendog      Tema GoldenDog Linux basado en debian-simple con logo del perro en gradiente.
-  modern         Diseño condensado con logo Debian ASCII y acentos rubí.
-  compact        Caja minimalista redondeada FastCat sin logo, ideal para paneles reducidos.
-  <ruta.jsonc>   Cualquier ruta a un archivo de configuración Fastfetch personalizado.
+  debian             (Predeterminado) Tema oficial Debian con métricas completas por categorías.
+  debian-simple      Tema Debian simplificado (sin Swap/Battery/Locale, display unificado, categoría Desktop).
+  goldendog          Tema GoldenDog Linux basado en debian-simple con logo del perro en gradiente.
+  goldendog-compact  Tema GoldenDog Linux compacto con logo del perro mejorado en alta definición.
+  modern             Diseño condensado con logo Debian ASCII y acentos rubí.
+  compact            Caja minimalista redondeada FastCat sin logo, ideal para paneles reducidos.
+  <ruta.jsonc>       Cualquier ruta a un archivo de configuración Fastfetch personalizado.
 
 EJEMPLOS:
-  $(basename "$0")                         # Instala/Aplica el tema oficial de Debian
-  $(basename "$0") --menu                  # Selector interactivo de temas
-  $(basename "$0") --list-themes           # Muestra todos los temas disponibles con detalles
-  $(basename "$0") --preview debian-simple # Previsualiza el diseño simplificado
-  $(basename "$0") --preview compact       # Previsualiza el diseño minimalista sin aplicarlo
-  $(basename "$0") --preview modern        # Previsualiza el diseño condensado
-  $(basename "$0") --theme debian-simple   # Aplica el diseño simplificado
-  $(basename "$0") --theme modern          # Cambia al diseño condensado
-  $(basename "$0") --theme compact         # Aplica la caja minimalista FastCat
-  $(basename "$0") --status                # Diagnóstico del entorno y tema activo
+  $(basename "$0")                             # Instala/Aplica el tema oficial de Debian
+  $(basename "$0") --menu                      # Selector interactivo de temas
+  $(basename "$0") --list-themes               # Muestra todos los temas disponibles con detalles
+  $(basename "$0") --preview goldendog-compact # Previsualiza el diseño compacto de GoldenDog
+  $(basename "$0") --preview debian-simple     # Previsualiza el diseño simplificado
+  $(basename "$0") --preview compact           # Previsualiza el diseño minimalista sin aplicarlo
+  $(basename "$0") --preview modern            # Previsualiza el diseño condensado
+  $(basename "$0") --theme goldendog-compact   # Aplica el diseño compacto de GoldenDog
+  $(basename "$0") --theme debian-simple       # Aplica el diseño simplificado
+  $(basename "$0") --theme modern              # Cambia al diseño condensado
+  $(basename "$0") --theme compact             # Aplica la caja minimalista FastCat
+  $(basename "$0") --status                    # Diagnóstico del entorno y tema activo
 EOF
 }
 
