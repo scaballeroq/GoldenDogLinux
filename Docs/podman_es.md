@@ -66,23 +66,23 @@ Los scripts usan la flag `--replace` de Podman para detener y reemplazar limpiam
 
 ### Administración, Monitoreo y Trazabilidad
 * **Portainer CE** (`podman-portainer.sh`): Interfaz web gráfica de administración de contenedores expuesta de forma segura en `https://localhost:9443`.
-* **Adminer** (`podman-adminer.sh`): Administrador web ligero para bases de datos SQL y NoSQL expuesto en `http://localhost:8080`.
+* **Adminer** (`podman-adminer.sh`): Administrador web ligero para bases de datos SQL y NoSQL expuesto en `http://localhost:8081`.
 * **Dozzle** (`podman-dozzle.sh`): Visualizador ligero de logs de contenedores en tiempo real disponible en `http://localhost:8888`.
-* **Grafana** (`podman-grafana.sh`): Suite de analítica y monitorización expuesta en `http://localhost:3000`.
-* **Prometheus** (`podman-prometheus.sh`): Base de datos de métricas disponible en `http://localhost:9090`.
-* **Jaeger** (`podman-jaeger.sh`): Sistema de trazabilidad distribuido expuesto en `http://localhost:16686` (UI).
+* **Grafana** (`podman-grafana.sh`): Suite de analítica y monitorización expuesta en `http://localhost:3000` (`admin/admin`).
+* **Prometheus** (`podman-prometheus.sh`): Base de datos de métricas disponible en `http://localhost:9090` (o `9091` si `cockpit.socket` está activo).
+* **Jaeger** (`podman-jaeger.sh`): Sistema de trazabilidad distribuido con soporte OpenTelemetry (OTLP `4317`/`4318`) expuesto en `http://localhost:16686` (UI).
 
 ### Infraestructura y Desarrollo
-* **Nginx** (`podman-nginx.sh`): Servidor web expuesto en los puertos estándar `80` (HTTP) y `443` (HTTPS).
-* **Keycloak** (`podman-keycloak.sh`): Proveedor de gestión de identidad y accesos (IAM) expuesto en `http://localhost:8081` (credenciales: `admin/admin`).
+* **Nginx** (`podman-nginx.sh`): Servidor web expuesto en `http://localhost:8082`.
+* **Keycloak** (`podman-keycloak.sh`): Proveedor de gestión de identidad y accesos (IAM) expuesto en `http://localhost:8083` (credenciales: `admin/admin`).
 * **RabbitMQ** (`podman-rabbitmq.sh`): Gestor de colas de mensajería expuesto en `5672` (gestión web en `http://localhost:15672` con `guest/guest`).
 * **MinIO** (`podman-minio.sh`): Almacenamiento de objetos compatible con AWS S3 (API en `9000`, Consola de control en `http://localhost:9001` con `minioadmin/minioadmin`).
 * **MailHog** (`podman-mailhog.sh`): Servidor SMTP de desarrollo para interceptar envíos de correo en pruebas (SMTP en `1025`, Interfaz web en `http://localhost:8025`).
-* **Browserless** (`podman-browserless.sh`): Navegador Chrome headless gestionable mediante APIs expuesto en el puerto `3001`.
+* **Browserless** (`podman-browserless.sh`): Navegador Chromium headless con aceleración GPU (`/dev/dri`) expuesto en el puerto `3003`.
 
 ### Frameworks y CMS
-* **WordPress** (`podman-wordpress.sh`): Despliega un CMS WordPress en el puerto `8082`, autoconfigurado para conectar a un contenedor de MySQL.
-* **Storybook** (`podman-storybook.sh`): Levanta el catálogo Storybook de componentes UI en el puerto `6006`.
+* **WordPress** (`podman-wordpress.sh`): Despliega un CMS WordPress en `http://localhost:8080`, autoconfigurado para conectar al contenedor `mysql-dev` en la red `dev-net`.
+* **Storybook** (`podman-storybook.sh`): Levanta el catálogo Storybook de componentes UI en `http://localhost:6006`.
 
 ---
 

@@ -4,9 +4,11 @@
 # Debian Workstation (KDE Plasma 6 + Wayland)
 # =============================================================================
 # Uso:
-#   ./quadlets-setup.sh              -> Prepara los directorios de Quadlets e instala los servicios compartidos
-#   ./quadlets-setup.sh --status     -> Comprueba las unidades Quadlets generadas en systemd user
-#   ./quadlets-setup.sh --help       -> Muestra la ayuda interactiva
+#   ./quadlets-setup.sh                 -> Prepara los directorios de Quadlets y verifica el generador
+#   ./quadlets-setup.sh --install-shared-> Instala todos los servicios compartidos globales en systemd user
+#   ./quadlets-setup.sh --remove-shared -> Desinstala los servicios compartidos globales de systemd user
+#   ./quadlets-setup.sh --status        -> Comprueba las unidades Quadlets generadas en systemd user
+#   ./quadlets-setup.sh --help          -> Muestra la ayuda interactiva
 # =============================================================================
 
 set -euo pipefail
@@ -26,12 +28,34 @@ log_ok()    { echo -e "${GREEN}[OK]${NC}   $1"; }
 log_error() { echo -e "${RED}[ERR]${NC}  $1"; }
 log_step()  { echo -e "${BLUE}>>${NC}    $1"; }
 
+require_non_root() {
+    if [ "$EUID" -eq 0 ]; then
+        log_error "Este script NO debe ejecutarse como root (con sudo)."
+        log_error "Los Quadlets de Podman Rootless se gestionan en el espacio de usuario (~/.config/containers/systemd)."
+        exit 1
+    fi
+}
+
 require_podman() {
     if ! command -v podman &>/dev/null; then
         log_error "Podman no está instalado en el sistema."
         echo "💡 Puedes instalarlo y configurarlo ejecutando: $PODMAN_DIR/install/podman-install.sh"
         exit 1
     fi
+}
+
+find_quadlet_generator() {
+    local gen_path
+    for gen_path in \
+        /usr/lib/systemd/user-generators/podman-user-generator \
+        /lib/systemd/user-generators/podman-user-generator \
+        /usr/libexec/podman/quadlet; do
+        if [ -x "$gen_path" ] || [ -f "$gen_path" ]; then
+            echo "$gen_path"
+            return 0
+        fi
+    done
+    return 1
 }
 
 show_help() {
@@ -42,8 +66,11 @@ Uso:
   $0 [OPCIÓN]
 
 Opciones:
-  (sin argumentos)       Crea directorios de systemd para Quadlets y verifica el generador.
-  --install-shared       Instala todos los servicios globales compartidos (.container) en systemd user.
+  (sin argumentos)       Crea directorios de systemd para Quadlets, instala la red base
+                         y verifica el generador sin auto-arrancar contenedores pesados.
+  --install-shared       Instala todos los servicios globales compartidos (.container, .network, .volume)
+                         en ~/.config/containers/systemd/global/ y recarga systemd user.
+  --remove-shared        Detiene y desinstala los servicios globales compartidos de systemd user.
   --status, -s           Muestra el estado de los Quadlets y servicios de usuario de systemd.
   --help, -h             Muestra este mensaje de ayuda.
 
@@ -64,14 +91,38 @@ show_status() {
         return 0
     fi
 
+    local gen_bin
+    gen_bin=$(find_quadlet_generator || true)
+
     echo "• Directorio Quadlets: $HOME/.config/containers/systemd"
-    echo "• Generador Quadlet:   $(if [ -f /usr/lib/systemd/user-generators/podman-user-generator ]; then echo 'Presente (/usr/lib/systemd/user-generators/podman-user-generator)'; else echo 'No detectado'; fi)"
+    echo "• Generador Quadlet:   $(if [ -n "$gen_bin" ]; then echo "✅ Presente ($gen_bin)"; else echo "⚠️ No detectado"; fi)"
     echo ""
     echo "📋 Archivos Quadlets configurados:"
-    ls -la "$HOME/.config/containers/systemd" 2>/dev/null || echo "  (Sin archivos configurados)"
+    if [ -d "$HOME/.config/containers/systemd" ]; then
+        local found_files
+        found_files=$(find "$HOME/.config/containers/systemd" -maxdepth 2 \( -name "*.container" -o -name "*.network" -o -name "*.volume" -o -name "*.pod" -o -name "*.kube" \) 2>/dev/null | sed "s|$HOME|~|g" || true)
+        if [ -n "$found_files" ]; then
+            echo "$found_files" | sed 's/^/  • /'
+        else
+            echo "  (Sin definiciones instaladas actualmente)"
+        fi
+    else
+        echo "  (Directorio ~/.config/containers/systemd aún no creado)"
+    fi
     echo ""
-    echo "📋 Unidades de servicio activas gestionadas por Podman Quadlets:"
-    systemctl --user list-units "*podman*" 2>/dev/null || echo "  (Ninguna unidad activa)"
+    echo "📋 Validación del Generador Quadlet (--dryrun):"
+    if [ -n "$gen_bin" ] && [ -x "$gen_bin" ]; then
+        if "$gen_bin" -user -dryrun &>/dev/null; then
+            echo "  ✅ Sintaxis de archivos Quadlet verificada sin errores."
+        else
+            echo "  ⚠️ El generador reportó advertencias. Revisa con: $gen_bin -user -dryrun"
+        fi
+    else
+        echo "  ℹ️ No disponible"
+    fi
+    echo ""
+    echo "📋 Unidades de servicio activas en systemd user:"
+    systemctl --user list-units --type=service --state=running "*podman*" "*postgres*" "*redis*" "*traefik*" "*keycloak*" --no-pager 2>/dev/null || echo "  (Ninguna unidad activa)"
     echo "================================================================="
 }
 
@@ -99,7 +150,7 @@ setup_podman_dirs() {
 install_global_services() {
     local shared_dir="$PODMAN_DIR/services-shared"
     local systemd_global="$HOME/.config/containers/systemd/global"
-    local socket_path="/run/user/$(id -u)/podman/podman.sock"
+    local socket_path="${XDG_RUNTIME_DIR:-/run/user/$(id -u)}/podman/podman.sock"
 
     if [ ! -d "$shared_dir" ] || [ -z "$(ls -A "$shared_dir" 2>/dev/null)" ]; then
         log_info "No hay servicios compartidos para instalar en services-shared/"
@@ -114,7 +165,6 @@ install_global_services() {
         basename="$(basename "$quadlet_file")"
         local target="$systemd_global/$basename"
 
-        # Reemplazar placeholder del socket path si existiera
         if grep -q "__PODMAN_SOCKET__" "$quadlet_file" 2>/dev/null; then
             sed "s|__PODMAN_SOCKET__|$socket_path|g" "$quadlet_file" > "$target"
         else
@@ -124,15 +174,35 @@ install_global_services() {
         log_ok "  $basename -> ~/.config/containers/systemd/global/"
     done
 
-    systemctl --user daemon-reload
+    systemctl --user daemon-reload 2>/dev/null || true
     log_ok "Servicios compartidos instalados y registrados en systemd user."
+}
+
+remove_global_services() {
+    local systemd_global="$HOME/.config/containers/systemd/global"
+    if [ ! -d "$systemd_global" ]; then
+        log_info "No hay servicios globales instalados."
+        return 0
+    fi
+
+    log_info "Deteniendo y eliminando servicios globales compartidos..."
+    for container_file in "$systemd_global"/*.container; do
+        [ -f "$container_file" ] || continue
+        local svc_name
+        svc_name="$(basename "$container_file" .container).service"
+        systemctl --user stop "$svc_name" 2>/dev/null || true
+    done
+
+    rm -f "$systemd_global"/*.{container,network,volume} 2>/dev/null || true
+    systemctl --user daemon-reload 2>/dev/null || true
+    log_ok "Servicios globales compartidos desinstalados de systemd user."
 }
 
 verify_quadlets() {
     log_info "Verificando compatibilidad de Quadlets..."
     local podman_version
-    podman_version=$(podman --version 2>/dev/null | grep -oP '\d+\.\d+' | head -1 || echo "detectado")
-    
+    podman_version=$(podman --version 2>/dev/null | grep -oP '\d+\.\d+' | head -1 || echo "5.x")
+
     log_ok "Quadlets soportado nativamente (Podman $podman_version en Golden Dog Linux / Debian 13)."
     echo ""
     echo "============================================"
@@ -143,7 +213,7 @@ verify_quadlets() {
     echo "  podman-utils create python-postgres mi-api"
     echo "  podman-utils start mi-api"
     echo "  podman-utils status mi-api"
-    echo "  podman-utils install-global <servicio>   (para servicios compartidos)"
+    echo "  podman-utils install-global <servicio>   (instala bajo demanda postgres-global, redis-global, traefik, keycloak o all)"
     echo ""
 }
 
@@ -157,21 +227,27 @@ case "${1:-}" in
         exit 0
         ;;
     --install-shared)
+        require_non_root
         require_podman
         setup_systemd_dirs
         setup_podman_dirs
         install_global_services
         verify_quadlets
         ;;
+    --remove-shared)
+        require_non_root
+        require_podman
+        remove_global_services
+        ;;
     "")
         echo "============================================"
         echo "  Configurador de Quadlets - Golden Dog Linux (Debian 13)"
         echo "============================================"
         echo ""
+        require_non_root
         require_podman
         setup_systemd_dirs
         setup_podman_dirs
-        install_global_services
         systemctl --user daemon-reload 2>/dev/null || true
         verify_quadlets
         ;;

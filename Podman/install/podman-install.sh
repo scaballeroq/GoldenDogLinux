@@ -101,14 +101,18 @@ show_status() {
 
     # Comprobar pasta
     if command -v pasta &>/dev/null; then
-        pasta_status="✅ pasta disponible ($(pasta --version 2>&1 | head -1 | awk '{print $1,$2}'))"
+        local pasta_ver
+        pasta_ver=$(dpkg-query -W -f='pasta ${Version}' passt 2>/dev/null || echo "passt")
+        pasta_status="✅ pasta disponible (${pasta_ver})"
     else
         pasta_status="⚠️ passt/pasta no instalado (degradando a slirp4netns)"
     fi
 
     # Comprobar crun
     if command -v crun &>/dev/null; then
-        crun_status="✅ crun ($(crun --version 2>&1 | head -1 | awk '{print $3}'))"
+        local crun_ver
+        crun_ver=$( (crun --version 2>&1 || true) | head -1 | awk '{print $3}' )
+        crun_status="✅ crun (${crun_ver:-activo})"
     else
         crun_status="ℹ️ crun no instalado"
     fi
@@ -150,24 +154,25 @@ show_status() {
         echo "• Rangos SubUID/GID:   $subuid_status"
         storage_info=$(podman info --format '{{.Store.GraphDriverName}} (Native Diff: {{index .Store.GraphStatus "Native Overlay Diff"}})' 2>/dev/null || echo "overlay nativo")
         echo "• Almacenamiento NVMe: $storage_info"
-        echo "• Aceleración GPU AMD: $gpu_status"
+        echo "• Aceleración GPU:     $gpu_status"
         echo "• Cortafuegos:         $firewall_status"
         echo "• Puertos Rootless:    $port_status"
         echo "• Emulación Docker:    $(command -v docker &>/dev/null && echo "✅ Activa (podman-docker)" || echo "ℹ️ No instalada")"
         echo "• Proveedor Compose:   $(command -v docker-compose &>/dev/null && echo "✅ docker-compose" || (command -v podman-compose &>/dev/null && echo "✅ podman-compose" || echo "ℹ️ No instalado"))"
         echo "• DOCKER_HOST:         $docker_host_val"
         echo "• CLI podman-utils:    $utils_status"
-        echo "• Entorno KDE:       $(if [ -f "$HOME/.config/environment.d/10-podman.conf" ]; then echo "✅ Configurado"; else echo "ℹ️ No presente"; fi)"
+        echo "• Entorno KDE:         $(if [ -f "$HOME/.config/environment.d/10-podman.conf" ]; then echo "✅ Configurado (~/.config/environment.d/10-podman.conf)"; else echo "ℹ️ No presente"; fi)"
+        echo "• Motor containers.conf: $(if [ -f "$HOME/.config/containers/containers.conf" ]; then echo "✅ Optimizado (crun + pasta + systemd)"; else echo "ℹ️ Predeterminado"; fi)"
         echo "• Generador Quadlets:  $(if [ -f /usr/lib/systemd/user-generators/podman-user-generator ]; then echo "✅ Integrado en systemd"; else echo "ℹ️ No detectado"; fi)"
         echo "-----------------------------------------------------------------"
         echo "📦 Contenedores en ejecución:"
         podman ps --format "table {{.ID}}\t{{.Names}}\t{{.Status}}\t{{.Ports}}" 2>/dev/null || echo "  (Ninguno en ejecución)"
     else
         echo "• Motor Podman:        ❌ No instalado en el sistema"
-        echo "• Paquete APT:         Disponible en repositorios oficiales de Debian"
+        echo "• Paquete APT:         Disponible en repositorios oficiales de Debian 13"
         echo "• Red Rootless:        $pasta_status"
         echo "• Runtime OCI:         $crun_status"
-        echo "• Aceleración GPU AMD: $gpu_status"
+        echo "• Aceleración GPU:     $gpu_status"
         echo "• Socket de Usuario:   ℹ️ Inactivo (requiere Podman)"
         echo "• Persistencia Linger: $(if [ "$linger_val" = "yes" ]; then echo "✅ Habilitada"; else echo "ℹ️ Deshabilitada"; fi)"
         echo "• Rangos SubUID/GID:   $subuid_status"
@@ -184,11 +189,12 @@ install_packages() {
     log_info "Comprobando paquetes del motor Podman y componentes optimizados..."
     local missing_pkgs=()
 
-    # Paquetes base y de alto rendimiento en Debian
-    # - passt: proporciona 'pasta', stack de red rootless estándar de Podman
+    # Paquetes base y de alto rendimiento en Debian 13 (Trixie):
+    # - passt: proporciona 'pasta', stack de red rootless estándar de Podman 5
+    # - netavark y aardvark-dns: motor de red bridge y DNS interno entre contenedores
     # - crun: runtime OCI nativo en C ultrarrápido y bajo consumo de memoria
     # - catatonit: init subreaper para contenedores
-    for pkg in podman podman-docker passt crun catatonit uidmap dbus-user-session slirp4netns fuse-overlayfs; do
+    for pkg in podman podman-docker passt netavark aardvark-dns crun catatonit uidmap dbus-user-session slirp4netns fuse-overlayfs; do
         if ! dpkg -s "$pkg" &>/dev/null; then
             missing_pkgs+=("$pkg")
         fi
@@ -258,7 +264,34 @@ EOF
     fi
 }
 
-# 4. Configurar registros oficiales
+# 4. Configurar motor Podman 5 (containers.conf) para Debian 13 + KDE Plasma 6
+configure_containers_conf() {
+    log_info "Configurando motor Podman (containers.conf: crun + pasta + netavark + systemd)..."
+    local containers_conf="$HOME/.config/containers/containers.conf"
+    mkdir -p "$(dirname "$containers_conf")"
+
+    if [ ! -f "$containers_conf" ]; then
+        cat > "$containers_conf" <<'EOF'
+[containers]
+tz = "local"
+log_driver = "journald"
+
+[engine]
+runtime = "crun"
+cgroup_manager = "systemd"
+events_logger = "journald"
+
+[network]
+network_backend = "netavark"
+default_rootless_network_cmd = "pasta"
+EOF
+        log_ok "containers.conf creado y optimizado (crun, pasta, netavark, journald, systemd)."
+    else
+        log_info "containers.conf ya existe, manteniendo configuración."
+    fi
+}
+
+# 5. Configurar registros oficiales
 configure_registries() {
     log_info "Configurando registros de búsqueda de imágenes (registries.conf)..."
     local registries_conf="$HOME/.config/containers/registries.conf"
@@ -304,9 +337,9 @@ enable_linger() {
     fi
 }
 
-# 6. Comprobar asignación de subuid, subgid y aceleración GPU AMD (render/video)
+# 6. Comprobar asignación de subuid, subgid y aceleración GPU (AMD / Intel)
 configure_privileges_and_gpu() {
-    log_info "Verificando rangos subuid/subgid y aceleración GPU AMD..."
+    log_info "Verificando rangos subuid/subgid y aceleración GPU (AMD / Intel)..."
     local needs_mod=0
 
     if ! grep -q "^$USER:" /etc/subuid 2>/dev/null || ! grep -q "^$USER:" /etc/subgid 2>/dev/null; then
@@ -383,11 +416,16 @@ configure_docker_host() {
     local socket_path="/run/user/$(id -u)/podman/podman.sock"
     local export_line="export DOCKER_HOST=\"unix://$socket_path\""
 
-    # 10.1. Sesión gráfica Wayland / KDE Plasma (environment.d)
+    # 10.1. Sesión gráfica Wayland / KDE Plasma 6 (environment.d + propagación en caliente)
     mkdir -p "$HOME/.config/environment.d"
     cat <<EOF > "$HOME/.config/environment.d/10-podman.conf"
 DOCKER_HOST=unix://$socket_path
 EOF
+    export DOCKER_HOST="unix://$socket_path"
+    systemctl --user import-environment DOCKER_HOST 2>/dev/null || true
+    if command -v dbus-update-activation-environment &>/dev/null; then
+        dbus-update-activation-environment --systemd DOCKER_HOST 2>/dev/null || true
+    fi
 
     # 10.2. Integración modular Bash (~/.bashrc.d/podman.sh) - PREDETERMINADO
     mkdir -p "$HOME/.bashrc.d"
@@ -510,6 +548,7 @@ case "${1:-}" in
         require_non_root
         install_packages
         configure_storage
+        configure_containers_conf
         configure_registries
         enable_linger
         configure_privileges_and_gpu

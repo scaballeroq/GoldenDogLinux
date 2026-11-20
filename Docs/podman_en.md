@@ -66,23 +66,23 @@ The scripts use Podman's `--replace` flag to stop and clean up any previous inst
 
 ### Administration, Monitoring, and Tracing
 * **Portainer CE** (`podman-portainer.sh`): Graphical container management UI exposed securely at `https://localhost:9443`.
-* **Adminer** (`podman-adminer.sh`): Lightweight database manager for SQL/NoSQL databases on `http://localhost:8080`.
+* **Adminer** (`podman-adminer.sh`): Lightweight database manager for SQL/NoSQL databases on `http://localhost:8081`.
 * **Dozzle** (`podman-dozzle.sh`): Lightweight real-time log viewer available on `http://localhost:8888`.
-* **Grafana** (`podman-grafana.sh`): Analytics and monitoring dashboard exposed on `http://localhost:3000`.
-* **Prometheus** (`podman-prometheus.sh`): Metrics scraper database available on `http://localhost:9090`.
-* **Jaeger** (`podman-jaeger.sh`): Distributed tracing platform UI exposed on `http://localhost:16686`.
+* **Grafana** (`podman-grafana.sh`): Analytics and monitoring dashboard exposed on `http://localhost:3000` (`admin/admin`).
+* **Prometheus** (`podman-prometheus.sh`): Metrics scraper database available on `http://localhost:9090` (or `9091` if `cockpit.socket` is active).
+* **Jaeger** (`podman-jaeger.sh`): Distributed tracing platform UI with OpenTelemetry (OTLP `4317`/`4318`) exposed on `http://localhost:16686`.
 
 ### Infrastructure and Utilities
-* **Nginx** (`podman-nginx.sh`): Web server exposed on standard ports `80` (HTTP) and `443` (HTTPS).
-* **Keycloak** (`podman-keycloak.sh`): Identity and Access Management (IAM) provider exposed on `http://localhost:8081` (credentials: `admin/admin`).
+* **Nginx** (`podman-nginx.sh`): Web server exposed on `http://localhost:8082`.
+* **Keycloak** (`podman-keycloak.sh`): Identity and Access Management (IAM) provider exposed on `http://localhost:8083` (credentials: `admin/admin`).
 * **RabbitMQ** (`podman-rabbitmq.sh`): Message broker exposed on `5672` (management UI on `http://localhost:15672` with `guest/guest`).
 * **MinIO** (`podman-minio.sh`): Object Storage compatible with AWS S3 (API on `9000`, dashboard Console on `http://localhost:9001` with `minioadmin/minioadmin`).
 * **MailHog** (`podman-mailhog.sh`): Development SMTP server to intercept outgoing emails in testing (SMTP on `1025`, Web interface on `http://localhost:8025`).
-* **Browserless** (`podman-browserless.sh`): Headless Chrome browser managed via APIs on port `3001`.
+* **Browserless** (`podman-browserless.sh`): Headless Chromium browser with GPU acceleration (`/dev/dri`) managed via APIs on port `3003`.
 
 ### Frameworks and CMS
-* **WordPress** (`podman-wordpress.sh`): Launches a WordPress site on port `8082`, configured to hook into the local MySQL container.
-* **Storybook** (`podman-storybook.sh`): Starts Storybook component playground on port `6006`.
+* **WordPress** (`podman-wordpress.sh`): Launches a WordPress site on `http://localhost:8080`, configured to hook into the local `mysql-dev` container on `dev-net`.
+* **Storybook** (`podman-storybook.sh`): Starts Storybook component playground on `http://localhost:6006`.
 
 ---
 

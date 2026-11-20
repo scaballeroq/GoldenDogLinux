@@ -307,6 +307,17 @@ cmd_install_global() {
         log_ok "Red 'proxy-net.network' instalada automáticamente como prerrequisito."
     fi
 
+    # Asegurar volúmenes asociados al servicio global (ej: postgres-global-data.volume, traefik-config.volume)
+    for vol_file in "$SHARED_DIR/${service}"*.volume; do
+        [ -f "$vol_file" ] || continue
+        local vol_base
+        vol_base="$(basename "$vol_file")"
+        if [ ! -f "$SYSTEMD_GLOBAL_DIR/$vol_base" ]; then
+            cp "$vol_file" "$SYSTEMD_GLOBAL_DIR/$vol_base"
+            log_ok "Volumen '$vol_base' instalado automáticamente como prerrequisito."
+        fi
+    done
+
     local matched=0
     for ext in container network volume; do
         local src="$SHARED_DIR/$service.$ext"
@@ -603,14 +614,18 @@ cmd_doctor() {
 
     # 7. Runtime OCI (crun)
     if command -v crun &>/dev/null; then
-        log_ok "Runtime OCI: crun ($(crun --version 2>&1 | head -1 | awk '{print $3}'))"
+        local crun_ver
+        crun_ver=$( (crun --version 2>&1 || true) | head -1 | awk '{print $3}' )
+        log_ok "Runtime OCI: crun (${crun_ver:-activo})"
     elif command -v runc &>/dev/null; then
         log_info "Runtime OCI: runc (se recomienda crun para mejor rendimiento C/cgroups-v2)"
     fi
 
     # 8. Red Rootless (Pasta)
     if command -v pasta &>/dev/null; then
-        log_ok "Red Rootless: pasta disponible ($(pasta --version 2>&1 | head -1 | awk '{print $1,$2}'))"
+        local pasta_ver
+        pasta_ver=$(dpkg-query -W -f='pasta ${Version}' passt 2>/dev/null || echo "passt")
+        log_ok "Red Rootless: pasta disponible (${pasta_ver})"
     else
         log_info "Red Rootless: passt/pasta no detectado en PATH (degradando a slirp4netns)"
     fi
