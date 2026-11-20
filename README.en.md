@@ -61,6 +61,7 @@ When finished, **restart your computer** and enjoy!
 | `just fonts` | Installs **Nerd Fonts** (`JetBrainsMono`, `FiraCode`, `CascadiaCode`, `Meslo`, `Hack`) for terminal icons. | `just fonts-status` |
 | `just fastfetch` | Configures the visual system summary (**Fastfetch** — type `ff` in the terminal to see it). | `just fastfetch-status` |
 | `just languages` | *(For developers)* Installs **Mise**, **Node.js LTS**, **Python + uv**, **Rust**, and **OpenJDK 21**. | `just languages-status` |
+| `just git-setup` | *(For developers)* Installs and configures **Git**, **Git-Delta**, **Lazygit**, and **GitHub CLI (`gh`)**. | `just git-status` |
 | `just ides` | *(For developers)* Installs **Google Antigravity Desktop 2.0**, **Antigravity CLI (`agy`)**, **Antigravity IDE**, and **OpenCode AI**. | `just ides-status` |
 | `just podman-setup` | *(For developers)* Configures **Rootless Podman** containers and systemd **Quadlets**. | `just podman-status` |
 | `just virtualization` | *(Advanced)* Configures **KVM/QEMU** virtual machines with **Virt-Manager** and **Cockpit Machines**. | `just virtualization-status` |

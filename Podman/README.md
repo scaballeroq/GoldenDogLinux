@@ -23,13 +23,16 @@ Podman/
 │   └── fullstack/            # Front + Back + PostgreSQL + Traefik + Keycloak
 │
 ├── services-shared/          # Servicios globales reutilizables
-│   ├── traefik.container     # Proxy inverso
-│   ├── keycloak.container    # OAuth2/OIDC
+│   ├── traefik.container          # Proxy inverso
+│   ├── traefik-config.volume      # Volumen de configuración Traefik
+│   ├── keycloak.container         # OAuth2/OIDC
 │   ├── postgres-global.container  # PostgreSQL compartido
+│   ├── postgres-global-data.volume
 │   ├── redis-global.container     # Redis compartido
-│   └── proxy-net.network     # Red compartida
+│   ├── redis-global-data.volume
+│   └── proxy-net.network          # Red compartida
 │
-├── scripts-standalone/       # Contenedores individuales autónomos (Adminer, MinIO, Redis, etc.)
+├── scripts-standalone/       # 18 contenedores individuales autónomos (--status, --open/--cli, --logs, --stop, --rm)
 └── projects/                 # Proyectos activos de desarrollo (gitignored)
 ```
 
@@ -40,13 +43,17 @@ Podman/
 ### 1. Instalar y configurar Podman Rootless
 
 ```bash
-./install/podman-install.sh
+./install/podman-install.sh           # Instala y configura Podman, socket, linger y CLI
+./install/podman-install.sh --status  # Diagnóstico del entorno Podman
 ```
 
 ### 2. Configurar Quadlets de Systemd
 
 ```bash
-./install/quadlets-setup.sh
+./install/quadlets-setup.sh                  # Prepara directorios Quadlet y recarga systemd
+./install/quadlets-setup.sh --install-shared # Instala los servicios de services-shared/
+./install/quadlets-setup.sh --remove-shared  # Elimina los servicios globales
+./install/quadlets-setup.sh --status         # Estado del generador Quadlet y unidades
 ```
 
 ### 3. CLI `podman-utils`
@@ -63,13 +70,20 @@ podman-utils help
 ## 💡 Uso Rápido
 
 ```bash
-# Crear proyecto desde plantilla
+# Crear proyecto desde plantilla (python-postgres, python-postgres-redis, fullstack)
 podman-utils create python-postgres mi-api
 
-# Iniciar servicios del proyecto
+# Iniciar, detener o reiniciar servicios del proyecto
 podman-utils start mi-api
+podman-utils stop mi-api
+podman-utils restart mi-api
 
-# Estado y logs
+# Estado, logs o eliminar proyecto
 podman-utils status mi-api
 podman-utils logs mi-api
+podman-utils destroy mi-api
+
+# Instalar/desinstalar servicios compartidos
+podman-utils install-global traefik
+podman-utils uninstall-global traefik
 ```

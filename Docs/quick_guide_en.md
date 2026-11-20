@@ -64,7 +64,9 @@ If you want your computer fully configured (AMD/Intel drivers, video codecs, Goo
 just setup-all
 ```
 
-The assistant will automatically detect whether your CPU/GPU is **AMD** or **Intel** and configure everything step by step. When it finishes, **restart your computer** and enjoy!
+The assistant will automatically detect whether your CPU/GPU is **AMD** or **Intel** and configure everything step by step (base system, multimedia, Flatpak, Chrome, tuning, KDE, shell, security, fonts, Fastfetch, Kitty, IDEs, Git, languages, and Podman). When it finishes, **restart your computer** and enjoy!
+
+*(Note: Optional extras such as `firefox`, `zsh`, `starship`, `cockpit`, `yt-dlp`, `virtualization`, and `kodi` are not part of `setup-all` and can be run individually whenever you want.)*
 
 ---
 
@@ -80,7 +82,7 @@ If you aren't a programmer or prefer installing only specific features, you can 
 | **4. Speed up the system** | `just tuning` | Tunes Linux internals for smoother multitasking, fast shutdowns, and better SSD and RAM usage. |
 | **5. Configure the firewall** | `just security` | Configures the **UFW** firewall to protect your PC while allowing KDE Connect and the Cockpit web console. |
 | **6. Install Google Chrome** | `just chrome` | Installs the official Google Chrome browser optimized for Wayland hardware video acceleration. |
-| **7. Install Mozilla Firefox** | `just firefox` | Installs the latest official Mozilla Firefox browser. |
+| **7. Install Mozilla Firefox** | `just firefox` | Installs the latest official Mozilla Firefox `.deb` browser *(note: currently includes the Spanish `firefox-l10n-es-es` pack; use `./Setup/flatpak.sh --web` if you prefer the multilingual Flatpak)*. |
 | **8. Set up Flatpak apps** | `just flatpak` | Connects Flathub and installs essential tools to manage your apps (**Flatseal** and **Warehouse**). |
 | **9. Modern GPU Terminal (Kitty)** | `just kitty` | Installs the **Kitty** terminal with blurred glass background and a comfortable dark color palette. |
 
@@ -131,18 +133,16 @@ just flatpak-status      # Lists which Flatpak apps are installed
 
 ## 6. Useful Everyday Shortcuts & Tricks
 
-If you ran `just shell`, your desktop and terminal now have handy shortcuts:
-
-### ⌨️ On the KDE Plasma Desktop
+### ⌨️ On the KDE Plasma Desktop (with `just kde-setup` / `just kitty`)
 * **`Ctrl + Alt + T`**: Opens your terminal immediately from anywhere.
 * **Right-click inside any folder (Dolphin)**: You'll see new context menu actions like **"Open in Kitty"** or **"Open in Antigravity"** to open a terminal or editor directly in that folder.
 
 ### 🌐 Web Control Panel (Cockpit)
 Golden Dog Linux includes **Cockpit**, a visual dashboard you can open in your web browser to inspect RAM, disks, updates, containers, and virtual machines:
 * Run `just cockpit-open` in the terminal, or open your browser and go to: **`https://localhost:9090`**
-* Log in using the **same username and password** you use to log into your computer.
+* Log in using the **same username and password** you use to log into your computer. *(Note: If your browser warns about a self-signed certificate, click "Advanced" -> "Proceed to localhost" — this is completely normal because it is running locally on your own PC).*
 
-### 🐚 Handy Terminal Shortcuts
+### 🐚 Handy Terminal Shortcuts (with `just shell`)
 When you open the terminal, you can type these short commands:
 
 | Shortcut | What does it do? |
@@ -183,6 +183,9 @@ just flatpak-clean
 
 ### ❓ What happens if I run the same command twice by mistake?
 **Nothing bad at all.** All scripts are *idempotent*: if they detect that a program or setting is already installed, they simply show `✅ Already installed` and skip downloading it again.
+
+### ❓ I have one Intel PC and one AMD PC—which command should I use?
+You can use `just post-install` (or `just setup-all`) on both: the script automatically checks your processor and applies the right configuration (`amd-setup.sh` or `intel-setup.sh`).
 
 ### ❓ Where can I find the advanced technical documentation?
 If you want to dive deeper into Podman containers, KVM virtual machines, or software development (Python, Rust, Node.js, Java), check out the detailed guides in [`Docs/`](./):

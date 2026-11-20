@@ -4,73 +4,95 @@ sidebar_position: 5
 
 # Entornos de Desarrollo (IDEs) y Herramientas de IA en Golden Dog Linux (Debian 13)
 
-Esta guía detalla la instalación, actualización y diagnóstico de los entornos de desarrollo y agentes de programación gestionados en la carpeta `IDE/`.
+Esta guía explica de forma sencilla qué instala y cómo se usa cada script de la carpeta `IDE/` para programar con editores modernos y asistentes de Inteligencia Artificial.
 
-Todos los instaladores están optimizados para **Golden Dog Linux (Debian 13 Trixie)** sobre **KDE Plasma 6 (Wayland)**, integrando lanzadores nativos con soporte Ozone Wayland, variables en `~/.config/environment.d/` y menús contextuales en **Dolphin** (`~/.local/share/kio/servicemenus/`).
+> [!NOTE]
+> **¿Qué es un IDE y qué hace esta carpeta? (Para principiantes)**
+> - Un **IDE** (*Entorno de Desarrollo Integrado*) es el programa donde escribes y pruebas código (como un procesador de textos avanzado para programar).
+> - Una herramienta **CLI** (*Command Line Interface*) es un programa que se usa directamente desde la terminal.
+> - Todos los instaladores están optimizados para **Golden Dog Linux (Debian 13 Trixie)** con **KDE Plasma 6 (Wayland)**, activando gráficos nítidos en Wayland y menús contextuales en el gestor de archivos **Dolphin** (clic derecho -> *Abrir con...*).
 
 ---
 
 ## 1. Google Antigravity Desktop 2.0 (`IDE/antigravity.sh`)
 
-Instala la aplicación de escritorio oficial **Google Antigravity Desktop 2.0** en `/opt/antigravity` con enlace en `/usr/local/bin/antigravity`:
+Instala la aplicación de escritorio oficial **Google Antigravity Desktop 2.0** en `/opt/antigravity` con acceso directo en el menú de aplicaciones y comando `antigravity` en `/usr/local/bin/antigravity`:
 
-* **Características**:
-  - Inspección de versión local vs remota 100% rootless (`--status` y `--check`).
-  - Actualizador atómico `/usr/local/bin/update-antigravity` con rollback automático y configuración de `chrome-sandbox` (SUID 4755).
-  - Extracción del icono nativo 512x512 desde `app.asar`.
-  - Lanzador de escritorio con flags `--ozone-platform-hint=auto --enable-features=WaylandWindowDecorations`.
-  - Menú contextual en Dolphin: *"Abrir con Antigravity"*.
+* **Qué hace por debajo**:
+  - Comprueba e instala las librerías gráficas necesarias (compatibles con Debian 13 `t64`).
+  - Descarga e instala el paquete oficial de forma atómica con copia de seguridad y rollback automático mediante el ayudante `/usr/local/bin/update-antigravity`.
+  - Configura `chrome-sandbox` con permisos `4755`, extrae el icono 512x512 nativo, crea el lanzador Wayland (`--ozone-platform-hint=auto --enable-features=WaylandWindowDecorations`) y añade el menú contextual de Dolphin en `/usr/share/kio/servicemenus/open-in-antigravity.desktop` (con respaldo en `~/.local/share/kio/servicemenus/`).
+  - Detecta si existe una instalación heredada por APT que pueda causar conflicto.
 
-* **Comandos**:
+* **Comandos disponibles**:
   ```bash
-  just antigravity               # Instala o actualiza Antigravity Desktop
-  ./IDE/antigravity.sh --status  # Diagnóstico rápido sin sudo
+  just antigravity                  # Instala o actualiza Antigravity Desktop
+  ./IDE/antigravity.sh --status     # Diagnóstico rápido sin sudo (-s)
+  ./IDE/antigravity.sh --check      # Comprueba si hay nueva versión (0 = al día, 1 = actualización) (-c)
+  ./IDE/antigravity.sh --force      # Fuerza la reinstalación aunque esté actualizado (-f)
+  ./IDE/antigravity.sh --url <URL>  # Instala desde una URL personalizada
+  ./IDE/antigravity.sh --uninstall  # Desinstala la aplicación y sus enlaces
+  ./IDE/antigravity.sh --help       # Muestra la ayuda (-h)
   ```
 
 ---
 
 ## 2. Google Antigravity CLI (`IDE/antigravity-cli.sh`)
 
-Instala la interfaz de línea de comandos **`agy`** de forma 100% rootless en `~/.local/bin/agy`:
+Instala la herramienta de terminal **`agy`** sin necesidad de permisos de administrador (*100% rootless*) en `~/.local/bin/agy`:
 
-* **Características**:
-  - Consulta directa al manifiesto oficial y descarga solo si existe una versión nueva.
-  - Fallback automático al instalador oficial (`https://antigravity.google/cli/install.sh`).
-  - Integración automática de `~/.local/bin` en `~/.bashrc.d/antigravity-cli.sh` y `~/.config/environment.d/10-antigravity-cli.conf`.
+* **Qué hace por debajo**:
+  - Consulta el manifiesto oficial y descarga la nueva versión solo si estás desactualizado (con respaldo al instalador oficial `https://antigravity.google/cli/install.sh`).
+  - Crea el enlace de actualización `~/.local/bin/update-antigravity-cli`.
+  - Añade `~/.local/bin` automáticamente a tu sesión gráfica y terminal mediante `~/.config/environment.d/10-antigravity-cli.conf`, `~/.bashrc.d/antigravity-cli.sh` y `~/.zshrc.d/antigravity-cli.zsh` (si usas Zsh).
 
-* **Comandos**:
+* **Comandos disponibles**:
   ```bash
-  just antigravity-cli               # Instala o actualiza agy CLI
-  ./IDE/antigravity-cli.sh --status  # Verifica versión local y remota
+  just antigravity-cli                  # Instala o actualiza agy CLI
+  ./IDE/antigravity-cli.sh --status     # Verifica versión local y remota (-s)
+  ./IDE/antigravity-cli.sh --check      # Comprueba actualizaciones (-c: 0 al día, 1 disponible, 2 error)
+  ./IDE/antigravity-cli.sh --update     # Actualiza a la última versión (-u)
+  ./IDE/antigravity-cli.sh --force      # Fuerza la reinstalación (-f)
+  ./IDE/antigravity-cli.sh --url <URL>  # Instala desde una URL específica
+  ./IDE/antigravity-cli.sh --uninstall  # Elimina agy y su integración de shell
+  ./IDE/antigravity-cli.sh --help       # Muestra la ayuda (-h)
   ```
 
 ---
 
 ## 3. Google Antigravity IDE (`IDE/antigravity-ide.sh`)
 
-Instala el motor **Google Antigravity IDE** en `/opt/antigravity-ide` con su helper `/usr/local/bin/update-antigravity-ide` y menú contextual en Dolphin (*"Abrir con Antigravity IDE"*):
+Instala el editor **Google Antigravity IDE** en `/opt/antigravity-ide` junto con su actualizador `/usr/local/bin/update-antigravity-ide`, lanzador Wayland y menú contextual en Dolphin (`/usr/share/kio/servicemenus/open-in-antigravity-ide.desktop` -> *"Abrir con Antigravity IDE"*):
 
 ```bash
-just antigravity-ide               # Instala o actualiza Antigravity IDE
-./IDE/antigravity-ide.sh --status  # Muestra el estado de la instalación
+just antigravity-ide                  # Instala o actualiza Antigravity IDE
+./IDE/antigravity-ide.sh --status     # Muestra el estado de la instalación (-s o status)
+./IDE/antigravity-ide.sh --url <URL>  # Instala desde un tarball oficial específico
+./IDE/antigravity-ide.sh --uninstall  # Desinstala Antigravity IDE
+./IDE/antigravity-ide.sh --help       # Muestra la ayuda (-h o help)
 ```
 
 ---
 
 ## 4. OpenCode AI CLI (`IDE/opencode.sh`)
 
-Gestiona el agente de terminal **OpenCode AI** en espacio de usuario a través de **Mise**:
+Instala y gestiona el asistente de programación en terminal **OpenCode AI** dentro de tu usuario usando **Mise** (un gestor moderno de herramientas):
 
-* **Características**:
-  - Instalación idempotente (`mise use --global opencode@latest`) o fijación de versión específica (`--version <ver>`).
-  - Limpieza automática de binarios heredados en `~/.opencode/bin` para evitar conflictos de `PATH`.
-  - Propagación de shims de Mise a la sesión gráfica KDE Plasma 6 (`~/.config/environment.d/10-opencode.conf`).
+* **Qué hace por debajo**:
+  - Si `mise` no está instalado todavía, ejecuta automáticamente `../ProgrammingLanguages/mise.sh` para instalarlo.
+  - Instala `opencode@latest` (o la versión que elijas) de forma global en Mise (`mise use --global`).
+  - Limpia binarios antiguos (`~/.opencode/bin/opencode`, `~/.local/bin/opencode`, `~/.bashrc.d/opencode.sh`, `~/.zshrc.d/opencode.zsh`) para evitar conflictos de `PATH`.
+  - Propaga el `PATH` de Mise a KDE Plasma 6 mediante `~/.config/environment.d/10-opencode.conf`, `systemctl --user` y `dbus`.
 
-* **Comandos**:
+* **Comandos disponibles**:
   ```bash
-  just opencode               # Instala OpenCode vía Mise
-  ./IDE/opencode.sh --status  # Diagnóstico de Mise y OpenCode
-  ./IDE/opencode.sh --update  # Actualiza a la última versión
+  just opencode                         # Instala OpenCode vía Mise (-i / --install)
+  ./IDE/opencode.sh --version 1.18.13   # Instala una versión concreta (-v o pasando la versión directa)
+  ./IDE/opencode.sh --update            # Actualiza OpenCode a la última versión (-u)
+  ./IDE/opencode.sh --force             # Fuerza la reinstalación (-f)
+  ./IDE/opencode.sh --status            # Diagnóstico de Mise y OpenCode (-s)
+  ./IDE/opencode.sh --uninstall         # Desinstala OpenCode conservando tu configuración (-r)
+  ./IDE/opencode.sh --help              # Muestra la ayuda (-h)
   ```
 
 ---
@@ -78,6 +100,6 @@ Gestiona el agente de terminal **OpenCode AI** en espacio de usuario a través d
 ## 5. Instalación Conjunta y Diagnóstico
 
 ```bash
-just ides         # Instala Antigravity Desktop, CLI, IDE y OpenCode
-just ides-status  # Muestra el estado de todas las herramientas de desarrollo
+just ides         # Instala Antigravity Desktop, CLI, IDE y OpenCode de una vez
+just ides-status  # Comprueba el estado de las 4 herramientas
 ```

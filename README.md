@@ -63,6 +63,7 @@ Puedes instalar todo de golpe con `just setup-all` o ejecutar **solo la pieza qu
 | `just fonts` | Instala las fuentes **Nerd Fonts** (`JetBrainsMono`, `FiraCode`, `CascadiaCode`, `Meslo`, `Hack`) para ver iconos en la terminal. | `just fonts-status` |
 | `just fastfetch` | Configura el resumen visual del sistema (**Fastfetch** — escribe `ff` en la terminal para verlo). | `just fastfetch-status` |
 | `just languages` | *(Para desarrolladores)* Instala **Mise**, **Node.js LTS**, **Python + uv**, **Rust** y **OpenJDK 21**. | `just languages-status` |
+| `just git-setup` | *(Para desarrolladores)* Instala y configura **Git**, **Git-Delta**, **Lazygit** y **GitHub CLI (`gh`)**. | `just git-status` |
 | `just ides` | *(Para desarrolladores)* Instala **Google Antigravity Desktop 2.0**, **Antigravity CLI (`agy`)**, **Antigravity IDE** y **OpenCode AI**. | `just ides-status` |
 | `just podman-setup` | *(Para desarrolladores)* Configura contenedores **Podman Rootless** y servicios **Quadlets** de systemd. | `just podman-status` |
 | `just virtualization` | *(Avanzado)* Configura máquinas virtuales **KVM/QEMU** con **Virt-Manager** y **Cockpit Machines**. | `just virtualization-status` |

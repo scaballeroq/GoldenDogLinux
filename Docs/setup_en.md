@@ -13,21 +13,26 @@ Configurations are automated via scripts in the `Setup/` folder and orchestrated
 ## 1. Base Post-Installation (`post-install.sh`)
 
 Prepares the base system by detecting host CPU/GPU architecture (any **AMD** or **Intel** desktop or laptop; **Nvidia GPUs excluded**) and executing the tailored installer:
-- **`post-install-amd.sh`** + **`amd-setup.sh`**: For AMD CPUs and GPUs (microcode, AMD firmware, Mesa RADV, VA-API `radeonsi`, PipeWire, ZRAM, Flatpak Flathub).
-- **`post-install-intel.sh`** + **`intel-setup.sh`**: For Intel CPUs and GPUs (Intel microcode, `iHD`/`i965` VA-API, Mesa ANV Vulkan, PipeWire, ZRAM, Flatpak Flathub).
+- **`post-install-amd.sh`** + **`amd-setup.sh`**: For AMD CPUs and GPUs (microcode, AMD firmware, Mesa RADV, VA-API `radeonsi`, FFmpeg/GStreamer codecs, PipeWire, ZRAM, and Flatpak Discover backend).
+- **`post-install-intel.sh`** + **`intel-setup.sh`**: For Intel CPUs and GPUs (Intel microcode, `iHD`/`i965` VA-API, Mesa ANV Vulkan, FFmpeg/GStreamer codecs, PipeWire, ZRAM, and Flatpak Discover backend).
 
-Command:
+> [!NOTE]
+> `post-install` installs `flatpak` and the KDE Discover backend; the **Flathub** remote is added afterward by `just flatpak` or `just multimedia`. **Rebooting** after completion is recommended.
+
+Commands:
 ```bash
-just post-install
+just post-install          # Auto-detects AMD or Intel (also accepts --amd / --intel)
+just amd-setup --status    # AMD hardware/driver diagnostics (or intel-status)
+just zram-status           # Check ZRAM compressed swap (50% RAM with ZSTD)
 ```
 
 ---
 
-## 2. Terminal Environment & Shell (`shell.sh`, `fastfetch.sh`, `fonts.sh`, and `kitty.sh`)
+## 2. Terminal Environment & Shell (`shell.sh`, `zsh-setup.sh`, `starship.sh`, `fastfetch.sh`, `fonts.sh`, and `kitty.sh`)
 
-Installs modern console utilities, developer typefaces, Starship prompt, and the GPU-accelerated Kitty terminal emulator.
+Installs modern console utilities, developer typefaces, optional Zsh, Starship prompt, and the GPU-accelerated Kitty terminal emulator.
 
-### Modern Terminal Utilities
+### Modern Terminal Utilities (`shell.sh` and `zsh-setup.sh`)
 - `eza` (modern `ls` replacement with git integration and glyphs)
 - `bat` (syntax-highlighted `cat` replacement via `batcat`)
 - `fzf` (interactive fuzzy finder for Ctrl+R, Ctrl+T, Alt+C)
@@ -37,21 +42,23 @@ Installs modern console utilities, developer typefaces, Starship prompt, and the
 - `duf` & `du-dust` (modern disk usage visualization)
 - `procs` (modern `ps` replacement)
 - `btop` (resource monitor)
+- `curl`, `git`, and `jq` (networking and JSON helpers)
+
+If you want to use **Zsh** instead of Bash, `just zsh` sets up `~/.zshrc` with Powerline styling, syntax highlighting, and autosuggestions (and `just zsh-default` sets it as your login shell). For **Starship**, run `./Setup/starship.sh` once to install the binary, then use `just starship` / `just starship-disable` to toggle it.
 
 ### Kitty Terminal (GPU-Accelerated)
 Configured with:
-- 75% background opacity and background blur (*blur 32*) accelerated by Mesa RADV GPU.
-- Catppuccin Mocha color scheme (#181825).
+- 75% background opacity and background blur (*blur 32*) accelerated by Mesa GPU drivers (AMD/Intel).
+- Catppuccin Mocha color scheme (`#181825`).
 - JetBrainsMono Nerd Font.
-- Global `Ctrl+Alt+T` keybinding in KDE Plasma 6.
-- Dolphin context menu (KIO ServiceMenu: "Open in Kitty").
+- Global `Ctrl+Alt+T` keybinding in KDE Plasma 6 and Dolphin context menu (*"Open in Kitty"*).
 
 ### Developer Fonts (Nerd Fonts)
-Automated installation of:
-`JetBrainsMono`, `FiraCode`, `CascadiaCode`, `Meslo`, and `Hack`.
+Automated user-space installation into `~/.local/share/fonts`:
+`JetBrainsMono`, `FiraCode`, `CascadiaCode`, `Meslo`, and `Hack` (you can also pass custom font names like `./Setup/fonts.sh GeistMono`).
 
 ### Fastfetch
-Aesthetic hardware and system banner supporting official Debian theme (`debian`) and minimalist mode (`compact`).
+Aesthetic hardware and system summary (`ff` or `fastfetch`) supporting 4 themes: `debian`, `debian-simple`, `modern`, and `compact` (use `./Setup/fastfetch.sh --menu` to pick interactively or `--preview` to test).
 
 ---
 
@@ -60,38 +67,46 @@ Aesthetic hardware and system banner supporting official Debian theme (`debian`)
 > [!IMPORTANT]
 > **Golden Dog Linux appearance preserved:** `kde-settings.sh` never alters global themes, color schemes, icons, cursors, panels, or window decorations.
 
-- **KDE Gear Packages**: Installs official utilities (`dolphin`, `kate`, `spectacle`, `okular`, `gwenview`, `ark`, `kio-extras`, `dolphin-plugins`, `ffmpegthumbs`, `wl-clipboard`).
+- **KDE Gear Packages**: Installs official utilities (`dolphin`, `kate`, `spectacle`, `kcalc`, `ark`, `gwenview`, `okular`, `plasma-systemmonitor`, `kio-extras`, `dolphin-plugins`, `ffmpegthumbs`, `wl-clipboard`).
 - **Optimized Dolphin**: Detailed view mode enabled by default with multimedia thumbnail previews.
 - **Global `Ctrl+Alt+T` Shortcut**: Launches your preferred terminal (`kitty` or `konsole`).
 - **Dolphin ServiceMenus**: Right-click context actions for **Kitty**, **Google Antigravity**, and **Antigravity IDE**.
 
 ---
 
-## 4. Browsers & Decoupled Software
+## 4. Browsers, Media & Decoupled Software
 
 - **Google Chrome** (`chrome.sh`): Official Google repository with Ozone Wayland flags (`--ozone-platform-hint=auto` and VA-API hardware acceleration).
-- **Mozilla Firefox** (`firefox.sh`): Native `.deb` package from Mozilla with APT Pin-Priority 1000, replacing Firefox ESR.
-- **Flatpak** (`flatpak.sh`): Modular catalog integrated with KDE Discover (Flatseal, Podman Desktop, Warehouse, VLC, Celluloid, OBS Studio, Kdenlive, Shotcut, Kodi, Stremio, Audacity, Spotify, Vesktop, Telegram, Bruno, DBeaver, LibreOffice, Obsidian, LocalSend, Pika Backup, GIMP, Inkscape).
-- **Cockpit Web Console** (`cockpit.sh`): On-demand activation via `cockpit.socket` on port `9090` with Podman, KVM Machines, Storage, and NetworkManager modules.
+- **Mozilla Firefox** (`firefox.sh`): Native `.deb` package from Mozilla with APT Pin-Priority 1000, replacing Firefox ESR. *(Note: this script currently installs the Spanish `firefox-l10n-es-es` language pack alongside `firefox`.)*
+- **`yt-dlp` Downloader** (`yt-dlp-setup.sh`): Installs `yt-dlp`, `ffmpeg`, `aria2`, `python3-mutagen`, and configures `deno` via Mise for reliable YouTube downloads.
+- **Flatpak** (`flatpak.sh`): Modular 22-app catalog integrated with KDE Discover (see the [Flatpak Apps Guide](./apps_en.md)).
+- **Cockpit Web Console** (`cockpit.sh`): On-demand activation via `cockpit.socket` at `https://localhost:9090` with Podman, KVM Machines, Storage, NetworkManager, and Files modules (supports `--open`, `--client`, `--start`, `--stop`, `--restart`, `--disable`).
 
 ---
 
 ## 5. Summary of Commands with Just
 
 ```bash
+just setup-all           # Set up the ENTIRE environment automatically (AMD / Intel)
+just status              # Full system diagnostics (tuning, security, KDE, Cockpit)
 just post-install        # Smart post-install dispatcher (AMD / Intel)
 just kde-setup           # Functional KDE Plasma 6 setup (preserves visual theme)
 just kde-status          # Show KDE Plasma 6 functional status
 just tuning              # Kernel sysctl, limits, Baloo exclusions, and ZRAM
+just zram                # Configure ZRAM compressed swap (50% RAM)
+just security            # Configure UFW firewall and container/VM networking
 just shell               # Install modern CLI tools and link Bash.Setup
-just zsh                 # Configure modular Zsh environment
-just starship            # Install and enable Starship prompt
+just zsh                 # Configure modular Zsh environment (just zsh-default to switch)
+just starship            # Enable Starship prompt (run ./Setup/starship.sh to install)
 just kitty               # Configure GPU-accelerated Kitty terminal
 just fonts               # Install Nerd Fonts
 just fastfetch           # Configure Fastfetch banner
-just multimedia          # Install GStreamer/FFmpeg codecs and VA-API acceleration
-just flatpak             # Install Flatpak applications
+just multimedia          # Install GStreamer/FFmpeg codecs, VA-API, and Flathub
+just yt-dlp              # Configure yt-dlp + FFmpeg + Deno
+just flatpak             # Install core Flatpak utilities (Flatseal & Warehouse)
 just chrome              # Install official Google Chrome
 just firefox             # Install native Firefox (.deb)
-just cockpit             # Configure Cockpit Web Console
+just kodi                # Install Kodi media center via APT
+just cockpit             # Configure Cockpit Web Console (just cockpit-open to launch)
+just update              # Full Debian system upgrade via APT
 ```

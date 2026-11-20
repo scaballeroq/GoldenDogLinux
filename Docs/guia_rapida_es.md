@@ -64,7 +64,9 @@ Si quieres dejar el ordenador completamente configurado (drivers AMD/Intel, cód
 just setup-all
 ```
 
-El asistente detectará automáticamente si tu procesador es **AMD** o **Intel** y configurará todo paso a paso. Cuando termine, **reinicia tu ordenador** y estará listo.
+El asistente detectará automáticamente si tu procesador es **AMD** o **Intel** y configurará todo paso a paso (sistema base, multimedia, Flatpak, Chrome, rendimiento, KDE, terminal, seguridad, fuentes, Fastfetch, Kitty, IDEs, Git, lenguajes y Podman). Cuando termine, **reinicia tu ordenador** y estará listo.
+
+*(Nota: Herramientas opcionales como `firefox`, `zsh`, `starship`, `cockpit`, `yt-dlp`, `virtualization` o `kodi` no están en `setup-all` y puedes instalarlas aparte si las quieres.)*
 
 ---
 
@@ -131,9 +133,7 @@ just flatpak-status      # Muestra qué aplicaciones Flatpak tienes instaladas
 
 ## 6. Trucos y Atajos Útiles para tu Día a Día
 
-Si has ejecutado `just shell`, tu terminal ahora tiene **"superpoderes"** que hacen todo más fácil:
-
-### ⌨️ En el Escritorio KDE Plasma
+### ⌨️ En el Escritorio KDE Plasma (con `just kde-setup` / `just kitty`)
 * **`Ctrl + Alt + T`**: Abre la terminal instantáneamente desde cualquier lugar.
 * **Clic derecho en cualquier carpeta (Dolphin)**: Verás nuevas opciones como **"Abrir en Kitty"** o **"Abrir con Antigravity"** para abrir la terminal o tu editor directamente en esa carpeta.
 
@@ -142,7 +142,7 @@ Golden Dog Linux incluye **Cockpit**, un panel visual que puedes abrir en tu nav
 * Escribe `just cockpit-open` en la terminal, o abre tu navegador y entra en: **`https://localhost:9090`**
 * Inicia sesión con el **mismo nombre de usuario y contraseña** que usas para entrar en tu ordenador. *(Nota: Si el navegador te avisa de que el certificado es autofirmado, pulsa en "Configuración avanzada" -> "Acceder a localhost", es normal porque es tu propio ordenador).*
 
-### 🐚 Atajos fáciles en la Terminal
+### 🐚 Atajos fáciles en la Terminal (con `just shell`)
 Cuando abras la terminal, puedes escribir estas palabras cortas:
 
 | Atajo | ¿Qué hace? |

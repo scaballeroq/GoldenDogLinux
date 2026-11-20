@@ -16,10 +16,11 @@ El script [`Setup/flatpak.sh`](../Setup/flatpak.sh) configura **Flatpak**, el ba
 
 ## 2. Catálogo de Aplicaciones por Categorías
 
-* **Core / Gestión (`--core`)**:
+* **Perfil por defecto (sin argumentos / `just flatpak`)**:
   - **Flatseal** (`com.github.tchx84.Flatseal`): Gestor gráfico de permisos y sandbox.
   - **Warehouse** (`io.github.flattool.Warehouse`): Gestión avanzada de Flatpaks y runtimes.
-  - **Podman Desktop** (`io.podman_desktop.PodmanDesktop`): Panel gráfico para contenedores Podman.
+* **Core / Gestión (`--core` o `--essential`)**:
+  - Incluye **Flatseal**, **Warehouse** y **Podman Desktop** (`io.podman_desktop.PodmanDesktop`).
 * **Multimedia (`--multimedia`)**:
   - **VLC**, **Celluloid**, **OBS Studio**, **Kdenlive**, **Shotcut**, **Kodi**, **Stremio**, **Audacity**, **Spotify**.
 * **Comunicación (`--comms`)**:
@@ -30,19 +31,26 @@ El script [`Setup/flatpak.sh`](../Setup/flatpak.sh) configura **Flatpak**, el ba
   - **LibreOffice**, **Obsidian**, **LocalSend**, **Pika Backup**.
 * **Diseño Gráfico (`--graphics`)**:
   - **GIMP**, **Inkscape**.
+* **Web (`--web`)**:
+  - **Mozilla Firefox** (`org.mozilla.firefox`).
 
 ---
 
 ## 3. Comandos con Just y CLI
 
 ```bash
-just flatpak                       # Instala las aplicaciones esenciales por defecto
+just flatpak                       # Instala el perfil por defecto (Flatseal y Warehouse)
 just flatpak-status                # Muestra el catálogo y estado de aplicaciones instaladas
 just flatpak-update                # Actualiza todas las aplicaciones y runtimes Flatpak
 just flatpak-clean                 # Elimina runtimes huérfanos no utilizados
 
-# Instalación por categoría o individual
+# Instalación por categoría, completa o individual
+./Setup/flatpak.sh --core          # Instala Flatseal, Warehouse y Podman Desktop
 ./Setup/flatpak.sh --multimedia    # Instala la suite multimedia
 ./Setup/flatpak.sh --dev           # Instala Bruno y DBeaver
+./Setup/flatpak.sh --web           # Instala Mozilla Firefox en Flatpak
+./Setup/flatpak.sh --all           # Instala las 22 aplicaciones del catálogo
+./Setup/flatpak.sh --overrides     # Aplica solo los permisos GTK/DRI recomendados
 ./Setup/flatpak.sh install vlc     # Instala una aplicación individual por alias o ID
+./Setup/flatpak.sh --user --multimedia  # Instala en espacio de usuario (sin sudo)
 ```

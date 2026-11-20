@@ -10,11 +10,11 @@ Este directorio organiza de forma modular los alias, variables de entorno, utili
 
 | Archivo | Descripción |
 | :--- | :--- |
-| `aliases.sh` | Atajos de navegación, seguridad (`rm -i`), gestión de paquetes (`apt`), cortafuegos (`ufw`), hardware e integración con herramientas Rust (`eza`, `bat`, `duf`, `dust`). |
+| `aliases.sh` | Atajos de navegación, Git, `apt`, `ufw`, hardware, `virsh` (KVM), Podman, seguridad (`rm -i`) e integración con herramientas modernas (`eza`/`lsd`, `bat`, `duf`, `dust`, `procs`, `btop`/`btm`, `fastfetch`) y `check-kernel-update`. |
 | `environment.sh` | Variables globales (`EDITOR`, `PATH`, Wayland, integración Qt/KDE, `DOCKER_HOST`, `LIBVIRT_DEFAULT_URI`) y activación automática de Mise. |
-| `functions.sh` | Utilidades multimedia (FFmpeg / ImageMagick), gestión de discos (`format-drive`, `iso2sd`), descompresión universal (`extract`) y navegación avanzada. |
-| `kde_settings.sh` | Atajos funcionales para KDE Plasma (accesos directos a `systemsettings`, Dolphin, Kate, Plasma System Monitor y portapapeles Wayland) sin alterar la apariencia visual. |
-| `history.sh` | Configuración optimizada del historial (10k/20k comandos, deduplicación inmediata y soporte dual Bash/Zsh). |
+| `functions.sh` | Utilidades multimedia (FFmpeg / ImageMagick), gestión de discos (`format-drive`, `iso2sd`), descompresión/compresión (`extract`, `compress`), copias (`backup`) y navegación avanzada. |
+| `kde_settings.sh` | Atajos funcionales para KDE Plasma (accesos directos a `systemsettings`, Dolphin, Kate/KWrite, Plasma System Monitor, KCalc y portapapeles Wayland) sin alterar la apariencia visual. |
+| `history.sh` | Configuración optimizada del historial (10k/20k comandos en Bash con marcas de tiempo, compartición y deduplicación inmediata en Zsh). |
 | `options.sh` | Comportamiento avanzado de shell (`autocd`, corrección de typos con `cdspell`, globbing extendido y completado insensible a mayúsculas). |
 | `podman-functions.sh` | Funciones y atajos para contenedores Podman y unidades Quadlets rootless de systemd. |
 | `rclone_aliases.sh` | Suite integral de sincronización, respaldo y descarga para Google Drive y OneDrive con Rclone. |
@@ -45,5 +45,5 @@ fi
 ---
 
 ## 🛡️ Seguridad y Cortafuegos
-- **UFW Nativo:** Todos los atajos de firewall (`fw`, `fw-status`, `fw-numbered`, `fw-reload`) operan con `ufw`, preinstalado y configurado en Golden Dog Linux.
-- **Protección de Archivos:** Operaciones interactivas por defecto (`rm -i`, `cp -i`, `mv -i`, `chown --preserve-root`).
+- **UFW Nativo:** Todos los atajos de firewall (`fw`, `fw-status`, `fw-numbered`, `fw-reload`, `fw-allow`, `fw-deny`) operan con `ufw`, preinstalado y configurado en Golden Dog Linux.
+- **Protección de Archivos:** Operaciones interactivas por defecto (`rm -i`, `cp -i`, `mv -i`, `ln -i`, `chown/chmod/chgrp --preserve-root`).

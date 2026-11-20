@@ -2,128 +2,104 @@
 sidebar_position: 3
 ---
 
-# Bash Configuration on Debian 13
+# Terminal Configuration (Bash & Zsh) on Debian 13
 
-This guide details the terminal environment (Bash) setup and built-in utilities provided in the modular scripts under the `Bash.Setup` folder.
+This guide explains in plain terms what each file in `Bash.Setup/` does to make your terminal faster, safer, and easier to use on both **Bash** and **Zsh**.
 
-The modular configuration is structured through the `~/.bashrc.d/` directory to ensure the `~/.bashrc` file remains clean and maintainable.
+> [!NOTE]
+> **How does this work? (Beginner-Friendly Summary)**
+> An **alias** is a short nickname for a longer command (for instance, typing `g` instead of `git`, or `c` instead of `clear`).
+> All scripts in `Bash.Setup/` are automatically linked into `~/.bashrc.d/` (and `~/.zshrc.d/` if you use Zsh) when you run `just shell` (`./Setup/shell.sh`) or `just zsh` (`./Setup/zsh-setup.sh`), keeping your `~/.bashrc` clean.
 
 ---
 
-## 1. Modular Environment Loading
+## 1. Installation & Modular Loading
 
-The scripts are loaded dynamically by adding the following block to your `~/.bashrc` file:
-
+The recommended way to enable everything is:
 ```bash
-# Modular loading of Bash.Setup scripts
-if [ -d "$HOME/.bashrc.d" ]; then
-    for script in "$HOME/.bashrc.d"/*.sh; do
-        [ -r "$script" ] && source "$script"
-    done
-    unset script
-fi
+just shell   # Installs modern CLI tools (eza, bat, fzf, zoxide...) and links Bash.Setup
 ```
-
-You can enable them by creating symbolic links in `~/.bashrc.d/`:
-```bash
-mkdir -p ~/.bashrc.d
-ln -s "$(pwd)/Bash.Setup/"*.sh ~/.bashrc.d/
-```
+A small loader in `~/.bashrc` sources every readable `*.sh` file in `~/.bashrc.d/` (and `Setup/shell.sh` / `Setup/zsh-setup.sh` also initialize `fzf` and `zoxide`).
 
 ---
 
 ## 2. Environment Variables (`environment.sh`)
 
-Defines global settings and performance optimizations for system tools:
-
-- **Default Editor**: Sets `nvim` (Neovim) as the global editor.
-- **Executable Paths (`PATH`)**: Adds local user directories to the environment path:
-  - `~/.local/bin`
-  - `~/bin`
-  - Cargo/Rust bin directory (`~/.cargo/bin`)
-- **Aesthetic Pager (`less` and `man`)**: Configures custom colors and flags to make Linux manual pages (`man`) and text viewing with `less` more readable.
+Sets up global defaults for both the terminal and KDE Plasma 6 Wayland apps:
+- **Editor & Pager**: `EDITOR` and `VISUAL` default to `nvim` (falling back to `nano`); `PAGER="less"` with colorized `man` pages.
+- **Wayland / KDE / Electron**: `GDK_BACKEND="wayland,x11,*"`, `QT_QPA_PLATFORM="wayland;xcb"`, `QT_QPA_PLATFORMTHEME="kde"`, `QT_AUTO_SCREEN_SCALE_FACTOR=1`, `MOZ_ENABLE_WAYLAND=1`, `ELECTRON_OZONE_PLATFORM_HINT="auto"`.
+- **`PATH` entries**: Automatically prepends (if present) `~/bin`, `~/.local/bin`, `~/.cargo/bin`, `~/go/bin`, and `~/.local/share/mise/shims`.
+- **Tools & Services**:
+  - Activates `mise` (`mise activate bash/zsh --shims`).
+  - Sets `DOCKER_HOST` to the rootless Podman socket when available.
+  - Sets `LIBVIRT_DEFAULT_URI="qemu:///system"` for KVM virtual machines.
+  - Configures `GPG_TTY`, `UV_LINK_MODE="copy"` (for Python `uv`), and Antigravity updater paths (`UPDATE_ANTIGRAVITY_PATH`, `UPDATE_ANTIGRAVITY_IDE_PATH`).
 
 ---
 
-## 3. Bash Behavior (`options.sh` and `history.sh`)
+## 3. Shell Behavior & History (`options.sh` and `history.sh`)
 
-Optimizes shell interaction through internal adjustments.
-
-### Advanced Shell Behavior (`options.sh`)
-* **`autocd`**: Allows changing directories by typing the path directly (without prefixing `cd`).
-* **`globstar`**: Enables recursive globbing pattern expansions (e.g. `ls **/*.js`).
-* **Directory Typo Correction**: Enables `cdspell` and `dirspell` to automatically fix minor typos when entering folder names.
+### Smart Behavior (`options.sh`)
+- **Bash**: Enables `autocd` (enter folders by typing their name), `cdspell` / `dirspell` (fixes minor folder typos), `globstar` (`**/*.ext`), and `checkwinsize`. Configures Readline for case-insensitive, colored tab completion.
+- **Zsh**: Enables `AUTO_CD`, `CORRECT`, `AUTO_PUSHD`, `PUSHD_IGNORE_DUPS`, `NO_CASE_GLOB`, `EXTENDED_GLOB`, `INTERACTIVE_COMMENTS`, and interactive completion menus (`zstyle`).
 
 ### Command History (`history.sh`)
-* Expanded capacity of up to **10,000 commands** in memory and **20,000 in history file**.
-* Ignores duplicates and common commands (`history -a`, `histignore`).
-* Writes commands to the history file immediately after execution.
+- **Bash**: Stores up to **10,000** commands in memory and **20,000** in `~/.bash_history`, adds timestamps (`HISTTIMEFORMAT="%F %T "`), enables `histappend` and `cmdhist`, and ignores duplicates and trivial commands (`HISTCONTROL=ignoreboth:erasedups`, `HISTIGNORE`).
+- **Zsh**: Stores **20,000** commands in `~/.zsh_history` with live cross-tab sharing (`SHARE_HISTORY`), automatic deduplication (`HIST_IGNORE_ALL_DUPS`, `HIST_SAVE_NO_DUPS`), and `HISTORY_IGNORE`.
 
 ---
 
 ## 4. System Shortcuts & Aliases (`aliases.sh`)
 
-Replaces standard commands with enriched and safe alternatives:
-
-- **Security**:
-  - `rm -i` (prompt before deletion)
-  - `cp -i` (prompt before overwrite when copying)
-  - `mv -i` (prompt before overwrite when moving)
-  - Defensive `--preserve-root` flag enabled by default.
-- **File Visualization** (if `eza` and `bat` are installed):
-  - `ls` mapped to `eza` with icons and a clean structure.
-  - `cat` mapped to `bat` with syntax highlighting.
-- **Quick Navigation**:
-  - `..`, `...`, `....` to step up directories quickly.
-  - `c` to clear the screen (`clear`).
-  - `path` to list PATH directories on individual lines.
+- **File safety**: `rm -i`, `cp -i`, `mv -i`, `ln -i` (confirm before overwriting/deleting), `mkdir -p`, and `--preserve-root` on `chown`, `chmod`, and `chgrp`.
+- **Modern listing & reading**: Uses `eza` (or `lsd` / `ls`) for `ls`, `ll`, `la`, `lt`, `tree`; and `batcat` / `bat` for `cat`, `less`, and `bat`.
+- **Quick navigation**: `..`, `...`, `....`, `~`, `repo` (`~/Workspace/Repositorios`), `workspace` (`~/Workspace`), `gdl` (`~/Workspace/Repositorios/GoldenDogLinux`).
+- **Modern CLI tools (when installed)**: `df` (`duf`), `du` (`dust`), `ps` (`procs`), `fd` (`fdfind`), `top` (`btm` or `btop`), `ff` / `sysinfo` (`fastfetch`).
+- **Git (15 shortcuts)**: `g`, `gs`, `ga`, `gc`, `gca`, `gcm`, `gp`, `gph`, `gF`, `gl`, `gd`, `gco`, `gb`, `gbr`, `gba`.
+- **APT packages (9 shortcuts)**: `update`, `upgrade`, `install`, `remove`, `purge`, `search`, `clean`, `list`, `pkg-info`.
+- **Network & UFW Firewall**: `ports`, `myip`, `localip`; and `fw`, `fw-status`, `fw-numbered`, `fw-reload`, `fw-allow`, `fw-deny`.
+- **Hardware, Kernel, VMs & Containers**:
+  - `check-kernel` / `kernel-check` (`check-kernel-update()` checks `kernel.org`), `cpu-info`, `gpu-info`, `ram-info`, `disk-info`.
+  - Virtual machines (`virsh`): `vms`, `vmstart`, `vmstop`, `vminfo`, `vmconsole`.
+  - Podman: `pc` (`podman-compose`), `ppsa`, `pimg`, `pods`, `podsa`, `pclean` (`podman system prune -af`).
+  - Shell & IDEs: `reload`, `edit-bashrc`, `edit-zshrc`, `edit-shell`, `edit-aliases`, `update-antigravity`, `update-antigravity-ide`.
 
 ---
 
-## 5. System Functions & Utilities (`functions.sh`)
+## 5. Useful Functions (`functions.sh`)
 
-Includes helper shell functions to simplify recurring tasks:
-
-* **`extract`**: Automatically extracts almost any compressed file format (`.zip`, `.tar.gz`, `.bz2`, `.rar`, etc.) without needing to recall specific decompression flags.
-* **`mkcd`**: Creates a folder and immediately changes into it with a single command.
-* **`up <N>`**: Steps up `N` directory levels easily (e.g. `up 3`).
-* **`duh`**: Displays folder sizes in the current directory, sorted by weight on disk.
-* **Multimedia Processing**:
-  - `webm2mp4`: Converts WebM screen recordings (common in Wayland) to standard MP4 files.
-  - `img2jpg` / `img2png`: Rapidly converts and optimizes image formats via console.
+- **Folders & search**: `mkcd <dir>` (create and enter), `up <N>` (go up N levels), `duh` (sorted folder sizes), `psgrep <name>`, `hg <text>` (search command history).
+- **Backups & archives**: `backup <file>` (alias `backup_file`, timestamped copy), `extract <archive>` (auto-extracts `.zip`, `.tar.gz`, `.tar.xz`, `.tar.zst`, `.7z`, `.rar`, `.bz2`, etc.), and `compress <format> <source>` (`tar.gz`, `tar.bz2`, `tar.xz`, `zip`, `7z`).
+- **USB drives**: `iso2sd <iso> <device>` (writes an ISO to USB) and `format-drive <device>` (interactive exFAT formatter).
+- **Media**: `webm2mp4`, `transcode-video-1080p`, `img2jpg`, `img2png`.
 
 ---
 
-## 6. Cloud Sync and Downloads (`rclone_aliases.sh` and `yt-dlp_aliases.sh`)
+## 6. Cloud Sync & Downloads (`rclone_aliases.sh` and `yt-dlp_aliases.sh`)
 
-Automates remote storage synchronization and media downloads.
+### Rclone Sync (`rclone_aliases.sh`)
+Shortcuts using `--fast-list --transfers 8 --checkers 16 --tpslimit 10` for **Google Drive** and **OneDrive** (with `-dry` dry-run, `-copy` non-destructive copy, and `-down` download variants):
+- `gdrive-imagenes`, `gdrive-documentos`, `gdrive-videos`, `gdrive-musica`, `gdrive-software`, `gdrive-kdenlive`, `gdrive-repos`, `gdrive-repos-debian`, `gdrive-repos-loladelacamara` (plus `-dry`, `-copy`, `-copy-dry`, and `-down*` for the first 5).
+- `lola-onedrive-documentos-down` (and `-dry`, `-copy`, `-copy-dry` variants).
+- Base paths can be overridden via `RCLONE_REPOS_BASE` (default `~/Proyectos`) and `RCLONE_EXT_BASE` (default `/run/media/$USER/NVME_EXT`).
 
-### Rclone Synchronization
-Facilitates cloud syncing (mirror or copy) with services like Google Drive and OneDrive using controlled transaction limits (`--tpslimit 10 --fast-list`) to avoid API throttling:
-- `gdrive-documentos` / `gdrive-imagenes`: Synchronizes local -> cloud (with `-copy` and `-dry` variants).
-- `gdrive-videos-down` / `gdrive-documentos-down`: Downloads files from the cloud to the local machine.
-
-### yt-dlp Downloads
-Utilities to automate media extraction:
-- `ytvideo <URL>`: Downloads video in optimal quality (1080p).
-- `ytaudio <URL>`: Downloads and converts stream to high-fidelity MP3.
-- `ytlista-audio <URL>`: Downloads complete playlists converted to MP3.
-
----
-
-## 7. Functional KDE Plasma 6 Helpers (`kde_settings.sh`)
-
-Provides quick CLI shortcuts for KDE Plasma 6 while preserving 100% of Golden Dog Linux's native visual appearance:
-- Quick reload for Plasma (`plasma-restart`) and KWin (`kwin-reload`).
-- Direct launchers for System Settings modules (`kde-settings`, `kde-conf-display`, `kde-conf-audio`, `kde-conf-network`, `kde-conf-power`, etc.).
-- Shortcuts for `files` (Dolphin), `editor` (Kate), `sysmon` (Plasma System Monitor), and Wayland clipboard (`clipcopy` / `clippaste`).
+### `yt-dlp` Downloads (`yt-dlp_aliases.sh`)
+Requires `yt-dlp` and `ffmpeg` (plus optional `deno` and `firefox` cookies):
+- `ytvideo <URL>`: Downloads video up to 1080p MP4.
+- `ytaudio <URL>`: Downloads and converts to MP3.
+- `ytlista <URL>` / `ytlista-audio <URL>`: Downloads full playlists (MP4 video or MP3 audio) using Firefox cookies.
+- `ytdl-subs <URL>`: Downloads 1080p video with embedded Spanish auto-subtitles.
 
 ---
 
-## 8. Container Functions (`podman-functions.sh`)
+## 7. KDE Plasma 6 (`kde_settings.sh`) & Podman (`podman-functions.sh`)
 
-Aliases and helper functions that simplify Podman container and systemd Quadlet operations:
-- `pexec <container>` (or `psh <container>`): Opens an interactive shell inside the specified container.
-- `plogs <container>`: Follows container logs in real time.
-- `quadlet-status` / `quadlet-reload`: Inspects and reloads systemd user Quadlet units.
-- `pclean` / `pclean-all`: Performs a complete system purge of unused containers and images.
+### KDE Plasma 6 (`kde_settings.sh`)
+CLI shortcuts that leave Golden Dog Linux's visual theme untouched:
+- Reload: `plasma-restart`, `kwin-reload`.
+- System Settings: `kde-settings`, `kde-conf-display`, `kde-conf-audio`, `kde-conf-sound`, `kde-conf-bluetooth`, `kde-conf-network`, `kde-conf-power`, `kde-conf-shortcuts`, `kde-conf-keyboard`, `kde-conf-touchpad`, `kde-conf-mouse`, `kde-conf-printers`.
+- Apps & Wayland clipboard: `files` (Dolphin), `editor` / `text-editor` (`kate` or `kwrite`), `sysmon` / `monitor` (`plasma-systemmonitor`), `calc` (`kcalc`), `clipcopy` (`wl-copy`), `clippaste` (`wl-paste`).
+
+### Podman Containers (`podman-functions.sh`)
+- Functions: `pexec` (alias `psh`), `plogs`, `pinfo`, `pcp`, `pclean-all`, `prm-stopped`, `prmi-dangling`, `pstop-all`, `prm-all`, `prmi-all`, `quadlet-status`, `quadlet-logs`.
+- Aliases: `p` (`podman`), `pps`, `psa`, `pi`, `pv`, `quadlet-reload`. *(Note: `pclean` is defined in `aliases.sh`.)*

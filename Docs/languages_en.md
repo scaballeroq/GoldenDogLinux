@@ -4,94 +4,99 @@ sidebar_position: 6
 
 # Programming Languages Management on Debian 13
 
-This guide details the installation, control, and maintenance of programming languages and their development environments managed in the `ProgrammingLanguages` folder.
+This guide explains in plain terms how to install, update, and maintain the programming languages managed in `ProgrammingLanguages/`.
 
-Environment management is centralized through **Mise** (runtimes and SDKs) and **Rustup** (Rust toolchain), supplemented by automated tasks configured via a `justfile`.
+> [!NOTE]
+> **How are languages organized here? (Beginner-Friendly Summary)**
+> Instead of mixing global language versions into the OS, we use modern tools that keep everything clean and isolated:
+> - **Mise**: A single manager to install and update tools like Node.js or `uv` inside your user folder.
+> - **Rustup**: The official Rust toolchain installer.
+> - **APT (Native Debian)**: Used for system Python and OpenJDK 21 (Java) for rock-solid stability.
 
 ---
 
 ## 1. Version Manager Mise (`mise.sh`)
 
-Mise is a modern CLI version manager that replaces older tools like `asdf`, `nvm`, or `pyenv`. It downloads and configures development environments globally or locally.
+[`ProgrammingLanguages/mise.sh`](../ProgrammingLanguages/mise.sh) installs and configures **Mise** (a modern replacement for `nvm`, `pyenv`, or `asdf`):
 
-1. **Official Repository Registration and Installation**:
-   ```bash
-   sudo apt update
-   sudo apt install -y curl gpg
-   sudo mkdir -p -m 755 /etc/apt/keyrings
-   curl -fsSL https://mise.jdx.dev/gpg-key.pub | sudo gpg --dearmor -o /etc/apt/keyrings/mise-archive-keyring.gpg
-   echo "deb [signed-by=/etc/apt/keyrings/mise-archive-keyring.gpg arch=$(dpkg --print-architecture)] https://mise.jdx.dev/deb stable main" | sudo tee /etc/apt/sources.list.d/mise.list > /dev/null
-   sudo apt update
-   sudo apt install -y mise
-   ```
-
-2. **Shell Activation**:
-   Mise initialization is added to `~/.bashrc.d/mise.sh`:
-   ```bash
-   eval "$(mise activate bash)"
-   ```
+* **Smart install mode**:
+  - When run as a **normal user** (recommended, e.g. via `just mise`), it installs the **standalone** binary in `~/.local/bin/mise` without needing root privileges.
+  - When run with `sudo` or `--deb`, it registers `https://mise.jdx.dev/deb` and installs the official `.deb` package (`/usr/bin/mise`).
+* **Automatic integration**:
+  - Writes `~/.config/environment.d/10-mise.conf` (Mise shims `PATH` + `COREPACK_ENABLE_DOWNLOAD_PROMPT=0`) and propagates it to KDE Plasma 6 via `systemctl --user` and `dbus`.
+  - Creates `~/.bashrc.d/mise.sh` (and `~/.zshrc.d/mise.zsh` if Zsh is present) along with shell completions.
+* **Commands & flags**:
+  ```bash
+  just mise                    # Install or reconfigure Mise
+  just mise-status             # Full diagnostics for Mise and runtimes (-s / --status)
+  ./ProgrammingLanguages/mise.sh --update      # Upgrade Mise, plugins, and tools (-u)
+  ./ProgrammingLanguages/mise.sh --standalone  # Force standalone install in ~/.local/bin/mise
+  ./ProgrammingLanguages/mise.sh --deb         # Force official .deb package (requires sudo)
+  ./ProgrammingLanguages/mise.sh --uninstall   # Uninstall Mise (preserves ~/.local/share/mise) (-r)
+  ./ProgrammingLanguages/mise.sh --help        # Show help (-h)
+  ```
 
 ---
 
-## 2. Language Runtimes and SDKs
+## 2. Language Runtimes & SDKs
 
 ### Node.js LTS & Corepack (`nodejs.sh`)
-* **Dependencies**: Verifies and installs `build-essential`, `python3`, and `make` via APT if missing, required to build native npm dependencies (`node-gyp`), with automatic multi-core parallelism (`JOBS=$(nproc)`).
-* **Installation**: Configures the latest global Node.js LTS release in Mise:
-  ```bash
-  mise use --global node@lts
-  ```
-* **Corepack (pnpm & yarn)**: Enables Corepack with unattended downloads (`COREPACK_ENABLE_DOWNLOAD_PROMPT=0`) and generates native shell completions for `npm` and `pnpm`.
+* **Automatic dependencies**: Automatically runs `./mise.sh` if `mise` is missing, and installs missing APT packages (`build-essential`, `make`, `curl`, `python3`) for compiling native npm modules (`node-gyp`).
+* **Node.js & Corepack**: Installs `node@lts` globally in Mise, enables **Corepack** (`pnpm` and `yarn` without interactive prompts), and tunes multi-core parallelism (`MAKEFLAGS`, `JOBS`, `npm_config_jobs`).
+* **Integration**: Writes `~/.config/environment.d/10-nodejs.conf`, `~/.bashrc.d/nodejs.sh`, `~/.zshrc.d/nodejs.zsh`, and completions for `npm` and `pnpm`.
+* **Commands**: `just node`, `just node --status` (`-s`), `just node --update` (`-u`), `just node --help` (`-h`).
 
 ### Native Python + `uv` Package Manager (`python.sh` & `python-uv-init.sh`)
-* **PEP 668 Philosophy**: Python is **not** installed globally in Mise to protect `/usr/bin/python3` and Debian system tools (APT, UFW, KDE Plasma 6).
-* **Per-project `uv` management**: Installs `uv` globally via Mise (`mise use --global uv@latest`) with `UV_LINK_MODE=copy` and links the interactive `py-project` wizard (`python-uv-init.sh`) to `~/.local/bin/py-project` to create isolated virtual environments from templates (Basic, FastAPI, Typer/Rich CLI, Data Science).
+* **PEP 668 System Protection**: Debian 13 relies on `/usr/bin/python3` for critical OS tools (APT, UFW, KDE). `python.sh` **removes any global Mise Python shim** (`mise unuse --global python`) and verifies native Debian packages (`python3`, `python3-venv`, `python3-pip`, `git`, `curl`, `build-essential`, `libssl-dev`).
+* **Isolated per-project environments with `uv`**: Installs `uv@latest` (and `uvx`) via Mise, configures `UV_LINK_MODE=copy` and `PYTHONUNBUFFERED=1` in `10-python.conf`, shells, and completions, and symlinks [`python-uv-init.sh`](../ProgrammingLanguages/python-uv-init.sh) to `~/.local/bin/py-project`.
+* **Commands**: `just python`, `just python --status` (`-s`), `just python --update` (`-u`), `just python-uv` (project wizard).
 
 ---
 
 ## 3. Rust Environment (`rust.sh`)
 
-Rust is managed through **Rustup**, accelerated with the **Mold** linker and **sccache** compilation cache:
+Configures **Rustup**, **Cargo**, and fast build tooling:
 
-1. **System Build Dependencies, Mold, and sccache**:
+1. **System dependencies**: Installs missing APT packages from `build-essential`, `cmake`, `libssl-dev`, `pkg-config`, `clang`, `libclang-dev`, `curl`, `mold`, and `sccache`.
+2. **Rustup & components**: Installs the `stable` toolchain (`--profile default --no-modify-path`) with `rust-analyzer`, `clippy`, `rustfmt`, `rust-src`, plus `cargo-binstall`, `cargo-update`, and `cargo-watch`.
+3. **Cargo config (`~/.cargo/config.toml`)**: Sets multi-core `jobs = NPROC`, `sccache` wrapper, and the `clang` + `mold` linker (`-C link-arg=-fuse-ld=mold`).
+4. **Integration & commands**: Configures `10-rust.conf`, `~/.bashrc.d/rust.sh`, `~/.zshrc.d/rust.zsh`, and `rustup`/`cargo` completions.
    ```bash
-   sudo apt-get install -y build-essential cmake libssl-dev pkg-config curl mold sccache
+   just rust           # Install and optimize Rust
+   just rust --status  # Full diagnostics (-s)
+   just rust --update  # Update rustup, toolchains, and cargo tools (-u)
    ```
-
-2. **Rustup & IDE Components**:
-   Installs the `stable` toolchain along with `rust-analyzer`, `clippy`, `rustfmt`, and `rust-src`:
-   ```bash
-   curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y --default-toolchain stable --no-modify-path
-   rustup component add rust-analyzer clippy rustfmt rust-src
-   ```
-
-3. **Cargo Optimizations (`~/.cargo/config.toml`)**:
-   Automatically configures CPU thread count (`jobs = NPROC`), `rustc-wrapper = "sccache"`, and the `mold` linker (`-C link-arg=-fuse-ld=mold`).
-
-4. **Fast Binary Installer (`cargo-binstall`)**:
-   Installs `cargo-binstall` along with `cargo-update` and `cargo-watch`.
 
 ---
 
 ## 4. OpenJDK 21 LTS (`java.sh`)
 
-Installs `openjdk-21-jdk`, `openjdk-21-jre`, `maven`, `ca-certificates-java`, `pcscd`, and `libnss3-tools` (compatible with smartcards and AutoFirma):
-* Configures `_JAVA_AWT_WM_NONREPARENTING=1` and font antialiasing for KWin Wayland.
-* Optimizes **Maven** (`MAVEN_ARGS="-T 1C"`) and **Gradle** (`~/.gradle/gradle.properties` with daemon, parallel execution, caching, and `vfs.watch`).
+Installs **Java 21** and build tools:
+
+* **APT packages**: `openjdk-21-jdk`, `openjdk-21-jre`, `ca-certificates`, `ca-certificates-java`, `maven`, `curl`, `pcscd`, and `libnss3-tools` (smartcard / eID support).
+* **RAM-aware optimization**: Configures `JAVA_HOME`, `_JAVA_AWT_WM_NONREPARENTING=1` and font antialiasing (`JAVA_TOOL_OPTIONS`) for Wayland, `MAVEN_ARGS="-T 1C"`, and scales heap memory (`4096m`/`4g` on systems with >= 15 GB RAM, or `2048m`/`2g` otherwise).
+* **Gradle properties**: Generates an optimized `~/.gradle/gradle.properties` (daemon, parallel, `workers.max`, caching, `vfs.watch`). *(Note: it configures Gradle performance properties rather than installing a global Gradle binary, as projects typically use `./gradlew`.)*
+* **Commands**:
+  ```bash
+  just java                 # Install and optimize OpenJDK 21 and Maven
+  just java --status        # Inspect Java, JAVA_HOME, Maven, and Gradle (-s)
+  just java --alternatives  # Show installed Java alternatives (-a)
+  just java --update        # Upgrade OpenJDK and Maven via APT (-u)
+  ```
 
 ---
 
 ## 5. Task Automation (`justfile`)
 
-Both the root `justfile` and `ProgrammingLanguages/justfile` provide recipes to install or inspect all languages:
+Available from both the root `justfile` and `ProgrammingLanguages/justfile`:
 
 ```bash
 just languages          # Install Mise, Node.js LTS, Python/uv, Rust, and OpenJDK 21
 just languages-status   # Show full diagnostics for all runtimes
-just mise               # Install/update Mise
-just node               # Install/update Node.js LTS + Corepack
-just python             # Verify native Python + install uv
-just python-uv          # Interactive wizard to create Python projects with uv
-just rust               # Install/update Rust + Mold + sccache
-just java               # Install/update OpenJDK 21 + Maven + Gradle
+just mise [args]        # Manage Mise (--status, --update, --standalone, --deb, --uninstall)
+just node [args]        # Manage Node.js LTS + Corepack (--status, --update)
+just python [args]      # Verify native Python + manage uv (--status, --update)
+just python-uv          # Create a new isolated Python project with uv
+just rust [args]        # Manage Rust + Mold + sccache (--status, --update)
+just java [args]        # Manage OpenJDK 21 + Maven (--status, --alternatives, --update)
 ```

@@ -10,7 +10,11 @@ This guide details the security, network, and system hardening automated in [`Se
 
 ## 1. Native Firewall (UFW)
 
-In **Golden Dog Linux (Debian 13)**, **UFW** (`Uncomplicated Firewall`) comes pre-installed and configured by default. The [`Setup/seguridad.sh`](../Setup/seguridad.sh) script verifies its status and applies the rules needed for a local development workstation:
+> [!NOTE]
+> **What is a firewall (UFW)? (Beginner-Friendly Summary)**
+> A firewall acts like your computer's security guard: it blocks unsolicited incoming network connections while letting you browse and download normally.
+
+In **Golden Dog Linux (Debian 13)**, **UFW** (`Uncomplicated Firewall`) comes pre-installed (and `seguridad.sh` installs it automatically if missing). The [`Setup/seguridad.sh`](../Setup/seguridad.sh) script verifies its status and applies the rules needed for a local development workstation:
 
 1. **Enabling UFW & Default Policy**:
    ```bash
@@ -24,7 +28,7 @@ In **Golden Dog Linux (Debian 13)**, **UFW** (`Uncomplicated Firewall`) comes pr
    - **Cockpit Web Console (`9090/tcp`)**: Allows local and LAN access to the web administration console at `https://localhost:9090`.
    - **KDE Connect (`1714:1764` TCP/UDP)**: Enables notification sync, media controls, shared clipboard, and file transfer between your phone and PC.
    - **Local Discovery (`5353/udp` mDNS/Avahi)**: Enables printer discovery and local network services.
-   - **Remote Access (`ssh`)**: Allowed automatically if the SSH service is active.
+   - **Remote Access (`ssh`)**: Allowed automatically if `ssh` or `sshd` is active.
    - **Virtual Machines & Containers**:
      - Podman bridge (`podman0`): `ufw allow in on podman0` and `ufw route allow in on podman0`.
      - KVM virtualization bridge (`virbr0`): `ufw allow in on virbr0`, `ufw route allow in on virbr0`, and `ufw route allow out on virbr0`.

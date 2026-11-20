@@ -33,7 +33,7 @@ py-project
 ```
 El asistente te solicitará:
 1. **Nombre del proyecto** (ej: `mi-api`, `scraper-datos`).
-2. **Versión de Python deseada** (ej: `3.12`, `3.13` o Enter para `3.12` por defecto).
+2. **Versión de Python deseada** (ej: `3.12`, `3.13` o Enter para `3.13` por defecto).
 3. **Plantilla de inicio**:
    - `1) Básico / Minimalista`: Estructura estándar con `pyproject.toml` y `main.py`.
    - `2) FastAPI`: API REST lista con `fastapi`, `uvicorn[standard]` y `pydantic`.
@@ -41,19 +41,19 @@ El asistente te solicitará:
    - `4) Data Science`: Entorno con `numpy`, `pandas` y `matplotlib`.
 
 ### 2. Modo Directo por Línea de Comandos
-Puedes inicializar proyectos directamente pasando los argumentos:
+Puedes inicializar proyectos directamente pasando los argumentos (`basic`, `fastapi`/`api`, `cli`/`terminal`, `data`/`datascience`):
 
 ```bash
-# Proyecto básico con Python 3.12
-py-project mi-app 3.12 basic
+# Proyecto básico con Python 3.13 (por defecto)
+py-project mi-app 3.13 basic
 
-# Proyecto FastAPI con Python 3.12
-py-project mi-api 3.12 fastapi
+# Proyecto FastAPI con Python 3.13 (también acepta "api")
+py-project mi-api 3.13 fastapi
 
-# Herramienta de terminal (CLI) con Python 3.13
+# Herramienta de terminal (CLI) con Python 3.13 (también acepta "terminal")
 py-project mi-cli 3.13 cli
 
-# Entorno de análisis de datos con Python 3.12
+# Entorno de análisis de datos con Python 3.12 (también acepta "datascience")
 py-project mi-analisis 3.12 data
 ```
 

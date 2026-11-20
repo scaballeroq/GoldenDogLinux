@@ -10,7 +10,11 @@ Esta guía detalla el proceso de seguridad, red y endurecimiento del sistema (ha
 
 ## 1. Cortafuegos Nativo (UFW)
 
-En **Golden Dog Linux (Debian 13)**, **UFW** (`Uncomplicated Firewall`) viene preinstalado y configurado por defecto. El script [`Setup/seguridad.sh`](../Setup/seguridad.sh) verifica su estado y aplica las reglas necesarias para una estación de trabajo y desarrollo local:
+> [!NOTE]
+> **¿Qué es un cortafuegos (UFW)? (Para principiantes)**
+> Un cortafuegos actúa como el portero de tu ordenador: bloquea cualquier conexión entrante que no hayas pedido desde internet o tu red, mientras te deja navegar y descargar con normalidad.
+
+En **Golden Dog Linux (Debian 13)**, **UFW** (`Uncomplicated Firewall`) viene preinstalado (y `seguridad.sh` lo instala automáticamente si faltara). El script [`Setup/seguridad.sh`](../Setup/seguridad.sh) verifica su estado y aplica las reglas necesarias para una estación de trabajo y desarrollo local:
 
 1. **Activación y Política Base de UFW**:
    ```bash
@@ -24,7 +28,7 @@ En **Golden Dog Linux (Debian 13)**, **UFW** (`Uncomplicated Firewall`) viene pr
    - **Cockpit Web Console (`9090/tcp`)**: Permite el acceso local y en LAN a la consola web de administración en `https://localhost:9090`.
    - **KDE Connect (`1714:1764` TCP/UDP)**: Permite la sincronización de notificaciones, control multimedia, portapapeles compartido y transferencia de archivos entre tu teléfono y tu PC.
    - **Descubrimiento Local (`5353/udp` mDNS/Avahi)**: Permite detectar impresoras, dispositivos multimedia y servicios locales.
-   - **Acceso Remoto (`ssh`)**: Si el servicio `ssh` está activo, se autoriza en UFW.
+   - **Acceso Remoto (`ssh`)**: Si el servicio `ssh` o `sshd` está activo, se autoriza automáticamente en UFW.
    - **Máquinas Virtuales y Contenedores**:
      - Puente de contenedores Podman (`podman0`): `ufw allow in on podman0` y `ufw route allow in on podman0`.
      - Puente de virtualización KVM (`virbr0`): `ufw allow in on virbr0`, `ufw route allow in on virbr0` y `ufw route allow out on virbr0`.
