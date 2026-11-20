@@ -18,6 +18,21 @@
 
 set -euo pipefail
 
+export PATH="/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:$PATH"
+
+if [ "$EUID" -ne 0 ]; then
+    SUDO="sudo"
+else
+    SUDO=""
+fi
+
+require_sudo() {
+    if [ "$EUID" -ne 0 ] && ! command -v sudo >/dev/null 2>&1; then
+        echo -e "${RED}❌ Error: 'sudo' no está disponible y el script no se ejecuta como root.${NC}" >&2
+        exit 1
+    fi
+}
+
 # Colores de salida
 GREEN="\033[0;32m"
 BLUE="\033[0;34m"
@@ -36,6 +51,8 @@ ICON_FILE="/usr/share/icons/hicolor/512x512/apps/antigravity.png"
 PIXMAP_FILE="/usr/share/pixmaps/antigravity.png"
 DOWNLOAD_PAGE="https://antigravity.google/download"
 LEGACY_KEYRING="/etc/apt/keyrings/antigravity-repo-key.gpg"
+LEGACY_APT_LIST="/etc/apt/sources.list.d/antigravity.list"
+TARGET_URL=""
 
 case "$(uname -m)" in
 x86_64 | amd64)
@@ -85,15 +102,14 @@ get_installed_version() {
 
 # Obtener última versión remota oficial disponible
 get_remote_version() {
+    if [ -n "${TARGET_URL:-}" ]; then
+        echo "$TARGET_URL" | grep -oP '/(?:antigravity-hub|antigravity/stable)/\K[0-9]+\.[0-9]+\.[0-9]+(?=-[0-9]+/)' | head -n1 || true
+        return 0
+    fi
     local html version
     html=$(curl -fsSL --compressed -A "Mozilla/5.0 (X11; Linux x86_64)" --retry 2 "$DOWNLOAD_PAGE" 2>/dev/null || true)
-    version=$(echo "$html" | grep -oP 'https://storage\.googleapis\.com/antigravity-public/antigravity-hub/\K[0-9.]+(?=-[0-9]+/linux-x64/Antigravity\.tar\.gz)' | head -n1 || true)
-    if [ -n "$version" ]; then
-        echo "$version"
-    else
-        # Fallback a última versión estable conocida si falla la red
-        echo "2.26.0"
-    fi
+    version=$(echo "$html" | grep -oP "https://(?:storage\.googleapis\.com/antigravity-public|edgedl\.me\.gvt1\.com/[^\"'\s<>]+)/(?:antigravity-hub|antigravity/stable)/\K[0-9]+\.[0-9]+\.[0-9]+(?=-[0-9]+/${PLATFORM}/Antigravity\.tar\.gz)" | head -n1 || true)
+    echo "$version"
 }
 
 # Comprobar si el paquete APT antiguo (antigravity_old.sh) sigue instalado
@@ -139,17 +155,9 @@ check_dependencies() {
 
     if [ ${#missing[@]} -gt 0 ]; then
         echo -e "ℹ️  ${YELLOW}Instalando dependencias requeridas con APT: ${missing[*]}...${NC}"
-        if [ "$EUID" -ne 0 ]; then
-            if ! command -v sudo &>/dev/null; then
-                echo -e "${RED}❌ Error: 'sudo' no está disponible para instalar paquetes.${NC}" >&2
-                exit 1
-            fi
-            sudo apt update -qq
-            sudo apt install -y "${missing[@]}"
-        else
-            apt update -qq
-            apt install -y "${missing[@]}"
-        fi
+        require_sudo
+        $SUDO apt-get update -qq
+        $SUDO DEBIAN_FRONTEND=noninteractive apt-get install -y "${missing[@]}"
     fi
 }
 
@@ -166,10 +174,12 @@ show_status() {
     local remote_v
     remote_v=$(get_remote_version)
 
-    local cpu_model gpu_model
+    local cpu_model gpu_model distro_pretty distro_codename
     cpu_model=$(grep -m1 'model name' /proc/cpuinfo | cut -d: -f2 | xargs || echo "Desconocido")
     gpu_model=$(lspci 2>/dev/null | grep -iE 'vga|3d|display' | head -n1 | cut -d: -f3 | xargs || echo "Mesa Wayland")
-    echo -e "💻 ${BOLD}Sistema:${NC}          Debian $(grep -oP 'VERSION_ID="\K[^"]+' /etc/os-release 2>/dev/null || echo "Linux") (${XDG_SESSION_TYPE:-wayland})"
+    distro_pretty=$(grep -oP '^PRETTY_NAME="\K[^"]+' /etc/os-release 2>/dev/null || echo "Debian GNU/Linux")
+    distro_codename=$(grep -oP '^VERSION_CODENAME=\K.*' /etc/os-release 2>/dev/null || echo "trixie")
+    echo -e "💻 ${BOLD}Sistema:${NC}          $distro_pretty [Debian $distro_codename] (${XDG_SESSION_TYPE:-wayland})"
     echo -e "⚡ ${BOLD}Hardware:${NC}         $cpu_model | $gpu_model"
     echo -e "👤 ${BOLD}Usuario objetivo:${NC} $REAL_USER ($USER_HOME)"
 
@@ -182,9 +192,13 @@ show_status() {
         echo -e "  • Estado App:         ${RED}No instalado${NC}"
         echo -e "  • Versión actual:     ${YELLOW}Ninguna${NC}"
     fi
-    echo -e "  • Última remota:      ${CYAN}v$remote_v${NC}"
+    if [ -n "$remote_v" ]; then
+        echo -e "  • Última remota:      ${CYAN}v$remote_v${NC}"
+    else
+        echo -e "  • Última remota:      ${YELLOW}No detectada en $DOWNLOAD_PAGE (usar --url si cambia el portal)${NC}"
+    fi
 
-    if [ -n "$installed_v" ]; then
+    if [ -n "$installed_v" ] && [ -n "$remote_v" ]; then
         if [ "$installed_v" = "$remote_v" ]; then
             echo -e "  • Actualización:      ${GREEN}Al día con la versión más reciente${NC}"
         else
@@ -193,27 +207,48 @@ show_status() {
     fi
 
     echo ""
-    echo -e "${BOLD}⚠️  Detección de Paquetes Heredados / Conflictos:${NC}"
+    echo -e "${BOLD}⚠️  Detección de Paquetes Heredados / Coexistencia:${NC}"
     if is_legacy_apt_installed; then
         local legacy_ver
         legacy_ver=$(dpkg-query -W -f='${Version}' antigravity 2>/dev/null || echo "desconocida")
         echo -e "  • Paquete APT heredado: ${RED}⚠️  Detectado (v$legacy_ver en /usr/bin/antigravity)${NC}"
         echo -e "    ${YELLOW}↳ Instalado por antigravity_old.sh. Puede generar conflictos con la v2.0.${NC}"
-        echo -e "    ${YELLOW}↳ Desinstalar con: ${BOLD}sudo apt purge -y antigravity && sudo rm -f $LEGACY_KEYRING${NC}"
+        echo -e "    ${YELLOW}↳ Desinstalar con: ${BOLD}sudo apt purge -y antigravity && sudo rm -f $LEGACY_KEYRING $LEGACY_APT_LIST${NC}"
     else
         echo -e "  • Paquete APT heredado: ${GREEN}✅ Limpio (No instalado / Desinstalado)${NC}"
     fi
 
-    if [ -f "$LEGACY_KEYRING" ]; then
-        echo -e "  • Keyring APT heredado: ${YELLOW}⚠️  Presente ($LEGACY_KEYRING)${NC}"
+    if [ -f "$LEGACY_KEYRING" ] || [ -f "$LEGACY_APT_LIST" ]; then
+        echo -e "  • Restos APT heredados: ${YELLOW}⚠️  Presentes ($LEGACY_KEYRING / $LEGACY_APT_LIST)${NC}"
+    fi
+
+    if [ -x "/opt/antigravity-ide/Antigravity-IDE/antigravity-ide" ] || [ -L "/usr/local/bin/antigravity-ide" ]; then
+        local ide_ver
+        ide_ver=$(cat /opt/antigravity-ide/.linuxcapable-version 2>/dev/null || echo "")
+        if [ -n "$ide_ver" ]; then
+            echo -e "  • Antigravity IDE:      ${GREEN}✅ Coexistiendo sin conflictos en /opt/antigravity-ide (v$ide_ver)${NC}"
+        else
+            echo -e "  • Antigravity IDE:      ${GREEN}✅ Coexistiendo sin conflictos (/usr/local/bin/antigravity-ide)${NC}"
+        fi
     fi
 
     echo ""
-    echo -e "${BOLD}📁 Rutas y Binarios del Sistema:${NC}"
+    echo -e "${BOLD}📁 Rutas, Binarios y Sandbox:${NC}"
     if [ -x "$INSTALL_ROOT/$EXPECTED_TOP_DIR/antigravity" ]; then
         echo -e "  • Binario nativo:     ${GREEN}$INSTALL_ROOT/$EXPECTED_TOP_DIR/antigravity${NC}"
     else
         echo -e "  • Binario nativo:     ${YELLOW}No existe ($INSTALL_ROOT/$EXPECTED_TOP_DIR/antigravity)${NC}"
+    fi
+
+    local sandbox_path="$INSTALL_ROOT/$EXPECTED_TOP_DIR/chrome-sandbox"
+    if [ -f "$sandbox_path" ] && [ ! -L "$sandbox_path" ]; then
+        local sb_perm
+        sb_perm=$(stat -c '%U:%G:%a' "$sandbox_path" 2>/dev/null || true)
+        if [ "$sb_perm" = "root:root:4755" ]; then
+            echo -e "  • Chrome Sandbox:     ${GREEN}✅ root:root:4755 ($sandbox_path)${NC}"
+        else
+            echo -e "  • Chrome Sandbox:     ${YELLOW}⚠️  Permisos incorrectos ($sb_perm)${NC}"
+        fi
     fi
 
     if [ -L "$COMMAND_LINK" ]; then
@@ -248,8 +283,10 @@ show_status() {
         echo -e "  • Icono de aplicación:   ${YELLOW}No presente${NC}"
     fi
 
-    if [ -f "$KIO_USER_FILE" ] || [ -f "$KIO_SYS_FILE" ]; then
-        echo -e "  • Menú Dolphin (KIO):     ${GREEN}Activo (${KIO_USER_FILE})${NC}"
+    if [ -f "$KIO_SYS_FILE" ]; then
+        echo -e "  • Menú Dolphin (KIO):     ${GREEN}Activo ($KIO_SYS_FILE)${NC}"
+    elif [ -f "$KIO_USER_FILE" ]; then
+        echo -e "  • Menú Dolphin (KIO):     ${GREEN}Activo ($KIO_USER_FILE)${NC}"
     else
         echo -e "  • Menú Dolphin (KIO):     ${YELLOW}No instalado${NC}"
     fi
@@ -303,6 +340,8 @@ generate_helper() {
 #!/usr/bin/env bash
 # LinuxCapable-Managed: google-antigravity-desktop-helper-v1
 set -euo pipefail
+
+export PATH="/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:$PATH"
 
 download_page="https://antigravity.google/download"
 install_root="/opt/antigravity"
@@ -371,12 +410,12 @@ fi
 if [ "$action" = "check" ]; then
     installed_version=$(cat "$install_root/.linuxcapable-version" 2>/dev/null || echo "")
     html=$(curl -fsSL --compressed -A "Mozilla/5.0 (X11; Linux x86_64)" --retry 2 "$download_page" 2>/dev/null || true)
-    version=$(echo "$html" | grep -oP 'https://storage\.googleapis\.com/antigravity-public/antigravity-hub/\K[0-9.]+(?=-[0-9]+/linux-x64/Antigravity\.tar\.gz)' | head -n1 || true)
+    version=$(echo "$html" | grep -oP "https://(?:storage\.googleapis\.com/antigravity-public|edgedl\.me\.gvt1\.com/[^\"'\s<>]+)/(?:antigravity-hub|antigravity/stable)/\K[0-9]+\.[0-9]+\.[0-9]+(?=-[0-9]+/${platform}/Antigravity\.tar\.gz)" | head -n1 || true)
     if [ -n "$installed_version" ] && [ "$installed_version" = "$version" ]; then
         echo "Al día: $installed_version"
         exit 0
     else
-        echo "Actualización requerida: $installed_version -> $version"
+        echo "Actualización requerida: ${installed_version:-ninguna} -> ${version:-desconocida}"
         exit 1
     fi
 fi
@@ -496,10 +535,29 @@ if [ "$icon_preexisting" = yes ]; then
 	cp -a -- "$icon_file" "$icon_backup"
 fi
 
-curl -fsSL --proto '=https' --proto-redir '=https' --compressed --retry 3 -o "$download_html" "$download_page"
+if [ -n "${ANTIGRAVITY_URL:-}" ]; then
+	download_fields=$(
+		python3 - "$ANTIGRAVITY_URL" "$platform" <<'PY'
+import re, sys
 
-download_fields=$(
-	python3 - "$download_html" "$download_page" "$platform" <<'PY'
+raw_url, platform = sys.argv[1].strip(), sys.argv[2]
+pattern = re.compile(
+    r"^https://(?:storage\.googleapis\.com/antigravity-public|edgedl\.me\.gvt1\.com/[^/]+(?:/[^/]+)*)/(?:antigravity-hub|antigravity/stable)/"
+    r"([0-9]+\.[0-9]+\.[0-9]+)-[0-9]+/"
+    + re.escape(platform)
+    + r"/Antigravity\.tar\.gz$"
+)
+m = pattern.fullmatch(raw_url)
+if not m:
+    raise SystemExit(f"URL oficial no válida para Antigravity Desktop ({platform}): {raw_url}")
+print(m.group(1), raw_url, sep="\t")
+PY
+	)
+else
+	curl -fsSL --proto '=https' --proto-redir '=https' --compressed --retry 3 -o "$download_html" "$download_page"
+
+	download_fields=$(
+		python3 - "$download_html" "$download_page" "$platform" <<'PY'
 import re
 import sys
 from html.parser import HTMLParser
@@ -522,30 +580,35 @@ page_url = sys.argv[2]
 platform = sys.argv[3]
 parser = LinkParser()
 parser.feed(html)
+
+raw_candidates = list(parser.hrefs)
+raw_candidates += re.findall(r'https://(?:storage\.googleapis\.com|edgedl\.me\.gvt1\.com)/[^"\'\s<>]+', html)
+
 pattern = re.compile(
-    r"https://storage\.googleapis\.com/antigravity-public/antigravity-hub/"
+    r"https://(?:storage\.googleapis\.com/antigravity-public|edgedl\.me\.gvt1\.com/[^/]+(?:/[^/]+)*)/(?:antigravity-hub|antigravity/stable)/"
     r"([0-9]+\.[0-9]+\.[0-9]+)-[0-9]+/"
     + re.escape(platform)
     + r"/Antigravity\.tar\.gz"
 )
 matches = []
-for href in parser.hrefs:
+for href in raw_candidates:
     url = urljoin(page_url, href)
     match = pattern.fullmatch(url)
     if match and url not in {item[1] for item in matches}:
         matches.append((match.group(1), url))
 
-if len(matches) != 1:
-    raise SystemExit(f"No se encontró descarga de Antigravity para {platform}")
+if not matches:
+    raise SystemExit(f"No se encontró descarga de Antigravity para {platform} (puedes usar --url <URL>)")
 
 print(*matches[0], sep="\t")
 PY
-)
+	)
+fi
 
 IFS=$'\t' read -r version download_url <<<"$download_fields"
 
 if [[ ! "$version" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]] ||
-   [[ ! "$download_url" =~ ^https://storage\.googleapis\.com/antigravity-public/antigravity-hub/[0-9]+\.[0-9]+\.[0-9]+-[0-9]+/${platform}/Antigravity\.tar\.gz$ ]]; then
+   [[ ! "$download_url" =~ ^https://(storage\.googleapis\.com/antigravity-public|edgedl\.me\.gvt1\.com/.+)/(antigravity-hub|antigravity/stable)/[0-9]+\.[0-9]+\.[0-9]+-[0-9]+/${platform}/Antigravity\.tar\.gz$ ]]; then
 	echo "Error analizando los enlaces de descarga de Antigravity." >&2
 	exit 1
 fi
@@ -555,7 +618,9 @@ sandbox_path="$install_root/$expected_top_dir/chrome-sandbox"
 installed_version=$(cat "$install_root/.linuxcapable-version" 2>/dev/null || true)
 
 # Comprobación de versión para evitar descargas redundantes si no es forzado
-if [ "$force" != "yes" ] && [ -n "$installed_version" ] && [ "$installed_version" = "$version" ] && [ -x "$expected_target" ] && [ -L "$command_link" ]; then
+if [ "$force" != "yes" ] && [ -n "$installed_version" ] && [ "$installed_version" = "$version" ] &&
+   [ -x "$expected_target" ] && [ -L "$command_link" ] && [ -f "$desktop_file" ] &&
+   [ -f "$sandbox_path" ] && [ "$(stat -c '%U:%G:%a' "$sandbox_path" 2>/dev/null)" = "root:root:4755" ]; then
     printf '✅ Antigravity Desktop %s ya está en la última versión. No se requiere descarga.\n' "$installed_version"
     exit 0
 fi
@@ -683,12 +748,13 @@ mkdir -p "$(dirname "$pixmap_file")"
 ln -sf "$icon_file" "$pixmap_file"
 install -m 0644 "$desktop_staged" "$desktop_file"
 
-# Integración con Dolphin (KDE Files)
-if [ -d "$(dirname "$kio_sys_file")" ]; then
-    cat <<'KIO_SYS' > "$kio_sys_file"
+# Integración con Dolphin (KDE Plasma 6 / KF6 ServiceMenu)
+mkdir -p "$(dirname "$kio_sys_file")"
+cat <<KIO_SYS > "$kio_sys_file"
 [Desktop Entry]
 Type=Service
 ServiceTypes=KonqPopupMenu/Plugin
+X-KDE-ServiceTypes=KonqPopupMenu/Plugin
 MimeType=inode/directory;
 Actions=openInAntigravity;
 X-KDE-Priority=TopLevel
@@ -698,10 +764,9 @@ Name=Abrir con Antigravity
 Name[es]=Abrir con Antigravity
 Name[en]=Open in Antigravity
 Icon=antigravity
-Exec=antigravity "%f"
+Exec=$command_link --ozone-platform-hint=auto --enable-features=WaylandWindowDecorations %F
 KIO_SYS
-    chmod 0644 "$kio_sys_file"
-fi
+chmod 0755 "$kio_sys_file"
 
 # Refresco de bases de datos de escritorio e iconos
 command -v update-desktop-database >/dev/null 2>&1 && update-desktop-database /usr/share/applications >/dev/null 2>&1 || true
@@ -715,11 +780,8 @@ HELPER_EOF
 
     if [ ! -f "$HELPER_PATH" ] || ! cmp -s "$helper_tmp" "$HELPER_PATH"; then
         echo -e "⚙️  Actualizando script helper en ${CYAN}$HELPER_PATH${NC}..."
-        if [ "$EUID" -ne 0 ]; then
-            sudo install -m 0755 "$helper_tmp" "$HELPER_PATH"
-        else
-            install -m 0755 "$helper_tmp" "$HELPER_PATH"
-        fi
+        require_sudo
+        $SUDO install -m 0755 "$helper_tmp" "$HELPER_PATH"
     fi
     rm -f "$helper_tmp"
 }
@@ -732,15 +794,12 @@ uninstall_app() {
     echo -e "🗑️  ${YELLOW}Desinstalando Google Antigravity Desktop...${NC}"
     echo -e "${BOLD}=================================================================${NC}"
 
+    require_sudo
     if [ -x "$HELPER_PATH" ]; then
-        if [ "$EUID" -ne 0 ]; then
-            sudo "$HELPER_PATH" --uninstall
-        else
-            "$HELPER_PATH" --uninstall
-        fi
+        $SUDO "$HELPER_PATH" --uninstall
     else
         echo "Eliminando archivos del sistema..."
-        sudo rm -rf "$INSTALL_ROOT" "$COMMAND_LINK" "$DESKTOP_FILE" "$ICON_FILE" "$PIXMAP_FILE" "$KIO_SYS_FILE"
+        $SUDO rm -rf "$INSTALL_ROOT" "$COMMAND_LINK" "$DESKTOP_FILE" "$ICON_FILE" "$PIXMAP_FILE" "$KIO_SYS_FILE"
         rm -f "$KIO_USER_FILE" 2>/dev/null || true
     fi
 
@@ -749,7 +808,7 @@ uninstall_app() {
         echo ""
         echo -e "${YELLOW}⚠️  Se detectó que el paquete APT heredado (antigravity_old.sh) todavía está en el sistema.${NC}"
         echo -e "   Para purgarlo por completo, ejecuta:"
-        echo -e "   ${BOLD}sudo apt purge -y antigravity && sudo rm -f $LEGACY_KEYRING && sudo apt autoremove --purge -y${NC}"
+        echo -e "   ${BOLD}sudo apt purge -y antigravity && sudo rm -f $LEGACY_KEYRING $LEGACY_APT_LIST && sudo apt autoremove --purge -y${NC}"
     fi
 
     echo -e "${GREEN}✅ Antigravity Desktop 2.0 y sus integraciones han sido eliminados.${NC}"
@@ -770,7 +829,7 @@ install_or_update() {
     if is_legacy_apt_installed; then
         echo -e "${YELLOW}⚠️  ATENCIÓN: Se ha detectado el paquete APT heredado de Antigravity en /usr/bin/antigravity.${NC}"
         echo -e "   Se recomienda purgarlo para evitar colisiones con el nuevo binario en /usr/local/bin/antigravity:"
-        echo -e "   ${CYAN}sudo apt purge -y antigravity && sudo rm -f $LEGACY_KEYRING${NC}"
+        echo -e "   ${CYAN}sudo apt purge -y antigravity && sudo rm -f $LEGACY_KEYRING $LEGACY_APT_LIST${NC}"
         echo ""
     fi
 
@@ -784,20 +843,26 @@ install_or_update() {
     local remote_v
     remote_v=$(get_remote_version)
 
-    echo -e "ℹ️  [2/3] Comprobando versiones (Local: ${CYAN}v${installed_v:-ninguna}${NC} | Remota: ${CYAN}v$remote_v${NC})..."
+    echo -e "ℹ️  [2/3] Comprobando versiones (Local: ${CYAN}v${installed_v:-ninguna}${NC} | Remota: ${CYAN}v${remote_v:-desconocida}${NC})..."
 
-    if [ "$force_flag" != "yes" ] && [ -n "$installed_v" ] && [ "$installed_v" = "$remote_v" ] && [ -x "$INSTALL_ROOT/$EXPECTED_TOP_DIR/antigravity" ] && [ -L "$COMMAND_LINK" ]; then
+    local sandbox_path="$INSTALL_ROOT/$EXPECTED_TOP_DIR/chrome-sandbox"
+    if [ "$force_flag" != "yes" ] && [ -n "$installed_v" ] && [ -n "$remote_v" ] && [ "$installed_v" = "$remote_v" ] &&
+       [ -x "$INSTALL_ROOT/$EXPECTED_TOP_DIR/antigravity" ] && [ -L "$COMMAND_LINK" ] && [ -f "$DESKTOP_FILE" ] &&
+       [ -f "$sandbox_path" ] && [ "$(stat -c '%U:%G:%a' "$sandbox_path" 2>/dev/null)" = "root:root:4755" ]; then
         echo -e "${GREEN}✨ Antigravity Desktop v$installed_v ya se encuentra en su versión más reciente y configurado.${NC}"
         echo -e "💡 No se requiere descarga ni cambios con privilegios de administrador."
         echo -e "💡 Usa ${CYAN}--force${NC} para forzar la reinstalación completa."
     else
         # 3. Sincronizar helper e instalar/actualizar
         echo -e "ℹ️  [3/3] Sincronizando script helper ($HELPER_PATH) y ejecutando actualización..."
+        require_sudo
         generate_helper
-        if [ "$force_flag" = "yes" ]; then
-            sudo "$HELPER_PATH" --force
+        local helper_args=()
+        [ "$force_flag" = "yes" ] && helper_args+=("--force")
+        if [ -n "$TARGET_URL" ]; then
+            $SUDO env ANTIGRAVITY_URL="$TARGET_URL" "$HELPER_PATH" "${helper_args[@]}"
         else
-            sudo "$HELPER_PATH"
+            $SUDO "$HELPER_PATH" "${helper_args[@]}"
         fi
     fi
 
@@ -808,6 +873,7 @@ install_or_update() {
 [Desktop Entry]
 Type=Service
 ServiceTypes=KonqPopupMenu/Plugin
+X-KDE-ServiceTypes=KonqPopupMenu/Plugin
 MimeType=inode/directory;
 Actions=openInAntigravity;
 X-KDE-Priority=TopLevel
@@ -817,9 +883,9 @@ Name=Abrir con Antigravity
 Name[es]=Abrir con Antigravity
 Name[en]=Open with Antigravity
 Icon=antigravity
-Exec=/usr/local/bin/antigravity %u
+Exec=/usr/local/bin/antigravity --ozone-platform-hint=auto --enable-features=WaylandWindowDecorations %F
 KIO_LOCAL
-        run_as_user chmod +x "$KIO_USER_FILE" 2>/dev/null || true
+        run_as_user chmod 0755 "$KIO_USER_FILE" 2>/dev/null || true
     fi
 
     # Refrescar bases de datos de escritorio e iconos
@@ -850,6 +916,7 @@ show_help() {
     echo -e "  ${CYAN}-s, --status${NC}        Muestra el estado completo de la instalación e integraciones (rootless)"
     echo -e "  ${CYAN}-c, --check${NC}         Comprueba si hay actualizaciones disponibles sin instalar (código de salida)"
     echo -e "  ${CYAN}-f, --force${NC}         Fuerza la descarga y reinstalación de la versión más reciente"
+    echo -e "  ${CYAN}--url <URL>${NC}         Usa una URL oficial directa (.tar.gz de storage.googleapis.com / edgedl.me.gvt1.com)"
     echo -e "  ${CYAN}--uninstall${NC}         Desinstala Antigravity Desktop y elimina accesos e integración de Dolphin"
     echo -e "  ${CYAN}-h, --help${NC}          Muestra este mensaje de ayuda"
     echo ""
@@ -879,6 +946,14 @@ while [ $# -gt 0 ]; do
             ACTION="install"
             FORCE="yes"
             shift
+            ;;
+        --url)
+            if [ -z "${2:-}" ]; then
+                echo -e "${RED}❌ Error: --url requiere una URL.${NC}" >&2
+                exit 1
+            fi
+            TARGET_URL="$2"
+            shift 2
             ;;
         --uninstall)
             ACTION="uninstall"
